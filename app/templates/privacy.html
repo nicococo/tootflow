@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Privacy Policy – TootFlow{% endblock %}
 {% block content %}
-<div class="container" style="max-width:720px;">
+<div class="container container-narrow">
   <h1>Privacy Policy</h1>
-  <p style="color:var(--muted); font-size:13px; margin-bottom:32px;">Last updated: 2026-02-25</p>
+  <p class="muted text-sm" style="margin-bottom:32px;">Last updated: 2026-02-25</p>
 
   <details open>
     <summary>Who we are</summary>
@@ -16,7 +16,8 @@
   <details open>
     <summary>What data we store</summary>
     <p>When you use TootFlow we store the following data about you:</p>
-    <table style="margin-top:12px;">
+    <div class="table-wrap" style="margin-top:12px;">
+    <table>
       <thead>
         <tr><th>Data</th><th>Why</th><th>How long</th></tr>
       </thead>
@@ -48,7 +49,8 @@
         </tr>
       </tbody>
     </table>
-    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+    </div>
+    <p class="muted text-sm" style="margin-top:12px;">
       We do not store email addresses, passwords, or any payment card details.
     </p>
   </details>
@@ -56,7 +58,8 @@
   <details open>
     <summary>Cookies</summary>
     <p>TootFlow uses two cookies, both strictly necessary for the service to function:</p>
-    <table style="margin-top:12px;">
+    <div class="table-wrap" style="margin-top:12px;">
+    <table>
       <thead>
         <tr><th>Cookie</th><th>Purpose</th></tr>
       </thead>
@@ -71,14 +74,16 @@
         </tr>
       </tbody>
     </table>
-    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+    </div>
+    <p class="muted text-sm" style="margin-top:12px;">
       No tracking, advertising, or analytics cookies are used. No consent banner is required.
     </p>
   </details>
 
   <details open>
     <summary>Third-party services</summary>
-    <table style="margin-top:4px;">
+    <div class="table-wrap" style="margin-top:4px;">
+    <table>
       <thead>
         <tr><th>Service</th><th>Purpose</th><th>Data shared</th></tr>
       </thead>
@@ -100,7 +105,8 @@
         </tr>
       </tbody>
     </table>
-    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+    </div>
+    <p class="muted text-sm" style="margin-top:12px;">
       Each third party operates under its own privacy policy. We do not sell your data to any party.
     </p>
   </details>
@@ -114,7 +120,7 @@
       <li><strong>Portability</strong> — the data export is a standard JSON file you can use with other services.</li>
       <li><strong>Rectification</strong> — your identity data (username/instance) is updated automatically on each login via Mastodon OAuth.</li>
     </ul>
-    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+    <p class="muted text-sm" style="margin-top:12px;">
       Deletion is immediate and permanent. There is no retention period after deletion.
     </p>
   </details>

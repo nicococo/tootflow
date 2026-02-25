@@ -6,8 +6,8 @@
 {% if not auth %}
   <h1>Admin</h1>
   {% if error %}<div class="error">Invalid token.</div>{% endif %}
-  <div style="max-width:400px;">
-    <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+  <div class="container-tight" style="padding:0;">
+    <p class="muted text-sm" style="margin-bottom:16px;">
       Append <code>?token=YOUR_ADMIN_SECRET</code> to the URL to authenticate.
       Your session will be saved in a cookie for this browser.
     </p>
@@ -15,15 +15,15 @@
 
 {% else %}
 
-  <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
-    <h1 style="border:none; margin:0; padding:0;">Admin Analytics</h1>
+  <div class="page-head">
+    <h1>Admin Analytics</h1>
     <span style="color:var(--muted); font-size:12px; letter-spacing:1px; text-transform:uppercase; padding-top:6px;">
       {{ now().strftime("%Y-%m-%d %H:%M") }} UTC
     </span>
   </div>
 
   <!-- Visitors -->
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Unique Visitors</h2>
+  <h2>Unique Visitors</h2>
   <div class="grid-3" style="margin-bottom:32px;">
     <div class="stat-box">
       <div class="num">{{ visitors_1d }}</div>
@@ -40,7 +40,7 @@
   </div>
 
   <!-- 30-day chart -->
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:12px;">30-Day Visitor Trend</h2>
+  <h2>30-Day Visitor Trend</h2>
   <div style="background:var(--white); border:var(--border); padding:16px 16px 8px; margin-bottom:32px;">
     <div style="display:flex; align-items:flex-end; gap:3px; height:80px;">
       {% for day in chart %}
@@ -56,16 +56,19 @@
   </div>
 
   <!-- Users -->
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Users</h2>
-  <table style="margin-bottom:32px; max-width:480px;">
+  <h2>Users</h2>
+  <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+  <table>
     <tr><th style="width:200px;">Total accounts</th><td>{{ users_total }}</td></tr>
     <tr><th>New last 7 days</th><td>{{ users_7d }}</td></tr>
     <tr><th>New last 30 days</th><td>{{ users_30d }}</td></tr>
   </table>
+  </div>
 
   <!-- Campaigns -->
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Campaigns</h2>
-  <table style="margin-bottom:32px; max-width:480px;">
+  <h2>Campaigns</h2>
+  <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+  <table>
     <tr><th style="width:200px;">Total campaigns</th><td>{{ campaigns_total }}</td></tr>
     <tr><th>Paid / activated</th><td>{{ campaigns_paid }}</td></tr>
     <tr><th>Currently active</th><td>{{ campaigns_active }}</td></tr>
@@ -78,21 +81,52 @@
       </td>
     </tr>
   </table>
+  </div>
 
   <!-- Revenue -->
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Revenue</h2>
-  <table style="margin-bottom:32px; max-width:480px;">
+  <h2>Revenue</h2>
+  <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+  <table>
     <tr><th style="width:200px;">Total revenue</th><td><strong style="color:var(--green);">€{{ "%.2f"|format(revenue_total) }}</strong></td></tr>
     <tr><th>Paid campaigns</th><td>{{ campaigns_paid }}</td></tr>
   </table>
+  </div>
 
   <!-- Posts -->
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Posts</h2>
-  <table style="margin-bottom:32px; max-width:480px;">
+  <h2>Posts</h2>
+  <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+  <table>
     <tr><th style="width:200px;">Published</th><td><span class="badge badge-published">{{ posts_published }}</span></td></tr>
     <tr><th>Pending</th><td><span class="badge badge-pending">{{ posts_pending }}</span></td></tr>
     <tr><th>Failed</th><td><span class="badge badge-failed">{{ posts_failed }}</span></td></tr>
   </table>
+  </div>
+
+  <!-- Manual Payment Override -->
+  <h2>Manual Payment Override</h2>
+  <div style="margin-bottom:32px; max-width:560px;">
+    {% if campaigns_list %}
+    <form method="post" action="/admin/campaigns/mark-paid" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <div style="flex:1; min-width:260px;">
+        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px;">Campaign</label>
+        <select name="campaign_id" style="width:100%;">
+          {% for c in campaigns_list %}
+          {% set acct = account_by_user.get(c.user_id) %}
+          <option value="{{ c.id }}">
+            {% if acct %}{{ acct.username }}@{{ acct.instance_url | replace("https://","") }}{% else %}user #{{ c.user_id }}{% endif %}
+            — {{ c.name }}
+            [{{ c.payment_status }}]
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Mark as Paid</button>
+    </form>
+    {% else %}
+    <p class="muted text-sm">No campaigns yet.</p>
+    {% endif %}
+  </div>
 
 {% endif %}
 </div>

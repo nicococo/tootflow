@@ -2,10 +2,10 @@
 {% block title %}Metrics – {{ campaign.name }} – TootFlow{% endblock %}
 {% block content %}
 <div class="container">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+  <div class="page-head">
     <div>
-      <h1 style="border:none; margin-bottom:4px; padding:0;">Metrics</h1>
-      <span style="font-size:13px; color:var(--muted);">
+      <h1>Metrics</h1>
+      <span class="meta">
         {{ campaign.name }}
         <span class="badge badge-{{ campaign.status }}" style="margin-left:6px;">{{ campaign.status | replace("_"," ") }}</span>
       </span>
@@ -29,7 +29,7 @@
   </div>
 
   {% if chart %}
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:12px;">Engagement by Week</h2>
+  <h2>Engagement by Week</h2>
   <div style="background:var(--white); border:var(--border); padding:20px 20px 10px; margin-bottom:32px;">
     <!-- Stacked bar chart -->
     <div style="display:flex; align-items:flex-end; gap:{% if chart|length > 12 %}4{% else %}8{% endif %}px; height:100px;">
@@ -67,10 +67,11 @@
   </div>
   {% endif %}
 
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Per Post</h2>
+  <h2>Per Post</h2>
   {% if not post_metrics %}
   <div class="empty-state">No published posts yet.</div>
   {% else %}
+  <div class="table-wrap">
   <table>
     <thead>
       <tr>
@@ -99,6 +100,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

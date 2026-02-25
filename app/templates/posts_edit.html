@@ -2,10 +2,10 @@
 {% block title %}Edit Posts – {{ campaign.name }} – TootFlow{% endblock %}
 {% block content %}
 <div class="container">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+  <div class="page-head">
     <div>
-      <h1 style="border:none; margin-bottom:4px; padding:0;">Edit Posts</h1>
-      <span style="font-size:13px; color:var(--muted);">
+      <h1>Edit Posts</h1>
+      <span class="meta">
         {{ campaign.name }} &middot; {{ posts | length }} post(s)
       </span>
     </div>
@@ -70,7 +70,7 @@
   </div>
   {% else %}
   {% for post in posts %}
-  <div style="border:var(--border); background:var(--white); margin-bottom:16px;">
+  <div class="surface" style="margin-bottom:16px;">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--canvas); border-bottom:var(--border-soft);">
       <div style="display:flex; align-items:center; gap:12px;">
         <span style="font-weight:bold; color:var(--muted); font-size:12px;">#{{ loop.index }}</span>

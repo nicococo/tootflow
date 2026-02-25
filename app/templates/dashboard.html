@@ -2,8 +2,8 @@
 {% block title %}Dashboard – TootFlow{% endblock %}
 {% block content %}
 <div class="container">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
-    <h1 style="border:none; margin:0; padding:0;">Dashboard</h1>
+  <div class="page-head">
+    <h1>Dashboard</h1>
     <a href="/campaigns/new" class="btn btn-primary">+ New Campaign</a>
   </div>
 
@@ -16,11 +16,12 @@
 
   {% if not campaigns %}
   <div class="empty-state">
-    <div style="font-size:32px; margin-bottom:12px; letter-spacing:-1px;">¿</div>
+    <div style="font-size:32px; margin-bottom:12px; letter-spacing:-1px;">+</div>
     No campaigns yet.<br>
     <a href="/campaigns/new" style="font-weight:bold;">Create your first campaign.</a>
   </div>
   {% else %}
+  <div class="table-wrap">
   <table>
     <thead>
       <tr>
@@ -54,6 +55,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

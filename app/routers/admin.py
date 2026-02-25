@@ -2,15 +2,16 @@ import hmac
 import logging
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, distinct
 from sqlmodel import Session, select
 
 from app.config import get_settings
+from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import Campaign, PageView, Payment, Post, User
+from app.models import Campaign, MastodonAccount, PageView, Payment, Post, User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin")
@@ -118,6 +119,37 @@ def admin_page(
         )
 
     stats = _build_stats(session)
+
+    campaigns_list = session.exec(select(Campaign).order_by(Campaign.created_at.desc())).all()
+    mastodon_accounts = session.exec(select(MastodonAccount)).all()
+    account_by_user = {a.user_id: a for a in mastodon_accounts}
+
     return templates.TemplateResponse(
-        "admin.html", {"request": request, "auth": True, "now": datetime.utcnow, **stats}
+        "admin.html", {
+            "request": request, "auth": True, "now": datetime.utcnow,
+            "campaigns_list": campaigns_list, "account_by_user": account_by_user,
+            **stats,
+        }
     )
+
+
+@router.post("/campaigns/mark-paid")
+def mark_campaign_paid(
+    request: Request,
+    campaign_id: int = Form(...),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(verify_csrf),
+):
+    if not _is_authenticated(request):
+        return RedirectResponse("/admin", status_code=302)
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign:
+        return RedirectResponse("/admin", status_code=302)
+    campaign.payment_status = "paid"
+    campaign.status = "active"
+    if not campaign.start_date:
+        campaign.start_date = datetime.utcnow()
+    session.add(campaign)
+    session.commit()
+    logger.info(f"Admin manually marked campaign {campaign_id} as paid")
+    return RedirectResponse("/admin", status_code=302)

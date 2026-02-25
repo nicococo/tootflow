@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Sign In – TootFlow{% endblock %}
 {% block content %}
-<div class="container" style="max-width:400px;">
+<div class="container container-tight">
   <h1>Sign In</h1>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
-  <form method="post" action="/login" style="background:var(--white); border:var(--border); padding:28px;">
+  <form method="post" action="/login" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
     <div class="form-group">
       <label for="instance_url">Mastodon Instance</label>
@@ -13,7 +13,7 @@
     </div>
     <button type="submit" class="btn btn-primary" style="width:100%;">Continue with Mastodon →</button>
   </form>
-  <p style="margin-top:16px; font-size:13px; color:var(--muted);">
+  <p class="muted text-sm" style="margin-top:16px;">
     You'll be redirected to your Mastodon instance to authorise TootFlow.
     An account is created automatically on first sign-in.
   </p>

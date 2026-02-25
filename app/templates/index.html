@@ -2,93 +2,329 @@
 {% block title %}TootFlow – Mastodon Campaign Planner{% endblock %}
 {% block content %}
 
-<div style="background:var(--ink); color:var(--white); padding:64px 24px; border-bottom:3px solid var(--orange);">
-  <div style="max-width:760px; margin:0 auto; display:flex; align-items:center; gap:48px; flex-wrap:wrap;">
+<style>
+  .hero {
+    background: linear-gradient(150deg, #0f1b2b 0%, #16263a 70%);
+    color: var(--surface);
+    border-bottom: 3px solid var(--teal);
+    padding: 68px 24px;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .hero-inner {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 54px;
+    flex-wrap: wrap;
+  }
+  .hero-copy { flex: 1; min-width: 270px; }
+  .hero-copy .eyebrow { color: #86eee0; letter-spacing: 2.5px; }
+  .hero-copy h1 {
+    font-size: 56px;
+    border: 0;
+    margin: 12px 0 0;
+    padding: 0;
+    letter-spacing: -1.8px;
+    color: #ffffff;
+  }
+  .hero-copy p {
+    margin-top: 18px;
+    font-size: 17px;
+    color: #b9cada;
+    max-width: 500px;
+    line-height: 1.7;
+  }
+  .hero .btn { margin-top: 20px; }
 
-    <!-- Mascot logo -->
+  .landing {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 24px 58px;
+  }
+  .landing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: var(--border);
+    background: var(--surface);
+    margin-bottom: 38px;
+    box-shadow: var(--shadow-sm);
+  }
+  .landing-block { padding: 28px; }
+  .landing-block + .landing-block {
+    border-left: var(--border);
+    background: var(--surface-soft);
+  }
+  .landing-block ol {
+    padding-left: 18px;
+    line-height: 2;
+    font-size: 14px;
+  }
+  .price {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    color: var(--ink);
+    margin-top: 4px;
+  }
+  .price-sub {
+    font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+  .feature-list {
+    margin-top: 18px;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--muted);
+  }
+  .feature-list div::before {
+    content: "\2713";
+    color: var(--green);
+    margin-right: 8px;
+    font-weight: 700;
+  }
+
+  .landing-cta { text-align: center; }
+
+  .benefits {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .benefit-card {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+  }
+  .benefit-card h3 {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .benefit-card p {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0;
+  }
+  .benefit-card .eyebrow {
+    margin-bottom: 8px;
+    color: var(--blue);
+  }
+
+  .workflow {
+    margin-top: 28px;
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .workflow-head {
+    padding: 16px 20px;
+    border-bottom: var(--border-soft);
+    background: var(--surface-soft);
+  }
+  .workflow-list {
+    padding: 12px 20px 18px;
+  }
+  .workflow-step {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: var(--border-soft);
+  }
+  .workflow-step:last-child { border-bottom: 0; }
+  .workflow-step .num {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--ink);
+    font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-soft);
+  }
+  .workflow-step p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .proof-grid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+  }
+  .proof-box {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+  }
+  .proof-box ul {
+    margin: 10px 0 0 18px;
+    color: var(--muted);
+    line-height: 1.8;
+    font-size: 14px;
+  }
+  .proof-price {
+    font-size: 42px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -1.2px;
+  }
+  .proof-muted {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  @media (max-width: 760px) {
+    .hero { padding: 48px 16px; }
+    .hero-copy h1 { font-size: 42px; }
+    .landing { padding: 32px 16px 44px; }
+    .landing-grid { grid-template-columns: 1fr; }
+    .landing-block + .landing-block { border-left: 0; border-top: var(--border); }
+    .benefits,
+    .proof-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="hero">
+  <div class="hero-inner">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104"
          width="108" height="94" aria-label="TootFlow mascot"
          style="flex-shrink:0;">
-      <!-- Left ear -->
-      <rect x="4"  y="14" width="30" height="40" fill="#f97316"/>
-      <!-- Right ear -->
-      <rect x="86" y="14" width="30" height="40" fill="#f97316"/>
-      <!-- Inner left ear -->
-      <rect x="10" y="20" width="18" height="26" fill="#c05621"/>
-      <!-- Inner right ear -->
-      <rect x="92" y="20" width="18" height="26" fill="#c05621"/>
-      <!-- Head -->
+      <rect x="4" y="14" width="30" height="40" fill="#47b8b1"/>
+      <rect x="86" y="14" width="30" height="40" fill="#47b8b1"/>
+      <rect x="10" y="20" width="18" height="26" fill="#2d8f96"/>
+      <rect x="92" y="20" width="18" height="26" fill="#2d8f96"/>
       <rect x="22" y="6" width="76" height="62" fill="white"/>
-      <!-- Left eye -->
       <rect x="36" y="20" width="12" height="12" fill="#141210"/>
-      <!-- Right eye -->
       <rect x="72" y="20" width="12" height="12" fill="#141210"/>
-      <!-- Eye shine -->
       <rect x="38" y="22" width="4" height="4" fill="white"/>
       <rect x="74" y="22" width="4" height="4" fill="white"/>
-      <!-- Snout -->
-      <rect x="42" y="44" width="36" height="20" fill="#f0ebe4"/>
-      <!-- Nostrils -->
-      <rect x="50" y="52" width="7" height="6" fill="#c8bfb4"/>
-      <rect x="63" y="52" width="7" height="6" fill="#c8bfb4"/>
-      <!-- Trunk -->
+      <rect x="42" y="44" width="36" height="20" fill="#e8eef4"/>
+      <rect x="50" y="52" width="7" height="6" fill="#a8b8c6"/>
+      <rect x="63" y="52" width="7" height="6" fill="#a8b8c6"/>
       <rect x="50" y="68" width="20" height="26" fill="white"/>
-      <!-- Trunk curl tip -->
       <rect x="38" y="86" width="32" height="10" fill="white"/>
-      <rect x="38" y="90" width="14" height="6"  fill="white"/>
-      <!-- Left tusk -->
-      <polygon points="24,68 18,68 10,94 18,94" fill="#f97316"/>
-      <!-- Right tusk -->
-      <polygon points="96,68 102,68 110,94 102,94" fill="#f97316"/>
+      <rect x="38" y="90" width="14" height="6" fill="white"/>
+      <polygon points="24,68 18,68 10,94 18,94" fill="#47b8b1"/>
+      <polygon points="96,68 102,68 110,94 102,94" fill="#47b8b1"/>
     </svg>
 
-    <!-- Hero text -->
-    <div style="flex:1; min-width:260px;">
-      <p style="font-size:10px; letter-spacing:4px; text-transform:uppercase; color:var(--orange); margin-bottom:16px;">Mastodon Campaign Tool</p>
-      <h1 style="font-size:52px; border:none; margin-bottom:0; letter-spacing:-2px; line-height:1; padding:0;">TootFlow</h1>
-      <p style="font-size:17px; margin-top:20px; color:#b8b0a6; line-height:1.7; max-width:440px;">
-        Grow your Mastodon presence with AI-assisted campaigns.<br>
-        Keep full editorial control, publish on schedule,<br>
+    <div class="hero-copy">
+      <p class="eyebrow">Mastodon Campaign Tool</p>
+      <h1>TootFlow</h1>
+      <p>
+        Grow your Mastodon presence with AI-assisted campaigns.
+        Keep full editorial control, publish on schedule,
         and gain insights into what resonates.
       </p>
-      <div style="display:flex; gap:12px; margin-top:36px;">
-        <a href="/login" class="btn btn-primary" style="font-size:14px; padding:12px 28px;">Get Started →</a>
-      </div>
+      <a href="/login" class="btn btn-primary">Get Started →</a>
     </div>
-
   </div>
 </div>
 
-<div style="max-width:760px; margin:0 auto; padding:48px 24px;">
-
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border:var(--border); margin-bottom:40px; background:var(--white);">
-    <div style="padding:28px; border-right:var(--border);">
-      <div style="font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--blue); margin-bottom:12px;">How it works</div>
-      <ol style="padding-left:18px; line-height:2.2; font-size:14px;">
-        <li>Connect your Mastodon account</li>
-        <li>Set your topic, tone and language</li>
-        <li>AI drafts a full post schedule</li>
-        <li>Review and refine every post</li>
+<div class="landing">
+  <div class="landing-grid">
+    <div class="landing-block">
+      <div class="eyebrow" style="color:var(--blue); margin-bottom:12px;">How it works</div>
+      <ol>
+        <li>Sign in with your Mastodon account</li>
+        <li>Create a campaign — topic, template, tone, language</li>
         <li>Pay once (29€) to activate</li>
-        <li>Posts publish on schedule with engagement insights</li>
+        <li>AI generates your full post schedule</li>
+        <li>Edit and regenerate until every post is perfect</li>
+        <li>Posts go live on schedule — track engagement</li>
       </ol>
     </div>
-    <div style="padding:28px; background:var(--canvas);">
-      <div style="font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--orange); margin-bottom:12px;">Pricing</div>
-      <div style="font-size:40px; font-weight:bold; letter-spacing:-2px; color:var(--ink); line-height:1;">29€</div>
-      <div style="font-size:11px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:1.5px;">per campaign · no subscription</div>
-      <div style="margin-top:20px; font-size:13px; line-height:2.2; color:var(--muted);">
-        ✓ AI-assisted post drafting<br>
-        ✓ Full editorial control<br>
-        ✓ Automated publishing<br>
-        ✓ Engagement insights
+    <div class="landing-block">
+      <div class="eyebrow" style="color:var(--orange); margin-bottom:12px;">Pricing</div>
+      <div class="price">29€</div>
+      <div class="price-sub">per campaign · no subscription</div>
+      <div class="feature-list">
+        <div>AI-assisted post drafting</div>
+        <div>Full editorial control</div>
+        <div>Automated publishing</div>
+        <div>Engagement insights</div>
       </div>
     </div>
   </div>
 
-  <div style="text-align:center;">
-    <a href="/login" class="btn btn-primary" style="font-size:14px; padding:12px 32px;">Start Your First Campaign →</a>
+  <div class="landing-cta">
+    <a href="/login" class="btn btn-primary">Start Your First Campaign →</a>
   </div>
 
+  <div class="benefits">
+    <article class="benefit-card">
+      <div class="eyebrow">Human In The Loop</div>
+      <h3>AI speed, your editorial control</h3>
+      <p>Generate a full campaign in seconds, then edit, delete, or add every post manually before anything goes live.</p>
+    </article>
+    <article class="benefit-card">
+      <div class="eyebrow">Built For Mastodon</div>
+      <h3>Native publishing workflow</h3>
+      <p>Connect via OAuth, schedule confidently, and publish automatically through the Mastodon API with secure token handling.</p>
+    </article>
+    <article class="benefit-card">
+      <div class="eyebrow">Clarity Over Noise</div>
+      <h3>Know what resonates</h3>
+      <p>Track favourites, reblogs, and replies per post so you can improve campaigns with real engagement signals.</p>
+    </article>
+  </div>
+
+  <section class="workflow">
+    <div class="workflow-head">
+      <div class="eyebrow">Fast Workflow</div>
+      <h3 style="margin:6px 0 0;">From idea to running campaign in one focused flow</h3>
+    </div>
+    <div class="workflow-list">
+      <div class="workflow-step">
+        <span class="num">01</span>
+        <p>Sign in with Mastodon OAuth, then create a campaign with topic, template, tone, and cadence.</p>
+      </div>
+      <div class="workflow-step">
+        <span class="num">02</span>
+        <p>Pay once (29€) to activate, then generate a full AI post schedule with one click.</p>
+      </div>
+      <div class="workflow-step">
+        <span class="num">03</span>
+        <p>Edit and regenerate individual posts until every one is exactly right before anything goes live.</p>
+      </div>
+      <div class="workflow-step">
+        <span class="num">04</span>
+        <p>TootFlow publishes on schedule automatically. Track favourites, reblogs, and replies per post.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="proof-grid">
+    <section class="proof-box">
+      <div class="eyebrow" style="color:var(--teal);">What You Get</div>
+      <h3 style="margin:6px 0 0;">Everything needed to run a focused campaign</h3>
+      <ul>
+        <li>Campaign templates for product launches, open source releases, and events</li>
+        <li>Up to 500 characters per post with Mastodon-friendly writing</li>
+        <li>Manual scheduling controls and post-level editing at any time</li>
+        <li>Automated publishing plus engagement tracking in one place</li>
+      </ul>
+    </section>
+    <section class="proof-box">
+      <div class="eyebrow" style="color:var(--orange);">Simple Economics</div>
+      <div class="proof-price">29€</div>
+      <p class="proof-muted">One-time per campaign. No subscription lock-in, no seat pricing, no long-term commitment.</p>
+      <a href="/login" class="btn btn-outline" style="margin-top:14px;">Create Campaign</a>
+    </section>
+  </div>
 </div>
 {% endblock %}

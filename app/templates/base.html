@@ -8,162 +8,270 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #f7f4ef;
-      --canvas:      #eee9e0;
-      --white:       #ffffff;
-      --ink:         #141210;
-      --muted:       #7a7068;
+      --bg:            #eef3f7;
+      --bg-rim:        #dfe8ef;
+      --surface:       #ffffff;
+      --surface-soft:  #f4f8fb;
+      --white:         var(--surface);
+      --canvas:        var(--surface-soft);
+      --ink:           #111b27;
+      --ink-soft:      #223042;
+      --muted:         #5f6f80;
 
-      --blue:        #1a56db;
-      --blue-dark:   #1240ab;
-      --blue-light:  #e8effe;
+      --blue:          #1565c0;
+      --blue-dark:     #0f4f98;
+      --blue-light:    #e8f2ff;
 
-      --orange:      #c05621;
-      --orange-light:#fff3e6;
+      --orange:        #d1603d;
+      --orange-light:  #fff1eb;
 
-      --green:       #057a55;
-      --green-light: #def7ec;
+      --green:         #177a61;
+      --green-light:   #e2f4ee;
 
-      --red:         #c81e1e;
-      --red-light:   #fde8e8;
+      --red:           #b4232c;
+      --red-light:     #feeaec;
 
-      --purple:      #6c2bd9;
-      --purple-light:#edebfe;
+      --purple:        #5a56c8;
+      --purple-light:  #ececff;
 
-      --amber:       #92400e;
-      --amber-light: #fef3c7;
+      --amber:         #9a5a2a;
+      --amber-light:   #fdf2df;
 
-      --teal:        #047481;
-      --teal-light:  #d5f5f6;
+      --teal:          #137b83;
+      --teal-light:    #e0f5f7;
 
-      --border:      2px solid var(--ink);
-      --border-soft: 1px solid #c8bfb4;
+      --border:        2px solid var(--ink);
+      --border-soft:   1px solid #cfc3b5;
+      --radius:        0px;
+
+      --shadow-sm:     0 2px 0 rgba(0, 0, 0, 0.14);
+      --shadow-md:     0 4px 0 rgba(0, 0, 0, 0.16);
     }
 
     body {
-      font-family: "Courier New", Courier, monospace;
+      font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
       font-size: 15px;
-      background: var(--bg);
+      line-height: 1.55;
+      background:
+        radial-gradient(circle at 10% -10%, var(--bg-rim) 0%, transparent 40%),
+        radial-gradient(circle at 90% -20%, #d5e4ef 0%, transparent 45%),
+        var(--bg);
       color: var(--ink);
       min-height: 100vh;
     }
 
-    a { color: var(--blue); text-decoration: underline; }
-    a:hover { background: var(--blue); color: var(--white); text-decoration: none; }
+    main { min-height: calc(100vh - 170px); }
 
-    /* ── HEADER ─────────────────────────────────────────── */
+    a {
+      color: var(--blue);
+      text-underline-offset: 2px;
+      text-decoration-thickness: 1.5px;
+    }
+    a:hover {
+      color: var(--blue-dark);
+      background: transparent;
+      text-decoration-thickness: 2px;
+    }
+
+    /* Header */
     header {
       background: var(--ink);
+      border-bottom: 3px solid var(--teal);
+      box-shadow: var(--shadow-md);
+    }
+    .header-inner {
+      max-width: 1080px;
+      margin: 0 auto;
       display: flex;
       align-items: stretch;
-      border-bottom: 3px solid var(--orange);
+      justify-content: space-between;
+      min-height: 64px;
     }
-
+    .header-left {
+      display: flex;
+      align-items: stretch;
+      min-width: 0;
+    }
     .logo {
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 17px;
-      font-weight: bold;
+      font-weight: 700;
       text-decoration: none;
-      color: var(--orange);
-      letter-spacing: 3px;
+      color: #6ee7d7;
+      letter-spacing: 2.2px;
       text-transform: uppercase;
-      padding: 16px 20px;
-      border-right: 1px solid #2e2a26;
+      padding: 0 20px;
+      border-right: 1px solid #2a3848;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
     }
-    .logo:hover { background: #1e1a16; color: #f97316; }
+    .logo:hover { color: #9af2e7; background: #182331; }
 
     .header-sub {
-      font-size: 9px;
-      letter-spacing: 3px;
+      font-size: 10px;
+      letter-spacing: 2.2px;
       text-transform: uppercase;
-      color: #524840;
-      padding: 0 20px;
+      color: #8194a8;
+      padding: 0 18px;
       display: flex;
       align-items: center;
-      border-right: 1px solid #2e2a26;
+      border-right: 1px solid #2a3848;
+      white-space: nowrap;
     }
 
     header nav {
       display: flex;
       gap: 0;
-      margin-left: auto;
       align-items: stretch;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
     header nav a {
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 11px;
-      color: #b8b0a6;
+      color: #c1ceda;
       text-decoration: none;
-      padding: 0 18px;
-      display: flex;
+      padding: 0 16px;
+      display: inline-flex;
       align-items: center;
-      border-left: 1px solid #2e2a26;
-      letter-spacing: 1.5px;
+      border-left: 1px solid #2a3848;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
+      min-height: 64px;
     }
-    header nav a:hover { background: #1e1a16; color: var(--orange); }
+    header nav a:hover { background: #182331; color: #9af2e7; }
     header nav .nav-cta {
       background: var(--blue);
-      color: var(--white);
+      color: #ffffff;
       border-left: 2px solid var(--blue-dark);
-      font-weight: bold;
+      font-weight: 700;
     }
-    header nav .nav-cta:hover { background: var(--blue-dark); color: var(--white); }
+    header nav .nav-cta:hover { background: var(--blue-dark); color: #ffffff; }
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
-    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    /* Layout */
+    .container { max-width: 1040px; margin: 0 auto; padding: 44px 24px; }
+    .container-narrow { max-width: 720px; }
+    .container-tight { max-width: 560px; }
 
-    /* ── TYPOGRAPHY ─────────────────────────────────────── */
+    .surface {
+      background: var(--surface);
+      border: var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-card {
+      background: var(--surface);
+      border: var(--border);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      border-bottom: var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .page-head h1 {
+      border: 0;
+      margin: 0;
+      padding: 0;
+      line-height: 1.15;
+    }
+    .page-head .meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Typography */
     h1 {
-      font-size: 26px;
-      font-weight: bold;
+      font-size: 30px;
+      font-weight: 800;
       border-bottom: var(--border);
       padding-bottom: 10px;
       margin-bottom: 28px;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.6px;
+      line-height: 1.15;
     }
-    h2 { font-size: 18px; font-weight: bold; margin-bottom: 16px; }
-    h3 { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+    h2 {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: var(--border-soft);
+    }
+    h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    p { margin-bottom: 12px; }
 
-    /* ── BUTTONS ─────────────────────────────────────────── */
+    .eyebrow {
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .muted { color: var(--muted); }
+    .text-sm { font-size: 13px; }
+
+    /* Buttons */
     .btn {
-      display: inline-block;
-      padding: 9px 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
       border: var(--border);
       background: var(--ink);
-      color: var(--white);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: bold;
+      color: var(--surface);
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
       cursor: pointer;
       text-decoration: none;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.3px;
+      transition: background-color .14s ease, border-color .14s ease, color .14s ease;
+      box-shadow: var(--shadow-sm);
     }
-    .btn:hover { background: var(--blue); border-color: var(--blue); color: var(--white); }
+    .btn:hover { background: var(--ink-soft); border-color: var(--ink-soft); color: var(--surface); text-decoration: none; }
 
     .btn-outline { background: transparent; color: var(--ink); }
-    .btn-outline:hover { background: var(--ink); border-color: var(--ink); color: var(--white); }
+    .btn-outline:hover { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 
-    .btn-primary { background: var(--blue); border-color: var(--blue); color: var(--white); }
-    .btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); color: var(--white); }
+    .btn-primary { background: var(--blue); border-color: var(--blue); color: var(--surface); }
+    .btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); color: var(--surface); }
 
-    .btn-danger { background: var(--red); border-color: var(--red); color: var(--white); }
-    .btn-danger:hover { background: #991b1b; border-color: #991b1b; color: var(--white); }
+    .btn-danger { background: var(--red); border-color: var(--red); color: var(--surface); }
+    .btn-danger:hover { background: #8f1b24; border-color: #8f1b24; color: var(--surface); }
 
-    .btn-success { background: var(--green); border-color: var(--green); color: var(--white); }
-    .btn-success:hover { background: #046c4e; border-color: #046c4e; color: var(--white); }
+    .btn-success { background: var(--green); border-color: var(--green); color: var(--surface); }
+    .btn-success:hover { background: #0b573d; border-color: #0b573d; color: var(--surface); }
 
-    .btn-sm { padding: 5px 12px; font-size: 11px; }
+    .btn-sm { padding: 6px 12px; font-size: 10px; letter-spacing: 1.1px; }
 
-    /* ── FORMS ───────────────────────────────────────────── */
+    /* Forms */
+    .form-card {
+      background: var(--surface);
+      border: var(--border);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
     .form-group { margin-bottom: 20px; }
     label {
       display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-weight: 700;
+      margin-bottom: 7px;
       font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1.7px;
       color: var(--muted);
     }
     input[type="text"], input[type="email"], input[type="password"], input[type="number"],
@@ -173,7 +281,7 @@
       border: 2px solid #c8bfb4;
       font-family: inherit;
       font-size: 14px;
-      background: var(--white);
+      background: var(--surface);
       color: var(--ink);
     }
     input:focus, select:focus, textarea:focus {
@@ -186,105 +294,96 @@
       appearance: none;
       -webkit-appearance: none;
       padding-right: 36px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23141210' stroke-width='2' fill='none' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a1612' stroke-width='2' fill='none' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 12px center;
       cursor: pointer;
     }
 
-    /* ── ALERTS ──────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+    /* Alerts */
     .error {
       background: var(--red-light);
-      border: 1px solid #fca5a5;
+      border: 1px solid #f4a4ab;
       border-left: 4px solid var(--red);
       padding: 12px 16px;
       margin-bottom: 20px;
       color: var(--red);
-      font-weight: bold;
+      font-weight: 700;
     }
     .success {
       background: var(--green-light);
-      border: 1px solid #6ee7b7;
+      border: 1px solid #8fd6ba;
       border-left: 4px solid var(--green);
       padding: 12px 16px;
       margin-bottom: 20px;
       color: var(--green);
-      font-weight: bold;
+      font-weight: 700;
     }
     .notice {
       background: var(--amber-light);
-      border: 1px solid #fcd34d;
-      border-left: 4px solid var(--orange);
+      border: 1px solid #e9c76d;
+      border-left: 4px solid var(--amber);
       padding: 12px 16px;
       margin-bottom: 20px;
     }
 
-    /* ── TABLES ──────────────────────────────────────────── */
-    table { width: 100%; border-collapse: collapse; border: var(--border); }
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; border: var(--border); background: var(--surface); }
     th, td { border: var(--border-soft); padding: 10px 14px; text-align: left; vertical-align: top; }
     th {
-      background: var(--blue);
-      color: var(--white);
-      font-weight: bold;
+      background: #2149b7;
+      color: var(--surface);
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-weight: 700;
       text-transform: uppercase;
       font-size: 10px;
-      letter-spacing: 2px;
-      border-color: var(--blue-dark);
+      letter-spacing: 1.5px;
+      border-color: #18398f;
     }
-    tr:nth-child(even) td { background: var(--canvas); }
+    tr:nth-child(even) td { background: var(--surface-soft); }
     tbody tr:hover td { background: var(--blue-light); }
 
-    /* ── BADGES ──────────────────────────────────────────── */
+    /* Badges */
     .badge {
       display: inline-block;
       padding: 2px 8px;
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 10px;
-      font-weight: bold;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.1px;
     }
-    .badge-draft, .badge-draft_unpaid {
-      background: var(--canvas); color: var(--muted); border: 1px solid #c8bfb4;
-    }
-    .badge-active {
-      background: var(--purple-light); color: var(--purple); border: 1px solid #a78bfa;
-    }
-    .badge-running {
-      background: var(--green-light); color: var(--green); border: 1px solid #6ee7b7;
-    }
-    .badge-completed {
-      background: var(--teal-light); color: var(--teal); border: 1px solid #67e8f9;
-    }
-    .badge-cancelled {
-      background: var(--canvas); color: var(--muted); border: 1px solid #c8bfb4;
-    }
-    .badge-pending {
-      background: var(--amber-light); color: var(--amber); border: 1px solid #fcd34d;
-    }
-    .badge-published {
-      background: var(--green-light); color: var(--green); border: 1px solid #6ee7b7;
-    }
-    .badge-failed {
-      background: var(--red-light); color: var(--red); border: 1px solid #fca5a5;
-    }
-    .badge-paid {
-      background: var(--green-light); color: var(--green); border: 1px solid #6ee7b7;
-    }
-    .badge-unpaid {
-      background: var(--amber-light); color: var(--amber); border: 1px solid #fcd34d;
-    }
+    .badge-draft, .badge-draft_unpaid { background: var(--surface-soft); color: var(--muted); border: 1px solid #c8bfb4; }
+    .badge-active { background: var(--purple-light); color: var(--purple); border: 1px solid #b8a7ef; }
+    .badge-running { background: var(--green-light); color: var(--green); border: 1px solid #8fd6ba; }
+    .badge-completed { background: var(--teal-light); color: var(--teal); border: 1px solid #8dd2da; }
+    .badge-cancelled { background: var(--surface-soft); color: var(--muted); border: 1px solid #c8bfb4; }
+    .badge-pending { background: var(--amber-light); color: var(--amber); border: 1px solid #e9c76d; }
+    .badge-published { background: var(--green-light); color: var(--green); border: 1px solid #8fd6ba; }
+    .badge-failed { background: var(--red-light); color: var(--red); border: 1px solid #f4a4ab; }
+    .badge-paid { background: var(--green-light); color: var(--green); border: 1px solid #8fd6ba; }
+    .badge-unpaid { background: var(--amber-light); color: var(--amber); border: 1px solid #e9c76d; }
 
-    /* ── STAT BOXES ──────────────────────────────────────── */
+    /* Stats */
     .stat-box {
-      background: var(--white);
+      background: var(--surface);
       border: var(--border);
       padding: 24px 16px;
       text-align: center;
+      box-shadow: var(--shadow-sm);
     }
-    .stat-box .num { font-size: 42px; font-weight: bold; line-height: 1; }
+    .stat-box .num { font-size: 42px; font-weight: 800; line-height: 1; }
     .stat-box .label {
-      font-size: 9px; text-transform: uppercase;
-      letter-spacing: 2.5px; color: var(--muted); margin-top: 8px;
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-top: 8px;
     }
     .stat-box:nth-child(1) { border-top: 4px solid var(--orange); }
     .stat-box:nth-child(1) .num { color: var(--orange); }
@@ -293,21 +392,18 @@
     .stat-box:nth-child(3) { border-top: 4px solid var(--teal); }
     .stat-box:nth-child(3) .num { color: var(--teal); }
 
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    @media (max-width: 600px) { .grid-3 { grid-template-columns: 1fr; } }
-
-    /* ── MISC COMPONENTS ─────────────────────────────────── */
+    /* Misc */
     .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
     .char-count { font-size: 12px; color: var(--muted); text-align: right; margin-top: 4px; }
-    .char-count.over { color: var(--red); font-weight: bold; }
+    .char-count.over { color: var(--red); font-weight: 700; }
 
     .empty-state {
       border: 2px dashed #c8bfb4;
-      padding: 48px;
+      padding: 42px;
       text-align: center;
       color: var(--muted);
-      background: var(--white);
+      background: var(--surface);
     }
 
     .mastodon-pill {
@@ -316,7 +412,7 @@
       gap: 8px;
       padding: 8px 14px;
       background: var(--purple-light);
-      border: 1px solid #a78bfa;
+      border: 1px solid #b8a7ef;
       border-left: 3px solid var(--purple);
       font-size: 13px;
       margin-bottom: 24px;
@@ -326,49 +422,98 @@
 
     details {
       border: var(--border);
-      background: var(--white);
+      background: var(--surface);
       margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
     }
     details summary {
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 700;
       padding: 12px 16px;
       border-left: 4px solid var(--blue);
       list-style: none;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
     details summary::marker, details summary::-webkit-details-marker { display: none; }
-    details summary::before { content: "+ "; color: var(--blue); font-weight: bold; }
+    details summary::before {
+      content: "+ ";
+      color: var(--blue);
+      font-weight: 700;
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    }
     details[open] summary {
-      border-bottom: var(--border);
+      border-bottom: var(--border-soft);
       background: var(--blue-light);
     }
-    details[open] summary::before { content: "− "; }
+    details[open] summary::before { content: "- "; }
     details[open] > *:not(summary) { padding: 16px; }
+
+    .danger-zone {
+      border: 2px solid var(--red);
+      background: #fff8f8;
+      padding: 24px;
+      margin-top: 44px;
+    }
+
+    footer {
+      border-top: var(--border-soft);
+      padding: 18px 24px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(3px);
+    }
+    footer a { color: var(--muted); text-decoration: none; border-bottom: 1px solid #b8ab9b; }
+    footer a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+    @media (max-width: 900px) {
+      .header-inner { display: block; }
+      .header-left { min-height: 56px; }
+      .logo, .header-sub { min-height: 56px; }
+      header nav a { min-height: 48px; }
+      .container { padding: 34px 16px; }
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .header-sub { display: none; }
+      header nav { width: 100%; }
+      header nav a { flex: 1 1 auto; justify-content: center; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .empty-state { padding: 28px 16px; }
+      h1 { font-size: 26px; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <a class="logo" href="/">TootFlow</a>
-    <span class="header-sub">Mastodon Campaigns</span>
-    {% if user is defined and user %}
-      <nav>
-        <a href="/dashboard">Dashboard</a>
-        <a href="/account">Account</a>
-        <a href="/campaigns/new" class="nav-cta">+ New Campaign</a>
-        <a href="/logout">Logout</a>
-      </nav>
-    {% else %}
-      <nav>
-        <a href="/login" class="nav-cta">Sign In</a>
-      </nav>
-    {% endif %}
+    <div class="header-inner">
+      <div class="header-left">
+        <a class="logo" href="/">TootFlow</a>
+        <span class="header-sub">Mastodon Campaigns</span>
+      </div>
+      {% if user is defined and user %}
+        <nav>
+          <a href="/dashboard">Dashboard</a>
+          <a href="/account">Account</a>
+          <a href="/campaigns/new" class="nav-cta">+ New Campaign</a>
+          <a href="/logout">Logout</a>
+        </nav>
+      {% else %}
+        <nav>
+          <a href="/login" class="nav-cta">Sign In</a>
+        </nav>
+      {% endif %}
+    </div>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
-  <footer style="border-top:var(--border-soft); padding:16px 24px; font-size:11px; color:var(--muted); text-align:center; letter-spacing:1px; text-transform:uppercase;">
-    <a href="/privacy" style="color:var(--muted);">Privacy Policy</a>
+  <footer>
+    <a href="/privacy">Privacy Policy</a>
     <span style="margin:0 12px;">·</span>
     TootFlow
   </footer>

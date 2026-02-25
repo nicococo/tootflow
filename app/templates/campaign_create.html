@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block title %}New Campaign – TootFlow{% endblock %}
 {% block content %}
-<div class="container" style="max-width:640px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
-    <h1 style="border:none; margin:0; padding:0;">New Campaign</h1>
+<div class="container container-narrow">
+  <div class="page-head">
+    <h1>New Campaign</h1>
     <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
   </div>
 
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  <form method="post" action="/campaigns/new">
+  <form method="post" action="/campaigns/new" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
 
     <div class="form-group">
@@ -23,7 +23,7 @@
         placeholder="What is this campaign about? What do you want people to know?"></textarea>
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+    <div class="grid-2">
       <div class="form-group">
         <label for="template_type">Template</label>
         <select id="template_type" name="template_type" required>
@@ -42,7 +42,7 @@
       </div>
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+    <div class="grid-3">
       <div class="form-group">
         <label for="language">Language</label>
         <select id="language" name="language" required>

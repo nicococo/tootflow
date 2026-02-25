@@ -2,9 +2,9 @@
 {% block title %}{{ campaign.name }} – TootFlow{% endblock %}
 {% block content %}
 <div class="container">
-  <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+  <div class="page-head">
     <div>
-      <h1 style="border:none; margin-bottom:8px; padding:0;">{{ campaign.name }}</h1>
+      <h1>{{ campaign.name }}</h1>
       <span class="badge badge-{{ campaign.status }}">{{ campaign.status | replace("_"," ") }}</span>
       {% if campaign.payment_status == "paid" %}
         <span class="badge badge-paid" style="margin-left:4px;">Paid</span>
@@ -15,7 +15,8 @@
     <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
   </div>
 
-  <table style="margin-bottom:28px;">
+  <div class="table-wrap" style="margin-bottom:28px;">
+  <table>
     <tr><th style="width:140px;">Template</th><td>{{ campaign.template_type | replace("_"," ") | title }}</td></tr>
     <tr><th>Tone</th><td>{{ campaign.tone | title }}</td></tr>
     <tr><th>Language</th><td>{{ campaign.language }}</td></tr>
@@ -25,6 +26,7 @@
     <tr><th>End Date</th><td>{{ campaign.end_date.strftime("%Y-%m-%d %H:%M") if campaign.end_date else "—" }}</td></tr>
     <tr><th>Description</th><td style="color:var(--muted);">{{ campaign.description }}</td></tr>
   </table>
+  </div>
 
   <div class="actions" style="margin-bottom:36px;">
     <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts ({{ posts | length }})</a>
@@ -45,7 +47,7 @@
     </form>
   </div>
 
-  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">
+  <h2>
     Posts <span style="color:var(--muted); font-weight:normal; font-size:14px;">({{ posts | length }})</span>
   </h2>
   {% if not posts %}
@@ -53,6 +55,7 @@
     No posts yet. <a href="/campaigns/{{ campaign.id }}/posts">Add posts.</a>
   </div>
   {% else %}
+  <div class="table-wrap">
   <table>
     <thead>
       <tr><th style="width:32px;">#</th><th style="width:140px;">Scheduled</th><th style="width:100px;">Status</th><th>Content</th></tr>
@@ -68,6 +71,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}
