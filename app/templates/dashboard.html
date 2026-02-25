@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – TootFlow{% endblock %}
+{% block content %}
+<div class="container">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+    <h1 style="border:none; margin:0; padding:0;">Dashboard</h1>
+    <a href="/campaigns/new" class="btn btn-primary">+ New Campaign</a>
+  </div>
+
+  {% if mastodon %}
+  <div class="mastodon-pill">
+    <span>Mastodon</span>
+    <strong>@{{ mastodon.username }}@{{ mastodon.instance_url | replace("https://","") | replace("http://","") }}</strong>
+  </div>
+  {% endif %}
+
+  {% if not campaigns %}
+  <div class="empty-state">
+    <div style="font-size:32px; margin-bottom:12px; letter-spacing:-1px;">¿</div>
+    No campaigns yet.<br>
+    <a href="/campaigns/new" style="font-weight:bold;">Create your first campaign.</a>
+  </div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Template</th>
+        <th>Status</th>
+        <th>Payment</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in campaigns %}
+      <tr>
+        <td><a href="/campaigns/{{ c.id }}" style="font-weight:bold;">{{ c.name }}</a></td>
+        <td style="color:var(--muted); font-size:13px;">{{ c.template_type | replace("_"," ") | title }}</td>
+        <td><span class="badge badge-{{ c.status }}">{{ c.status | replace("_"," ") }}</span></td>
+        <td>
+          {% if c.payment_status == "paid" %}
+            <span class="badge badge-paid">Paid</span>
+          {% else %}
+            <span class="badge badge-unpaid">Unpaid</span>
+          {% endif %}
+        </td>
+        <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
+        <td class="actions">
+          <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
+          <a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

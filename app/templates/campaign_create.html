@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}New Campaign – TootFlow{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+    <h1 style="border:none; margin:0; padding:0;">New Campaign</h1>
+    <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
+  </div>
+
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/campaigns/new">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+
+    <div class="form-group">
+      <label for="name">Campaign Name</label>
+      <input type="text" id="name" name="name" required placeholder="e.g. MyApp v2.0 Launch">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description / Topic</label>
+      <textarea id="description" name="description" rows="4" required
+        placeholder="What is this campaign about? What do you want people to know?"></textarea>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="form-group">
+        <label for="template_type">Template</label>
+        <select id="template_type" name="template_type" required>
+          {% for t in templates %}
+          <option value="{{ t }}">{{ t | replace("_"," ") | title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="tone">Tone</label>
+        <select id="tone" name="tone" required>
+          {% for t in tones %}
+          <option value="{{ t }}">{{ t | title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+      <div class="form-group">
+        <label for="language">Language</label>
+        <select id="language" name="language" required>
+          {% for l in languages %}
+          <option value="{{ l }}">{{ l }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="duration_days">Duration (days)</label>
+        <input type="number" id="duration_days" name="duration_days" value="30" min="1" max="365" required>
+      </div>
+      <div class="form-group">
+        <label for="posts_per_week">Posts / Week</label>
+        <input type="number" id="posts_per_week" name="posts_per_week" value="3" min="1" max="14" required>
+      </div>
+    </div>
+
+    <div class="notice" style="margin-bottom:24px;">
+      After creating the campaign you can add posts manually or use AI generation once activated.
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">Create Campaign →</button>
+      <a href="/dashboard" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

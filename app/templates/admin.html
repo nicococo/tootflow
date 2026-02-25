@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Admin – TootFlow{% endblock %}
+{% block content %}
+<div class="container">
+
+{% if not auth %}
+  <h1>Admin</h1>
+  {% if error %}<div class="error">Invalid token.</div>{% endif %}
+  <div style="max-width:400px;">
+    <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+      Append <code>?token=YOUR_ADMIN_SECRET</code> to the URL to authenticate.
+      Your session will be saved in a cookie for this browser.
+    </p>
+  </div>
+
+{% else %}
+
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+    <h1 style="border:none; margin:0; padding:0;">Admin Analytics</h1>
+    <span style="color:var(--muted); font-size:12px; letter-spacing:1px; text-transform:uppercase; padding-top:6px;">
+      {{ now().strftime("%Y-%m-%d %H:%M") }} UTC
+    </span>
+  </div>
+
+  <!-- Visitors -->
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Unique Visitors</h2>
+  <div class="grid-3" style="margin-bottom:32px;">
+    <div class="stat-box">
+      <div class="num">{{ visitors_1d }}</div>
+      <div class="label">Last 24 h</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">{{ visitors_7d }}</div>
+      <div class="label">Last 7 days</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">{{ visitors_30d }}</div>
+      <div class="label">Last 30 days</div>
+    </div>
+  </div>
+
+  <!-- 30-day chart -->
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:12px;">30-Day Visitor Trend</h2>
+  <div style="background:var(--white); border:var(--border); padding:16px 16px 8px; margin-bottom:32px;">
+    <div style="display:flex; align-items:flex-end; gap:3px; height:80px;">
+      {% for day in chart %}
+      <div style="flex:1; background:var(--blue); height:{{ [day.pct, 2] | max }}%; cursor:default;"
+           title="{{ day.date }}: {{ day.count }}"></div>
+      {% endfor %}
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--muted); letter-spacing:0.5px;">
+      <span>{{ chart[0].date }}</span>
+      <span>{{ chart[14].date }}</span>
+      <span>{{ chart[-1].date }}</span>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Users</h2>
+  <table style="margin-bottom:32px; max-width:480px;">
+    <tr><th style="width:200px;">Total accounts</th><td>{{ users_total }}</td></tr>
+    <tr><th>New last 7 days</th><td>{{ users_7d }}</td></tr>
+    <tr><th>New last 30 days</th><td>{{ users_30d }}</td></tr>
+  </table>
+
+  <!-- Campaigns -->
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Campaigns</h2>
+  <table style="margin-bottom:32px; max-width:480px;">
+    <tr><th style="width:200px;">Total campaigns</th><td>{{ campaigns_total }}</td></tr>
+    <tr><th>Paid / activated</th><td>{{ campaigns_paid }}</td></tr>
+    <tr><th>Currently active</th><td>{{ campaigns_active }}</td></tr>
+    <tr>
+      <th>Conversion rate</th>
+      <td>
+        {% if campaigns_total > 0 %}
+          {{ "%.0f"|format(campaigns_paid / campaigns_total * 100) }}%
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Revenue -->
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Revenue</h2>
+  <table style="margin-bottom:32px; max-width:480px;">
+    <tr><th style="width:200px;">Total revenue</th><td><strong style="color:var(--green);">€{{ "%.2f"|format(revenue_total) }}</strong></td></tr>
+    <tr><th>Paid campaigns</th><td>{{ campaigns_paid }}</td></tr>
+  </table>
+
+  <!-- Posts -->
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Posts</h2>
+  <table style="margin-bottom:32px; max-width:480px;">
+    <tr><th style="width:200px;">Published</th><td><span class="badge badge-published">{{ posts_published }}</span></td></tr>
+    <tr><th>Pending</th><td><span class="badge badge-pending">{{ posts_pending }}</span></td></tr>
+    <tr><th>Failed</th><td><span class="badge badge-failed">{{ posts_failed }}</span></td></tr>
+  </table>
+
+{% endif %}
+</div>
+{% endblock %}

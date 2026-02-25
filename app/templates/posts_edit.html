@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Edit Posts – {{ campaign.name }} – TootFlow{% endblock %}
+{% block content %}
+<div class="container">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:var(--border); padding-bottom:12px; margin-bottom:28px;">
+    <div>
+      <h1 style="border:none; margin-bottom:4px; padding:0;">Edit Posts</h1>
+      <span style="font-size:13px; color:var(--muted);">
+        {{ campaign.name }} &middot; {{ posts | length }} post(s)
+      </span>
+    </div>
+    <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
+  </div>
+
+  <!-- AI: Generate whole campaign -->
+  {% set paid = campaign.payment_status == "paid" %}
+  {% set pending_count = posts | selectattr("status", "equalto", "pending") | list | length %}
+  <div style="background:{% if paid %}var(--blue-light){% else %}var(--canvas){% endif %}; border:2px solid {% if paid %}var(--blue){% else %}#c8bfb4{% endif %}; padding:16px 20px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div>
+      <div style="font-size:11px; letter-spacing:2px; text-transform:uppercase; color:{% if paid %}var(--blue){% else %}var(--muted){% endif %}; font-weight:bold; margin-bottom:4px;">AI Generation</div>
+      <div style="font-size:13px; color:var(--muted);">
+        {% if paid %}
+          {% if pending_count > 0 %}Replaces {{ pending_count }} pending post(s) with a fresh AI-drafted schedule.
+          {% else %}Generate a full AI-drafted post schedule for this campaign.{% endif %}
+        {% else %}
+          Activate this campaign to unlock AI-drafted post generation.
+        {% endif %}
+      </div>
+    </div>
+    {% if paid %}
+    <form method="post" action="/campaigns/{{ campaign.id }}/generate"
+          onsubmit="return {% if pending_count > 0 %}confirm('Replace all {{ pending_count }} pending post(s) with AI-generated content?'){% else %}true{% endif %};">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <button type="submit" class="btn btn-primary">✦ Generate Campaign</button>
+    </form>
+    {% else %}
+    <button class="btn btn-primary" disabled style="opacity:0.4; cursor:not-allowed;">✦ Generate Campaign</button>
+    {% endif %}
+  </div>
+
+  <!-- Add new post -->
+  <details style="margin-bottom:24px;">
+    <summary>Add New Post</summary>
+    <form method="post" action="/campaigns/{{ campaign.id }}/posts/add">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <div class="form-group">
+        <label>Content (max 500 chars)</label>
+        <textarea name="content" id="new-content" rows="4" maxlength="500" required
+          oninput="updateCount('new-content','new-count')"></textarea>
+        <div class="char-count" id="new-count">0 / 500</div>
+      </div>
+      <div class="form-group">
+        <label>Scheduled Time</label>
+        <input type="datetime-local" name="scheduled_time" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Add Post</button>
+    </form>
+  </details>
+
+  <!-- Post list -->
+  {% if not posts %}
+  <div class="empty-state">
+    {% if campaign.payment_status == "paid" %}
+      No posts yet.<br>
+      Click <strong>✦ Generate Campaign</strong> above for AI-drafted posts, or add manually.
+    {% else %}
+      No posts yet. Add posts manually above,<br>
+      or <a href="/campaigns/{{ campaign.id }}">activate the campaign</a> to unlock AI generation.
+    {% endif %}
+  </div>
+  {% else %}
+  {% for post in posts %}
+  <div style="border:var(--border); background:var(--white); margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--canvas); border-bottom:var(--border-soft);">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-weight:bold; color:var(--muted); font-size:12px;">#{{ loop.index }}</span>
+        <span style="font-size:13px; color:var(--muted);">{{ post.scheduled_time.strftime("%Y-%m-%d %H:%M") }}</span>
+        <span class="badge badge-{{ post.status }}">{{ post.status }}</span>
+      </div>
+      {% if post.status == "pending" %}
+      <div class="actions">
+        {% if paid %}
+        <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/regenerate"
+              style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-outline btn-sm">✦ Regenerate</button>
+        </form>
+        {% else %}
+        <button class="btn btn-outline btn-sm" disabled style="opacity:0.4; cursor:not-allowed;" title="Activate campaign to unlock">✦ Regenerate</button>
+        {% endif %}
+        <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/delete"
+              onsubmit="return confirm('Delete this post?');" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div style="padding:16px;">
+      {% if post.status == "pending" %}
+      <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/edit">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <div class="form-group">
+          <textarea name="content" id="content-{{ post.id }}" rows="4" maxlength="500"
+            oninput="updateCount('content-{{ post.id }}','count-{{ post.id }}')">{{ post.content }}</textarea>
+          <div class="char-count" id="count-{{ post.id }}">{{ post.content | length }} / 500</div>
+        </div>
+        <div style="display:flex; gap:16px; align-items:flex-end;">
+          <div class="form-group" style="flex:1; margin:0;">
+            <label>Scheduled Time</label>
+            <input type="datetime-local" name="scheduled_time"
+              value="{{ post.scheduled_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </div>
+      </form>
+      {% else %}
+      <div style="font-size:14px; white-space:pre-wrap; color:var(--muted);">{{ post.content }}</div>
+      {% if post.mastodon_status_id %}
+      <p style="font-size:12px; color:var(--muted); margin-top:8px; border-top:var(--border-soft); padding-top:8px;">
+        Published {{ post.published_at.strftime("%Y-%m-%d %H:%M") if post.published_at else "—" }}
+        &middot; Status ID: <code>{{ post.mastodon_status_id }}</code>
+      </p>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="actions" style="margin-top:24px; padding-top:16px; border-top:var(--border-soft);">
+    <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline">Done Editing</a>
+  </div>
+</div>
+
+<script>
+function updateCount(textareaId, countId) {
+  const ta = document.getElementById(textareaId);
+  const counter = document.getElementById(countId);
+  const len = ta.value.length;
+  counter.textContent = len + ' / 500';
+  counter.classList.toggle('over', len > 500);
+}
+document.querySelectorAll('textarea[id^="content-"], textarea[id="new-content"]').forEach(ta => {
+  const countId = ta.id.replace('content-', 'count-').replace('new-content', 'new-count');
+  const counter = document.getElementById(countId);
+  if (counter) counter.textContent = ta.value.length + ' / 500';
+});
+</script>
+{% endblock %}

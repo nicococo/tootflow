@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Account – TootFlow{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px;">
+  <h1>Account</h1>
+
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Identity</h2>
+  <table style="margin-bottom:32px;">
+    {% if mastodon %}
+    <tr>
+      <th style="width:140px;">Mastodon</th>
+      <td><strong style="color:var(--purple);">@{{ mastodon.username }}@{{ mastodon.instance_url | replace("https://","") | replace("http://","") }}</strong></td>
+    </tr>
+    <tr>
+      <th>Instance</th>
+      <td style="color:var(--muted);">{{ mastodon.instance_url }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <th>Member since</th>
+      <td style="color:var(--muted);">{{ user.created_at.strftime("%Y-%m-%d") }}</td>
+    </tr>
+    <tr>
+      <th>Campaigns</th>
+      <td>{{ campaign_count }}</td>
+    </tr>
+  </table>
+
+  <h2 style="border-bottom:var(--border-soft); padding-bottom:8px; margin-bottom:16px;">Your Data</h2>
+  <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+    Download a copy of everything TootFlow holds about you: your Mastodon identity,
+    all campaigns, posts, and engagement metrics.
+  </p>
+  <a href="/account/export" class="btn btn-outline">Download Data Export (JSON)</a>
+
+  <div style="border:2px solid var(--red); padding:24px; margin-top:48px;">
+    <h2 style="color:var(--red); border:none; margin-bottom:8px;">Danger Zone</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+      Permanently deletes your account, all campaigns, posts, and metrics.
+      This cannot be undone. Payment records are also removed from our system.
+    </p>
+    <form method="post" action="/account/delete"
+          onsubmit="return confirm('Delete your account and all data permanently? This cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <button type="submit" class="btn btn-danger">Delete My Account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy – TootFlow{% endblock %}
+{% block content %}
+<div class="container" style="max-width:720px;">
+  <h1>Privacy Policy</h1>
+  <p style="color:var(--muted); font-size:13px; margin-bottom:32px;">Last updated: 2026-02-25</p>
+
+  <details open>
+    <summary>Who we are</summary>
+    <p>
+      TootFlow is a tool for scheduling and managing Mastodon social media campaigns.
+      References to "we", "us", or "TootFlow" in this policy refer to the operator of this service.
+    </p>
+  </details>
+
+  <details open>
+    <summary>What data we store</summary>
+    <p>When you use TootFlow we store the following data about you:</p>
+    <table style="margin-top:12px;">
+      <thead>
+        <tr><th>Data</th><th>Why</th><th>How long</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mastodon username &amp; instance URL</td>
+          <td>Your identity — used to link your account</td>
+          <td>Until you delete your account</td>
+        </tr>
+        <tr>
+          <td>Mastodon access token (encrypted)</td>
+          <td>Publishing posts on your behalf when scheduled</td>
+          <td>Until you delete your account; refreshed on each login</td>
+        </tr>
+        <tr>
+          <td>Campaign names, descriptions, post content</td>
+          <td>Core product functionality</td>
+          <td>Until you delete the campaign or your account</td>
+        </tr>
+        <tr>
+          <td>Post engagement metrics (favourites, reblogs, replies)</td>
+          <td>Showing you how your posts perform</td>
+          <td>Until you delete the campaign or your account</td>
+        </tr>
+        <tr>
+          <td>Payment order ID and amount</td>
+          <td>Activating campaigns; reconciling payments</td>
+          <td>Until you delete your account</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+      We do not store email addresses, passwords, or any payment card details.
+    </p>
+  </details>
+
+  <details open>
+    <summary>Cookies</summary>
+    <p>TootFlow uses two cookies, both strictly necessary for the service to function:</p>
+    <table style="margin-top:12px;">
+      <thead>
+        <tr><th>Cookie</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>access_token</code></td>
+          <td>Session authentication (JWT, httpOnly, not readable by JavaScript)</td>
+        </tr>
+        <tr>
+          <td><code>csrf_token</code></td>
+          <td>Cross-site request forgery protection</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+      No tracking, advertising, or analytics cookies are used. No consent banner is required.
+    </p>
+  </details>
+
+  <details open>
+    <summary>Third-party services</summary>
+    <table style="margin-top:4px;">
+      <thead>
+        <tr><th>Service</th><th>Purpose</th><th>Data shared</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Your Mastodon instance</td>
+          <td>OAuth login; publishing posts; fetching metrics</td>
+          <td>OAuth authorisation code; post content on publish</td>
+        </tr>
+        <tr>
+          <td>LemonSqueezy</td>
+          <td>Payment processing</td>
+          <td>A campaign identifier to link payment to your campaign. Card data never reaches TootFlow.</td>
+        </tr>
+        <tr>
+          <td>OpenAI</td>
+          <td>AI-generated post suggestions</td>
+          <td>Campaign name, description, tone, and language when generating posts</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+      Each third party operates under its own privacy policy. We do not sell your data to any party.
+    </p>
+  </details>
+
+  <details open>
+    <summary>Your rights (GDPR)</summary>
+    <p>If you are in the EU or UK you have the following rights:</p>
+    <ul style="margin-top:8px; padding-left:20px; line-height:2;">
+      <li><strong>Access</strong> — download everything we hold about you via <a href="/account">Account → Download Data Export</a>.</li>
+      <li><strong>Erasure</strong> — permanently delete your account and all associated data via <a href="/account">Account → Delete My Account</a>.</li>
+      <li><strong>Portability</strong> — the data export is a standard JSON file you can use with other services.</li>
+      <li><strong>Rectification</strong> — your identity data (username/instance) is updated automatically on each login via Mastodon OAuth.</li>
+    </ul>
+    <p style="margin-top:12px; color:var(--muted); font-size:13px;">
+      Deletion is immediate and permanent. There is no retention period after deletion.
+    </p>
+  </details>
+
+  <details>
+    <summary>Data security</summary>
+    <p>
+      Mastodon access tokens are encrypted at rest using AES-128 (Fernet).
+      Session cookies are signed with a server-side secret, marked <code>httpOnly</code>,
+      and use <code>SameSite=Lax</code>. All requests are protected by CSRF tokens.
+      In production the application is served over HTTPS only.
+    </p>
+  </details>
+
+  <details>
+    <summary>Changes to this policy</summary>
+    <p>
+      Material changes will be communicated by updating the "Last updated" date at the top of this page.
+      Continued use of TootFlow after changes constitutes acceptance of the updated policy.
+    </p>
+  </details>
+</div>
+{% endblock %}
