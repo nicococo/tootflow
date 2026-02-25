@@ -11,6 +11,13 @@ TEMPLATE_DESCRIPTIONS = {
     "product_launch": "a product launch campaign to generate buzz and drive adoption",
     "open_source_release": "an open source software release campaign for the developer community",
     "event_promotion": "an event promotion campaign to drive registrations and attendance",
+    "knowledge_sharing": "a knowledge-sharing campaign that drops useful insights and expertise on a specific topic to attract and grow an interested audience",
+    "developer_tips": "a developer tips campaign sharing practical coding tips, tricks, and workflow improvements for a technical audience",
+    "research_insights": "a research insights campaign sharing findings, data, and takeaways from academic or professional research to inform and engage a curious audience",
+    "personal_brand": "a personal brand campaign that establishes thought leadership and builds a recognisable voice and presence around a person's expertise",
+    "community_building": "a community building campaign that invites people to join a shared interest, sparks conversations, and grows an engaged following around a topic",
+    "project_showcase": "a project showcase campaign that highlights the story, progress, and interesting details behind a creative or technical side project",
+    "newsletter_growth": "a newsletter growth campaign that teases valuable content and gives compelling reasons to subscribe to a newsletter or mailing list",
 }
 
 TONE_DESCRIPTIONS = {
@@ -74,7 +81,7 @@ async def generate_posts(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.8,
-        max_tokens=settings.openai_max_tokens,
+        max_completion_tokens=settings.openai_max_tokens,
     )
 
     raw = response.choices[0].message.content.strip()
@@ -120,7 +127,7 @@ async def regenerate_single_post(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.9,
-        max_tokens=min(settings.openai_max_tokens, 600),  # single post never needs more
+        max_completion_tokens=min(settings.openai_max_tokens, 600),  # single post never needs more
     )
 
     return response.choices[0].message.content.strip()[:500]

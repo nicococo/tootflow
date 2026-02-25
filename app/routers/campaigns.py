@@ -17,7 +17,18 @@ router = APIRouter(prefix="/campaigns")
 settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
 
-TEMPLATES = ["product_launch", "open_source_release", "event_promotion"]
+TEMPLATES = [
+    "product_launch",
+    "open_source_release",
+    "event_promotion",
+    "knowledge_sharing",
+    "developer_tips",
+    "research_insights",
+    "personal_brand",
+    "community_building",
+    "project_showcase",
+    "newsletter_growth",
+]
 TONES = ["professional", "casual", "technical", "inspiring"]
 LANGUAGES = ["English", "German", "French"]
 
@@ -29,10 +40,12 @@ def list_campaigns(request: Request, session: Session = Depends(get_session), us
 
 
 @router.get("/new", response_class=HTMLResponse)
-def new_campaign_page(request: Request, user: User = Depends(get_current_user)):
+def new_campaign_page(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    existing = session.exec(select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())).all()
     return templates.TemplateResponse(
         "campaign_create.html",
-        {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES},
+        {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
+         "existing_campaigns": existing},
     )
 
 
@@ -97,6 +110,23 @@ def campaign_detail(
         {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
          "ai_max": settings.openai_max_posts_per_campaign},
     )
+
+
+@router.post("/{campaign_id}/rename")
+def rename_campaign(
+    campaign_id: int,
+    name: str = Form(...),
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    campaign.name = name.strip()[:200]
+    session.add(campaign)
+    session.commit()
+    return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
 
 
 @router.post("/{campaign_id}/delete")

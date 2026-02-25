@@ -9,6 +9,27 @@
 
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
+  {% if existing_campaigns %}
+  <div class="form-card" style="margin-bottom:16px; padding:16px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <label for="copy_from" style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); white-space:nowrap; margin:0;">Copy from existing</label>
+    <select id="copy_from" onchange="copyFromCampaign(this)" style="flex:1; min-width:200px;">
+      <option value="">— select a campaign —</option>
+      {% for c in existing_campaigns %}
+      <option value="{{ c.id }}"
+        data-name="{{ c.name }}"
+        data-description="{{ c.description | replace('"', '&quot;') }}"
+        data-template="{{ c.template_type }}"
+        data-tone="{{ c.tone }}"
+        data-language="{{ c.language }}"
+        data-duration="{{ c.duration_days }}"
+        data-posts-per-week="{{ c.posts_per_week }}">
+        {{ c.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
   <form method="post" action="/campaigns/new" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
 
@@ -71,4 +92,24 @@
     </div>
   </form>
 </div>
+
+<script>
+function copyFromCampaign(select) {
+  const opt = select.options[select.selectedIndex];
+  if (!opt.value) return;
+  document.getElementById('name').value        = 'Copy of ' + opt.dataset.name;
+  document.getElementById('description').value = opt.dataset.description;
+  document.getElementById('duration_days').value    = opt.dataset.duration;
+  document.getElementById('posts_per_week').value   = opt.dataset.postsPerWeek;
+  setSelect('template_type', opt.dataset.template);
+  setSelect('tone',          opt.dataset.tone);
+  setSelect('language',      opt.dataset.language);
+}
+function setSelect(id, value) {
+  const el = document.getElementById(id);
+  for (const opt of el.options) {
+    if (opt.value === value) { el.value = value; break; }
+  }
+}
+</script>
 {% endblock %}

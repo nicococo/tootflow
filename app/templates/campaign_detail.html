@@ -207,7 +207,21 @@
   <div class="camp-main">
     <div class="page-head">
       <div>
-        <h1>{{ campaign.name }}</h1>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <h1 id="campaign-name-display">{{ campaign.name }}</h1>
+          <button type="button" class="btn btn-outline btn-sm" onclick="toggleRename(true)"
+                  id="rename-btn" style="margin-bottom:4px;">Rename</button>
+        </div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/rename"
+              id="rename-form" style="display:none; margin-bottom:8px;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" name="name" id="rename-input" value="{{ campaign.name }}"
+                   required maxlength="200" style="flex:1; min-width:200px;">
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleRename(false)">Cancel</button>
+          </div>
+        </form>
         <span class="badge badge-{{ campaign.status }}">{{ campaign.status | replace("_"," ") }}</span>
         {% if campaign.payment_status == "paid" %}
           <span class="badge badge-paid" style="margin-left:4px;">Paid</span>
@@ -217,6 +231,15 @@
       </div>
       <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
     </div>
+
+    <script>
+    function toggleRename(show) {
+      document.getElementById('rename-form').style.display      = show ? 'block' : 'none';
+      document.getElementById('campaign-name-display').style.display = show ? 'none'  : '';
+      document.getElementById('rename-btn').style.display       = show ? 'none'  : '';
+      if (show) document.getElementById('rename-input').focus();
+    }
+    </script>
 
     <div class="table-wrap" style="margin-bottom:28px;">
     <table>

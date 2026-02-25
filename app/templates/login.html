@@ -10,6 +10,24 @@
       <label for="instance_url">Mastodon Instance</label>
       <input type="text" id="instance_url" name="instance_url"
         placeholder="https://mastodon.social" required autofocus>
+      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
+        {% for instance in [
+          "mastodon.social",
+          "mastodon.online",
+          "fosstodon.org",
+          "hachyderm.io",
+          "chaos.social",
+          "infosec.exchange",
+          "techhub.social",
+          "sigmoid.social"
+        ] %}
+        <button type="button" class="instance-chip"
+                onclick="pickInstance('https://{{ instance }}')">{{ instance }}</button>
+        {% endfor %}
+      </div>
+      <div class="muted text-sm" style="margin-top:8px;">
+        Not listed? Type your instance URL above.
+      </div>
     </div>
     <button type="submit" class="btn btn-primary" style="width:100%;">Continue with Mastodon →</button>
   </form>
@@ -18,4 +36,36 @@
     An account is created automatically on first sign-in.
   </p>
 </div>
+
+<style>
+  .instance-chip {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 4px 10px;
+    border: var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .instance-chip:hover {
+    background: var(--surface-soft);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .instance-chip.selected {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+</style>
+
+<script>
+function pickInstance(url) {
+  document.getElementById('instance_url').value = url;
+  document.querySelectorAll('.instance-chip').forEach(btn => {
+    btn.classList.toggle('selected', btn.textContent.trim() === url.replace('https://', ''));
+  });
+}
+</script>
 {% endblock %}
