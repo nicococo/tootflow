@@ -36,6 +36,7 @@ class Campaign(SQLModel, table=True):
     end_date: Optional[datetime] = None
     status: str = "draft_unpaid"
     payment_status: str = "unpaid"
+    ai_posts_generated: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: Optional[User] = Relationship(back_populates="campaigns")

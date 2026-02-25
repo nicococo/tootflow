@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.database import get_session
 from app.models import Campaign, Post, User, MastodonAccount
 from app.auth import get_current_user
@@ -13,6 +14,7 @@ from app.limiter import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campaigns")
+settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
 
 TEMPLATES = ["product_launch", "open_source_release", "event_promotion"]
@@ -92,7 +94,8 @@ def campaign_detail(
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
     return templates.TemplateResponse(
         "campaign_detail.html",
-        {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon},
+        {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
+         "ai_max": settings.openai_max_posts_per_campaign},
     )
 
 

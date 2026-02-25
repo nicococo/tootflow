@@ -6,9 +6,11 @@ class Settings(BaseSettings):
     secret_key: str = "changeme"
     database_url: str = "sqlite:///./tootflow.db"
 
+    max_posts_per_campaign: int = 32          # hard cap on total posts per campaign
+
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
-    openai_max_posts_per_campaign: int = 30   # cap on posts generated per campaign
+    openai_max_posts_per_campaign: int = 30   # cap on posts generated per AI request
     openai_max_tokens: int = 4096             # max tokens per OpenAI response
 
     lemonsqueezy_api_key: str = ""

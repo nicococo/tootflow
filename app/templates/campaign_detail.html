@@ -227,6 +227,19 @@
       <tr><th>Posts / Week</th><td>{{ campaign.posts_per_week }}</td></tr>
       <tr><th>Start Date</th><td>{{ campaign.start_date.strftime("%Y-%m-%d %H:%M") if campaign.start_date else "—" }}</td></tr>
       <tr><th>End Date</th><td>{{ campaign.end_date.strftime("%Y-%m-%d %H:%M") if campaign.end_date else "—" }}</td></tr>
+      <tr>
+        <th>AI Calls</th>
+        <td>
+          {% if campaign.payment_status != "paid" %}
+            <span style="color:var(--muted); font-size:13px;">Activate campaign to unlock AI generation.</span>
+          {% elif campaign.ai_posts_generated >= ai_max %}
+            <span style="color:var(--red, #c0392b); font-weight:bold;">{{ campaign.ai_posts_generated }} / {{ ai_max }}</span>
+            <span style="color:var(--muted); font-size:12px; margin-left:6px;">— limit reached</span>
+          {% else %}
+            {{ campaign.ai_posts_generated }} / {{ ai_max }}
+          {% endif %}
+        </td>
+      </tr>
       <tr><th>Description</th><td style="color:var(--muted);">{{ campaign.description }}</td></tr>
     </table>
     </div>
