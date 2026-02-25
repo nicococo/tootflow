@@ -96,7 +96,7 @@ async def generate_campaign_posts(
         raise HTTPException(status_code=403, detail="Campaign must be activated before generating posts")
 
     try:
-        post_contents = generate_posts(
+        post_contents = await generate_posts(
             campaign_name=campaign.name,
             description=campaign.description,
             template_type=campaign.template_type,
@@ -146,7 +146,7 @@ async def regenerate_post(
         raise HTTPException(status_code=404)
 
     try:
-        post.content = regenerate_single_post(
+        post.content = await regenerate_single_post(
             campaign_name=campaign.name,
             description=campaign.description,
             template_type=campaign.template_type,

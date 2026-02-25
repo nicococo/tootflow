@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from typing import List
-from openai import OpenAI
+from openai import AsyncOpenAI
 from app.config import get_settings
 
 settings = get_settings()
@@ -27,7 +27,7 @@ def _sanitize(text: str, max_len: int) -> str:
     return text[:max_len].strip()
 
 
-def generate_posts(
+async def generate_posts(
     campaign_name: str,
     description: str,
     template_type: str,
@@ -36,7 +36,7 @@ def generate_posts(
     duration_days: int,
     posts_per_week: int,
 ) -> List[str]:
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     total_posts = min(
         max(1, int(duration_days / 7 * posts_per_week)),
@@ -67,7 +67,7 @@ def generate_posts(
         f"Total posts: {total_posts}"
     )
 
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=settings.openai_model,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -83,7 +83,7 @@ def generate_posts(
     return posts[:total_posts]
 
 
-def regenerate_single_post(
+async def regenerate_single_post(
     campaign_name: str,
     description: str,
     template_type: str,
@@ -91,7 +91,7 @@ def regenerate_single_post(
     language: str,
 ) -> str:
     """Generate a single replacement post in the context of the campaign."""
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
@@ -113,7 +113,7 @@ def regenerate_single_post(
         f"Language: {safe_lang}"
     )
 
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=settings.openai_model,
         messages=[
             {"role": "system", "content": system_prompt},
