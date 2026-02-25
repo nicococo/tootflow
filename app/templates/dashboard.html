@@ -1,61 +1,229 @@
 {% extends "base.html" %}
 {% block title %}Dashboard – TootFlow{% endblock %}
 {% block content %}
-<div class="container">
-  <div class="page-head">
-    <h1>Dashboard</h1>
-    <a href="/campaigns/new" class="btn btn-primary">+ New Campaign</a>
+
+<style>
+  .dash-wrap {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 0 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    align-items: start;
+  }
+  .dash-sidebar { position: sticky; top: 24px; }
+  .dash-main { min-width: 0; }
+
+  .info-panel {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .info-panel-head {
+    padding: 10px 14px;
+    border-bottom: var(--border);
+    background: var(--surface-soft);
+  }
+  .info-panel-body { padding: 4px 0; }
+  .info-row {
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .info-row:last-child { border-bottom: 0; }
+  .info-row strong {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .info-row span { color: var(--muted); }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .status-row:last-child { border-bottom: 0; }
+
+  @media (max-width: 760px) {
+    .dash-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
+    .dash-sidebar { position: static; margin-bottom: 24px; }
+  }
+</style>
+
+<div class="dash-wrap">
+
+  <!-- Left sidebar -->
+  <aside class="dash-sidebar">
+
+    <!-- Workflow -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--blue);">Workflow</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>1 · Create</strong>
+          <span>Set topic, template, tone, and cadence.</span>
+        </div>
+        <div class="info-row">
+          <strong>2 · Activate</strong>
+          <span>Pay once (29€) to unlock AI generation.</span>
+        </div>
+        <div class="info-row">
+          <strong>3 · Generate</strong>
+          <span>AI drafts all posts. Edit and regenerate freely.</span>
+        </div>
+        <div class="info-row">
+          <strong>4 · Publish</strong>
+          <span>Posts go live on schedule automatically.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status legend -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--muted);">Status Guide</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="status-row">
+          <span class="badge badge-draft_unpaid" style="font-size:10px;">draft</span>
+          <span>Not yet paid</span>
+        </div>
+        <div class="status-row">
+          <span class="badge badge-active" style="font-size:10px;">active</span>
+          <span>Paid, awaiting first post</span>
+        </div>
+        <div class="status-row">
+          <span class="badge badge-running" style="font-size:10px;">running</span>
+          <span>Actively publishing</span>
+        </div>
+        <div class="status-row">
+          <span class="badge badge-completed" style="font-size:10px;">completed</span>
+          <span>All posts published</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--muted);">Quick Links</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <a href="/campaigns/new" style="font-size:12px;">+ New Campaign</a>
+        </div>
+        <div class="info-row">
+          <a href="/account" style="font-size:12px;">Account Settings</a>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <div class="dash-main">
+    <div class="page-head">
+      <h1>Dashboard</h1>
+      <a href="/campaigns/new" class="btn btn-primary">+ New Campaign</a>
+    </div>
+
+    {% if mastodon %}
+    <div class="mastodon-pill">
+      <span>Mastodon</span>
+      <strong>@{{ mastodon.username }}@{{ mastodon.instance_url | replace("https://","") | replace("http://","") }}</strong>
+    </div>
+    {% endif %}
+
+    {% if campaigns %}
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:28px;">
+
+      <div class="stat-box">
+        <div class="num">{{ published_count }}</div>
+        <div class="label">Posts Published</div>
+      </div>
+
+      <div class="stat-box">
+        <div class="num">{{ active_count }}</div>
+        <div class="label">Active Campaigns</div>
+      </div>
+
+      <div class="stat-box" style="{% if next_post %}border-color:var(--blue);{% endif %}">
+        {% if next_post %}
+          <div class="label" style="margin-bottom:4px;">Next Post</div>
+          <div style="font-size:13px; font-weight:bold; margin-bottom:2px;">
+            {{ next_post.scheduled_time.strftime("%b %d, %H:%M") }}
+          </div>
+          <div style="font-size:11px; color:var(--muted); margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            {{ next_post_campaign.name }}
+          </div>
+          <a href="/campaigns/{{ next_post_campaign.id }}/posts#post-{{ next_post.id }}"
+             class="btn btn-outline btn-sm">Edit →</a>
+        {% else %}
+          <div class="num">—</div>
+          <div class="label">Next Post</div>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endif %}
+
+    {% if not campaigns %}
+    <div class="empty-state">
+      <div style="font-size:32px; margin-bottom:12px; letter-spacing:-1px;">+</div>
+      No campaigns yet.<br>
+      <a href="/campaigns/new" style="font-weight:bold;">Create your first campaign.</a>
+    </div>
+    {% else %}
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Template</th>
+          <th>Status</th>
+          <th>Payment</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in campaigns %}
+        <tr>
+          <td><a href="/campaigns/{{ c.id }}" style="font-weight:bold;">{{ c.name }}</a></td>
+          <td style="color:var(--muted); font-size:13px;">{{ c.template_type | replace("_"," ") | title }}</td>
+          <td><span class="badge badge-{{ c.status }}">{{ c.status | replace("_"," ") }}</span></td>
+          <td>
+            {% if c.payment_status == "paid" %}
+              <span class="badge badge-paid">Paid</span>
+            {% else %}
+              <span class="badge badge-unpaid">Unpaid</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
+          <td class="actions">
+            <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
+            <a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
   </div>
 
-  {% if mastodon %}
-  <div class="mastodon-pill">
-    <span>Mastodon</span>
-    <strong>@{{ mastodon.username }}@{{ mastodon.instance_url | replace("https://","") | replace("http://","") }}</strong>
-  </div>
-  {% endif %}
-
-  {% if not campaigns %}
-  <div class="empty-state">
-    <div style="font-size:32px; margin-bottom:12px; letter-spacing:-1px;">+</div>
-    No campaigns yet.<br>
-    <a href="/campaigns/new" style="font-weight:bold;">Create your first campaign.</a>
-  </div>
-  {% else %}
-  <div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Template</th>
-        <th>Status</th>
-        <th>Payment</th>
-        <th>Created</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for c in campaigns %}
-      <tr>
-        <td><a href="/campaigns/{{ c.id }}" style="font-weight:bold;">{{ c.name }}</a></td>
-        <td style="color:var(--muted); font-size:13px;">{{ c.template_type | replace("_"," ") | title }}</td>
-        <td><span class="badge badge-{{ c.status }}">{{ c.status | replace("_"," ") }}</span></td>
-        <td>
-          {% if c.payment_status == "paid" %}
-            <span class="badge badge-paid">Paid</span>
-          {% else %}
-            <span class="badge badge-unpaid">Unpaid</span>
-          {% endif %}
-        </td>
-        <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
-        <td class="actions">
-          <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
-          <a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}

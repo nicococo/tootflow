@@ -15,7 +15,8 @@ from app.config import get_settings
 from app.csrf import CSRFMiddleware
 from app.limiter import limiter
 from app.database import create_db_and_tables, get_session
-from app.models import Campaign, MastodonAccount, User
+from sqlalchemy import func
+from app.models import Campaign, MastodonAccount, Post, User
 from app.auth import optional_current_user, get_current_user
 from app.scheduler import start_scheduler, stop_scheduler
 from app.routers import auth, campaigns, posts, payments, metrics, account, admin
@@ -122,7 +123,32 @@ def dashboard(
         select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())
     ).all()
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
+
+    campaign_ids = [c.id for c in campaigns_list]
+    published_count = 0
+    active_count = 0
+    next_post = None
+    next_post_campaign = None
+
+    if campaign_ids:
+        published_count = session.exec(
+            select(func.count()).select_from(Post)
+            .where(Post.campaign_id.in_(campaign_ids), Post.status == "published")
+        ).one() or 0
+        active_count = sum(1 for c in campaigns_list if c.status in ("active", "running"))
+        next_post = session.exec(
+            select(Post)
+            .where(Post.campaign_id.in_(campaign_ids), Post.status == "pending")
+            .order_by(Post.scheduled_time)
+        ).first()
+        if next_post:
+            next_post_campaign = next(c for c in campaigns_list if c.id == next_post.campaign_id)
+
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "user": user, "campaigns": campaigns_list, "mastodon": mastodon},
+        {
+            "request": request, "user": user, "campaigns": campaigns_list, "mastodon": mastodon,
+            "published_count": published_count, "active_count": active_count,
+            "next_post": next_post, "next_post_campaign": next_post_campaign,
+        },
     )

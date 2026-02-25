@@ -1,77 +1,282 @@
 {% extends "base.html" %}
 {% block title %}{{ campaign.name }} – TootFlow{% endblock %}
 {% block content %}
-<div class="container">
-  <div class="page-head">
-    <div>
-      <h1>{{ campaign.name }}</h1>
-      <span class="badge badge-{{ campaign.status }}">{{ campaign.status | replace("_"," ") }}</span>
-      {% if campaign.payment_status == "paid" %}
-        <span class="badge badge-paid" style="margin-left:4px;">Paid</span>
-      {% else %}
-        <span class="badge badge-unpaid" style="margin-left:4px;">Unpaid</span>
-      {% endif %}
+
+<style>
+  .camp-wrap {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 0 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    align-items: start;
+  }
+  .camp-sidebar { position: sticky; top: 24px; }
+  .camp-main { min-width: 0; }
+
+  .info-panel {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .info-panel-head {
+    padding: 10px 14px;
+    border-bottom: var(--border);
+    background: var(--surface-soft);
+  }
+  .info-panel-body { padding: 4px 0; }
+  .info-row {
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .info-row:last-child { border-bottom: 0; }
+  .info-row span { color: var(--muted); }
+
+  /* Progress steps */
+  .progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+  }
+  .progress-step:last-child { border-bottom: 0; }
+  .step-icon {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    margin-top: 1px;
+  }
+  .step-icon.done { border-color: var(--green); color: var(--green); font-weight: bold; }
+  .step-icon.current { border-color: var(--blue); background: var(--blue); color: #fff; font-weight: bold; }
+  .step-label { color: var(--ink); }
+  .step-label.muted { color: var(--muted); }
+  .step-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Post stat rows */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stat-row:last-child { border-bottom: 0; }
+  .stat-row strong { color: var(--ink); font-size: 13px; }
+
+  @media (max-width: 760px) {
+    .camp-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
+    .camp-sidebar { position: static; margin-bottom: 24px; }
+  }
+</style>
+
+{% set pending_count   = posts | selectattr("status", "equalto", "pending")   | list | length %}
+{% set published_count = posts | selectattr("status", "equalto", "published") | list | length %}
+{% set failed_count    = posts | selectattr("status", "equalto", "failed")    | list | length %}
+{% set is_paid         = campaign.payment_status == "paid" %}
+{% set is_running      = campaign.status in ("running", "completed") %}
+{% set has_posts       = posts | length > 0 %}
+
+<div class="camp-wrap">
+
+  <!-- Left sidebar -->
+  <aside class="camp-sidebar">
+
+    <!-- Campaign progress -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--blue);">Progress</div>
+      </div>
+      <div class="info-panel-body">
+
+        <div class="progress-step">
+          <div class="step-icon done">✓</div>
+          <div>
+            <div class="step-label">Created</div>
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if is_paid %}done{% elif not is_paid %}current{% endif %}">
+            {% if is_paid %}✓{% else %}2{% endif %}
+          </div>
+          <div>
+            <div class="step-label {% if not is_paid %}{% else %}{% endif %}">Activated</div>
+            {% if not is_paid %}
+            <div class="step-hint">Pay 29€ to unlock AI generation.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if has_posts and is_paid %}done{% elif is_paid and not has_posts %}current{% else %}{% endif %}">
+            {% if has_posts and is_paid %}✓{% elif is_paid and not has_posts %}3{% else %}3{% endif %}
+          </div>
+          <div>
+            <div class="step-label {% if not is_paid %}muted{% endif %}">Posts Ready</div>
+            {% if is_paid and not has_posts %}
+            <div class="step-hint">Generate or add posts manually.</div>
+            {% elif is_paid and pending_count > 0 and not is_running %}
+            <div class="step-hint">{{ pending_count }} post(s) pending review.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if campaign.status == 'completed' %}done{% elif is_running %}current{% endif %}">
+            {% if campaign.status == 'completed' %}✓{% elif is_running %}4{% else %}4{% endif %}
+          </div>
+          <div>
+            <div class="step-label {% if not is_running %}muted{% endif %}">Publishing</div>
+            {% if campaign.status == 'running' %}
+            <div class="step-hint">{{ published_count }} of {{ posts | length }} published.</div>
+            {% elif campaign.status == 'completed' %}
+            <div class="step-hint">All posts published.</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
     </div>
-    <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
-  </div>
 
-  <div class="table-wrap" style="margin-bottom:28px;">
-  <table>
-    <tr><th style="width:140px;">Template</th><td>{{ campaign.template_type | replace("_"," ") | title }}</td></tr>
-    <tr><th>Tone</th><td>{{ campaign.tone | title }}</td></tr>
-    <tr><th>Language</th><td>{{ campaign.language }}</td></tr>
-    <tr><th>Duration</th><td>{{ campaign.duration_days }} days</td></tr>
-    <tr><th>Posts / Week</th><td>{{ campaign.posts_per_week }}</td></tr>
-    <tr><th>Start Date</th><td>{{ campaign.start_date.strftime("%Y-%m-%d %H:%M") if campaign.start_date else "—" }}</td></tr>
-    <tr><th>End Date</th><td>{{ campaign.end_date.strftime("%Y-%m-%d %H:%M") if campaign.end_date else "—" }}</td></tr>
-    <tr><th>Description</th><td style="color:var(--muted);">{{ campaign.description }}</td></tr>
-  </table>
-  </div>
-
-  <div class="actions" style="margin-bottom:36px;">
-    <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts ({{ posts | length }})</a>
-    <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
-
-    {% if campaign.payment_status != "paid" %}
-      <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="display:inline;">
-        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-        <button type="submit" class="btn btn-success">Activate Campaign — 29€</button>
-      </form>
+    <!-- Post breakdown -->
+    {% if has_posts %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--muted);">Posts</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="stat-row">
+          <span>Pending</span>
+          <strong>{{ pending_count }}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Published</span>
+          <strong style="color:var(--green);">{{ published_count }}</strong>
+        </div>
+        {% if failed_count > 0 %}
+        <div class="stat-row">
+          <span>Failed</span>
+          <strong style="color:var(--red, #c0392b);">{{ failed_count }}</strong>
+        </div>
+        {% endif %}
+        <div class="stat-row">
+          <span>Total</span>
+          <strong>{{ posts | length }}</strong>
+        </div>
+      </div>
+    </div>
     {% endif %}
 
-    <form method="post" action="/campaigns/{{ campaign.id }}/delete"
-          onsubmit="return confirm('Delete this campaign and all its posts?');"
-          style="display:inline; margin-left:auto;">
-      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-      <button type="submit" class="btn btn-danger btn-sm">Delete Campaign</button>
-    </form>
+    <!-- Campaign settings summary -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--muted);">Settings</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <span>{{ campaign.duration_days }} days · {{ campaign.posts_per_week }}×/week</span>
+        </div>
+        <div class="info-row">
+          <span>{{ campaign.tone | title }} · {{ campaign.language }}</span>
+        </div>
+        {% if campaign.start_date %}
+        <div class="info-row">
+          <span>Started {{ campaign.start_date.strftime("%b %d, %Y") }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <div class="camp-main">
+    <div class="page-head">
+      <div>
+        <h1>{{ campaign.name }}</h1>
+        <span class="badge badge-{{ campaign.status }}">{{ campaign.status | replace("_"," ") }}</span>
+        {% if campaign.payment_status == "paid" %}
+          <span class="badge badge-paid" style="margin-left:4px;">Paid</span>
+        {% else %}
+          <span class="badge badge-unpaid" style="margin-left:4px;">Unpaid</span>
+        {% endif %}
+      </div>
+      <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
+    </div>
+
+    <div class="table-wrap" style="margin-bottom:28px;">
+    <table>
+      <tr><th style="width:140px;">Template</th><td>{{ campaign.template_type | replace("_"," ") | title }}</td></tr>
+      <tr><th>Tone</th><td>{{ campaign.tone | title }}</td></tr>
+      <tr><th>Language</th><td>{{ campaign.language }}</td></tr>
+      <tr><th>Duration</th><td>{{ campaign.duration_days }} days</td></tr>
+      <tr><th>Posts / Week</th><td>{{ campaign.posts_per_week }}</td></tr>
+      <tr><th>Start Date</th><td>{{ campaign.start_date.strftime("%Y-%m-%d %H:%M") if campaign.start_date else "—" }}</td></tr>
+      <tr><th>End Date</th><td>{{ campaign.end_date.strftime("%Y-%m-%d %H:%M") if campaign.end_date else "—" }}</td></tr>
+      <tr><th>Description</th><td style="color:var(--muted);">{{ campaign.description }}</td></tr>
+    </table>
+    </div>
+
+    <div class="actions" style="margin-bottom:36px;">
+      <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts ({{ posts | length }})</a>
+      <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
+
+      {% if campaign.payment_status != "paid" %}
+        <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-success">Activate Campaign — 29€</button>
+        </form>
+      {% endif %}
+
+      <form method="post" action="/campaigns/{{ campaign.id }}/delete"
+            onsubmit="return confirm('Delete this campaign and all its posts?');"
+            style="display:inline; margin-left:auto;">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <button type="submit" class="btn btn-danger btn-sm">Delete Campaign</button>
+      </form>
+    </div>
+
+    <h2>
+      Posts <span style="color:var(--muted); font-weight:normal; font-size:14px;">({{ posts | length }})</span>
+    </h2>
+    {% if not posts %}
+    <div class="empty-state">
+      No posts yet. <a href="/campaigns/{{ campaign.id }}/posts">Add posts.</a>
+    </div>
+    {% else %}
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:32px;">#</th><th style="width:140px;">Scheduled</th><th style="width:100px;">Status</th><th>Content</th></tr>
+      </thead>
+      <tbody>
+        {% for p in posts %}
+        <tr>
+          <td style="color:var(--muted);">{{ loop.index }}</td>
+          <td style="white-space:nowrap; font-size:13px; color:var(--muted);">{{ p.scheduled_time.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td><span class="badge badge-{{ p.status }}">{{ p.status }}</span></td>
+          <td style="font-size:13px;">{{ p.content[:100] }}{% if p.content|length > 100 %}<span style="color:var(--muted);">…</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
   </div>
 
-  <h2>
-    Posts <span style="color:var(--muted); font-weight:normal; font-size:14px;">({{ posts | length }})</span>
-  </h2>
-  {% if not posts %}
-  <div class="empty-state">
-    No posts yet. <a href="/campaigns/{{ campaign.id }}/posts">Add posts.</a>
-  </div>
-  {% else %}
-  <div class="table-wrap">
-  <table>
-    <thead>
-      <tr><th style="width:32px;">#</th><th style="width:140px;">Scheduled</th><th style="width:100px;">Status</th><th>Content</th></tr>
-    </thead>
-    <tbody>
-      {% for p in posts %}
-      <tr>
-        <td style="color:var(--muted);">{{ loop.index }}</td>
-        <td style="white-space:nowrap; font-size:13px; color:var(--muted);">{{ p.scheduled_time.strftime("%Y-%m-%d %H:%M") }}</td>
-        <td><span class="badge badge-{{ p.status }}">{{ p.status }}</span></td>
-        <td style="font-size:13px;">{{ p.content[:100] }}{% if p.content|length > 100 %}<span style="color:var(--muted);">…</span>{% endif %}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
