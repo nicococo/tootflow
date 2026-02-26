@@ -95,6 +95,18 @@
   <!-- Left sidebar -->
   <aside class="camp-sidebar">
 
+    <!-- Paused notice -->
+    {% if not campaign.enabled and campaign.payment_status == "paid" %}
+    <div class="info-panel" style="border-color:var(--orange);">
+      <div class="info-panel-head" style="background:#fffaf3;">
+        <div class="eyebrow" style="color:var(--orange);">Paused</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">No posts will publish until you resume the campaign.</div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Campaign progress -->
     <div class="info-panel">
       <div class="info-panel-head">
@@ -267,8 +279,15 @@
     </table>
     </div>
 
+    {% if not campaign.enabled %}
+    <div class="notice" style="margin-bottom:20px; border-color:var(--orange); background:#fffaf3;">
+      <strong>Campaign paused.</strong> No posts will be published until you resume it.
+    </div>
+    {% endif %}
+
     <div class="actions" style="margin-bottom:36px;">
       <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts ({{ posts | length }})</a>
+      <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
       <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
 
       {% if campaign.payment_status != "paid" %}
@@ -278,6 +297,20 @@
         </form>
       {% endif %}
 
+      {% if campaign.payment_status == "paid" %}
+      <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <button type="submit" class="btn btn-outline">
+          {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
+        </button>
+      </form>
+      {% endif %}
+
+      {% if campaign.payment_status == "paid" and has_posts %}
+      <button type="button" class="btn btn-outline" onclick="triggerExport('newsletter')">Export Newsletter</button>
+      <button type="button" class="btn btn-outline" onclick="triggerExport('linkedin')">Export LinkedIn</button>
+      {% endif %}
+
       <form method="post" action="/campaigns/{{ campaign.id }}/delete"
             onsubmit="return confirm('Delete this campaign and all its posts?');"
             style="display:inline; margin-left:auto;">
@@ -285,6 +318,76 @@
         <button type="submit" class="btn btn-danger btn-sm">Delete Campaign</button>
       </form>
     </div>
+
+    <!-- Export modal -->
+    <div id="export-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+      <div style="background:var(--surface); border:var(--border); max-width:700px; width:100%; box-shadow:var(--shadow-md);">
+        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--surface-soft); display:flex; justify-content:space-between; align-items:center;">
+          <div class="eyebrow" id="export-modal-title" style="color:var(--blue);">Export</div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeExportModal()">Close</button>
+        </div>
+        <div style="padding:16px;">
+          <div id="export-loading" style="display:none; color:var(--muted); font-size:13px; text-align:center; padding:28px 0;">Generating — this may take a few seconds…</div>
+          <div id="export-error" style="display:none;" class="error"></div>
+          <textarea id="export-content" style="display:none; width:100%; height:340px; font-size:13px; line-height:1.6; resize:vertical;" readonly></textarea>
+        </div>
+        <div style="padding:10px 16px; border-top:var(--border-soft); display:flex; justify-content:flex-end;">
+          <button type="button" id="export-copy-btn" class="btn btn-primary btn-sm" onclick="copyExport()" style="display:none;">Copy to Clipboard</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    const exportCsrf = document.querySelector('input[name=csrf_token]').value;
+
+    async function triggerExport(type) {
+      const modal   = document.getElementById('export-modal');
+      const title   = document.getElementById('export-modal-title');
+      const loading = document.getElementById('export-loading');
+      const error   = document.getElementById('export-error');
+      const content = document.getElementById('export-content');
+      const copyBtn = document.getElementById('export-copy-btn');
+
+      title.textContent  = type === 'newsletter' ? 'Newsletter Digest' : 'LinkedIn Summary';
+      loading.style.display = 'block';
+      error.style.display   = 'none';
+      content.style.display = 'none';
+      copyBtn.style.display = 'none';
+      modal.style.display   = 'flex';
+
+      try {
+        const fd = new FormData();
+        fd.append('csrf_token', exportCsrf);
+        const resp = await fetch('/campaigns/{{ campaign.id }}/export/' + type, { method: 'POST', body: fd });
+        const data = await resp.json();
+        if (!resp.ok) {
+          error.textContent     = data.detail || 'Generation failed. Please try again.';
+          error.style.display   = 'block';
+        } else {
+          content.value         = data.content;
+          content.style.display = 'block';
+          copyBtn.style.display = 'inline-flex';
+        }
+      } catch (e) {
+        error.textContent   = 'Request failed. Check your connection and try again.';
+        error.style.display = 'block';
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
+    function closeExportModal() {
+      document.getElementById('export-modal').style.display = 'none';
+    }
+
+    async function copyExport() {
+      const text = document.getElementById('export-content').value;
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('export-copy-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy to Clipboard'; }, 2000);
+    }
+    </script>
 
     <h2>
       Posts <span style="color:var(--muted); font-weight:normal; font-size:14px;">({{ posts | length }})</span>

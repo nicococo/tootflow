@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TootFlow", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Rate limiter
 app.state.limiter = limiter
@@ -99,6 +101,36 @@ templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["now"] = datetime.utcnow
 
 
+@app.get("/robots.txt", response_class=PlainTextResponse)
+def robots_txt(request: Request):
+    base = str(request.base_url).rstrip("/")
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin/\n"
+        "Disallow: /webhooks/\n"
+        "Disallow: /mastodon/callback\n"
+        "Disallow: /dashboard\n"
+        "Disallow: /campaigns/\n"
+        "Disallow: /account\n"
+        f"\nSitemap: {base}/sitemap.xml\n"
+    )
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml(request: Request):
+    base = str(request.base_url).rstrip("/")
+    content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"  <url><loc>{base}/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>\n"
+        f"  <url><loc>{base}/login</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>\n"
+        f"  <url><loc>{base}/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>\n"
+        "</urlset>\n"
+    )
+    return Response(content=content, media_type="application/xml")
+
+
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy(request: Request, session: Session = Depends(get_session)):
     user = optional_current_user(request, session)
@@ -135,12 +167,14 @@ def dashboard(
             select(func.count()).select_from(Post)
             .where(Post.campaign_id.in_(campaign_ids), Post.status == "published")
         ).one() or 0
-        active_count = sum(1 for c in campaigns_list if c.status in ("active", "running"))
+        active_count = sum(1 for c in campaigns_list if c.status in ("active", "running") and c.enabled)
+        paused_count = sum(1 for c in campaigns_list if c.status in ("active", "running") and not c.enabled)
+        active_campaign_ids = [c.id for c in campaigns_list if c.status in ("active", "running") and c.enabled]
         next_post = session.exec(
             select(Post)
-            .where(Post.campaign_id.in_(campaign_ids), Post.status == "pending")
+            .where(Post.campaign_id.in_(active_campaign_ids), Post.status == "pending")
             .order_by(Post.scheduled_time)
-        ).first()
+        ).first() if active_campaign_ids else None
         if next_post:
             next_post_campaign = next(c for c in campaigns_list if c.id == next_post.campaign_id)
 
@@ -148,7 +182,7 @@ def dashboard(
         "dashboard.html",
         {
             "request": request, "user": user, "campaigns": campaigns_list, "mastodon": mastodon,
-            "published_count": published_count, "active_count": active_count,
+            "published_count": published_count, "active_count": active_count, "paused_count": paused_count,
             "next_post": next_post, "next_post_campaign": next_post_campaign,
         },
     )

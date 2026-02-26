@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
@@ -11,6 +11,7 @@ from app.models import Campaign, Post, User, MastodonAccount
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
+from app.services.ai_service import generate_newsletter_digest, generate_linkedin_summary
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campaigns")
@@ -112,6 +113,58 @@ def campaign_detail(
     )
 
 
+@router.get("/{campaign_id}/edit", response_class=HTMLResponse)
+def edit_campaign_page(
+    campaign_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    return templates.TemplateResponse(
+        "campaign_create.html",
+        {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
+         "edit_campaign": campaign},
+    )
+
+
+@router.post("/{campaign_id}/edit")
+def update_campaign(
+    campaign_id: int,
+    name: str = Form(...),
+    description: str = Form(...),
+    template_type: str = Form(...),
+    tone: str = Form(...),
+    language: str = Form("English"),
+    duration_days: int = Form(30),
+    posts_per_week: int = Form(3),
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if template_type not in TEMPLATES:
+        raise HTTPException(status_code=400, detail="Invalid template type")
+    if tone not in TONES:
+        raise HTTPException(status_code=400, detail="Invalid tone")
+    if language not in LANGUAGES:
+        raise HTTPException(status_code=400, detail="Invalid language")
+    campaign.name = name.strip()[:200]
+    campaign.description = description.strip()
+    campaign.template_type = template_type
+    campaign.tone = tone
+    campaign.language = language
+    campaign.duration_days = max(1, min(365, duration_days))
+    campaign.posts_per_week = max(1, min(14, posts_per_week))
+    session.add(campaign)
+    session.commit()
+    return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
+
+
 @router.post("/{campaign_id}/rename")
 def rename_campaign(
     campaign_id: int,
@@ -127,6 +180,84 @@ def rename_campaign(
     session.add(campaign)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
+
+
+@router.post("/{campaign_id}/toggle")
+def toggle_campaign(
+    campaign_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    campaign.enabled = not campaign.enabled
+    session.add(campaign)
+    session.commit()
+    return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
+
+
+@router.post("/{campaign_id}/export/newsletter")
+async def export_newsletter(
+    campaign_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.payment_status != "paid":
+        raise HTTPException(status_code=403, detail="Campaign not activated")
+    if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
+        raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
+    posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
+    if not posts:
+        raise HTTPException(status_code=400, detail="No posts to export")
+    try:
+        content = await generate_newsletter_digest(
+            campaign.name, campaign.description, campaign.tone, campaign.language,
+            [p.content for p in posts],
+        )
+    except Exception as e:
+        logger.error(f"Newsletter generation failed for campaign {campaign_id}: {e}")
+        raise HTTPException(status_code=500, detail="Generation failed")
+    campaign.ai_posts_generated += 1
+    session.add(campaign)
+    session.commit()
+    return JSONResponse({"content": content})
+
+
+@router.post("/{campaign_id}/export/linkedin")
+async def export_linkedin(
+    campaign_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.payment_status != "paid":
+        raise HTTPException(status_code=403, detail="Campaign not activated")
+    if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
+        raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
+    posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
+    if not posts:
+        raise HTTPException(status_code=400, detail="No posts to export")
+    try:
+        content = await generate_linkedin_summary(
+            campaign.name, campaign.description, campaign.tone, campaign.language,
+            [p.content for p in posts],
+        )
+    except Exception as e:
+        logger.error(f"LinkedIn generation failed for campaign {campaign_id}: {e}")
+        raise HTTPException(status_code=500, detail="Generation failed")
+    campaign.ai_posts_generated += 1
+    session.add(campaign)
+    session.commit()
+    return JSONResponse({"content": content})
 
 
 @router.post("/{campaign_id}/delete")

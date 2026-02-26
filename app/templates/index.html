@@ -1,5 +1,25 @@
 {% extends "base.html" %}
 {% block title %}TootFlow – Mastodon Campaign Planner{% endblock %}
+{% block meta_description %}Plan and automate Mastodon campaigns with AI-assisted drafting. You bring the intention — TootFlow schedules it. Full editorial control. One-time 29€ per campaign, no subscription.{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "TootFlow",
+  "description": "Plan, draft, and automate Mastodon social media campaigns with AI-assisted post scheduling and full editorial control.",
+  "applicationCategory": "SocialNetworkingApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "29.00",
+    "priceCurrency": "EUR",
+    "description": "One-time per campaign, no subscription"
+  },
+  "url": "{{ request.url.scheme }}://{{ request.url.netloc }}/"
+}
+</script>
+{% endblock %}
 {% block content %}
 
 <style>
@@ -322,9 +342,9 @@
       <p>Generate a full post schedule in seconds, then edit, regenerate, or rewrite every post before anything goes live. You stay in control.</p>
     </article>
     <article class="benefit-card">
-      <div class="eyebrow">Clarity Over Noise</div>
-      <h3>Know what resonates</h3>
-      <p>Track favourites, reblogs, and replies per post so you can improve campaigns with real engagement signals.</p>
+      <div class="eyebrow">Write Once, Publish Everywhere</div>
+      <h3>Turn posts into more content</h3>
+      <p>Export any campaign as a newsletter digest or LinkedIn summary — AI repurposes your posts into a new format, ready to copy and paste wherever you need it.</p>
     </article>
   </div>
 
@@ -362,6 +382,7 @@
         <li>Up to 500 characters per post with Mastodon-friendly writing</li>
         <li>Manual scheduling controls and post-level editing at any time</li>
         <li>Automated publishing plus engagement tracking in one place</li>
+        <li>Export any campaign as a newsletter digest or LinkedIn summary with one click</li>
       </ul>
     </section>
     <section class="proof-box">

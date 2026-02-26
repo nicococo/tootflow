@@ -41,8 +41,10 @@ async def activate_campaign(
 async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_session)):
     body = await request.body()
     signature = request.headers.get("X-Signature", "")
+    logger.debug(f"Webhook received — event signature present: {bool(signature)}, body length: {len(body)}")
 
     if not verify_webhook_signature(body, signature):
+        logger.warning("Webhook signature mismatch")
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     try:
@@ -50,8 +52,10 @@ async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
+    logger.info(f"Webhook event: {payload.get('meta', {}).get('event_name', 'unknown')}")
+
     event_name = payload.get("meta", {}).get("event_name", "")
-    if event_name not in ("order_created", "payment_success"):
+    if event_name not in ("order_created", "order_refunded"):
         return JSONResponse({"status": "ignored"})
 
     data = payload.get("data", {})
@@ -71,12 +75,26 @@ async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    # Verify campaign belongs to the claimed user (Fix #8 supplement)
+    # Verify campaign belongs to the claimed user
     if campaign.user_id != user_id:
         logger.warning(f"Webhook user_id mismatch for campaign {campaign_id}")
         raise HTTPException(status_code=400, detail="Invalid webhook data")
 
-    # Record payment
+    if event_name == "order_refunded":
+        # Revoke access and stop publishing
+        campaign.payment_status = "unpaid"
+        campaign.status = "draft_unpaid"
+        campaign.enabled = False
+        session.add(campaign)
+        payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
+        if payment:
+            payment.status = "refunded"
+            session.add(payment)
+        session.commit()
+        logger.info(f"Campaign {campaign_id} revoked due to refund")
+        return JSONResponse({"status": "ok"})
+
+    # order_created — record payment and activate campaign
     payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
     if not payment:
         payment = Payment(
@@ -93,7 +111,6 @@ async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_
         payment.lemonsqueezy_order_id = str(data.get("id", ""))
         session.add(payment)
 
-    # Activate campaign
     campaign.payment_status = "paid"
     campaign.status = "active"
     campaign.start_date = datetime.utcnow()

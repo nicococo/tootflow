@@ -113,6 +113,10 @@
           <span class="badge badge-completed" style="font-size:10px;">completed</span>
           <span>All posts published</span>
         </div>
+        <div class="status-row">
+          <span class="badge" style="font-size:10px; background:#fff3e0; color:#b45309; border:1px solid #f59e0b;">paused</span>
+          <span>Publishing suspended — resume any time</span>
+        </div>
       </div>
     </div>
 
@@ -156,8 +160,9 @@
       </div>
 
       <div class="stat-box">
-        <div class="num">{{ active_count }}</div>
-        <div class="label">Active Campaigns</div>
+        <div class="num">{{ active_count }}{% if paused_count %} <span style="font-size:16px; color:var(--muted);">/ {{ paused_count }}</span>{% endif %}</div>
+        <div class="label">Running / Paused</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">paid &amp; publishing</div>
       </div>
 
       <div class="stat-box" style="{% if next_post %}border-color:var(--blue);{% endif %}">
@@ -204,7 +209,13 @@
         <tr>
           <td><a href="/campaigns/{{ c.id }}" style="font-weight:bold;">{{ c.name }}</a></td>
           <td style="color:var(--muted); font-size:13px;">{{ c.template_type | replace("_"," ") | title }}</td>
-          <td><span class="badge badge-{{ c.status }}">{{ c.status | replace("_"," ") }}</span></td>
+          <td>
+            {% if not c.enabled and c.payment_status == "paid" %}
+            <span class="badge" style="background:#fff3e0; color:#b45309; border:1px solid #f59e0b;">paused</span>
+            {% else %}
+            <span class="badge badge-{{ c.status }}">{{ c.status | replace("_"," ") }}</span>
+            {% endif %}
+          </td>
           <td>
             {% if c.payment_status == "paid" %}
               <span class="badge badge-paid">Paid</span>

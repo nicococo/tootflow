@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}New Campaign – TootFlow{% endblock %}
+{% block title %}{% if edit_campaign %}Edit Campaign – {{ edit_campaign.name }}{% else %}New Campaign{% endif %} – TootFlow{% endblock %}
 {% block content %}
 <div class="container container-narrow">
   <div class="page-head">
-    <h1>New Campaign</h1>
-    <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
+    <h1>{% if edit_campaign %}Edit Campaign{% else %}New Campaign{% endif %}</h1>
+    <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}" class="btn btn-outline btn-sm">← {% if edit_campaign %}Campaign{% else %}Dashboard{% endif %}</a>
   </div>
 
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  {% if existing_campaigns %}
+  {% if existing_campaigns and not edit_campaign %}
   <div class="form-card" style="margin-bottom:16px; padding:16px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
     <label for="copy_from" style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); white-space:nowrap; margin:0;">Copy from existing</label>
     <select id="copy_from" onchange="copyFromCampaign(this)" style="flex:1; min-width:200px;">
@@ -30,18 +30,19 @@
   </div>
   {% endif %}
 
-  <form method="post" action="/campaigns/new" class="form-card">
+  <form method="post" action="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}/edit{% else %}/campaigns/new{% endif %}" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
 
     <div class="form-group">
       <label for="name">Campaign Name</label>
-      <input type="text" id="name" name="name" required placeholder="e.g. MyApp v2.0 Launch">
+      <input type="text" id="name" name="name" required placeholder="e.g. MyApp v2.0 Launch"
+             value="{{ edit_campaign.name if edit_campaign else '' }}">
     </div>
 
     <div class="form-group">
       <label for="description">Description / Topic</label>
       <textarea id="description" name="description" rows="4" required
-        placeholder="What is this campaign about? What do you want people to know?"></textarea>
+        placeholder="What is this campaign about? What do you want people to know?">{{ edit_campaign.description if edit_campaign else '' }}</textarea>
     </div>
 
     <div class="grid-2">
@@ -49,7 +50,9 @@
         <label for="template_type">Template</label>
         <select id="template_type" name="template_type" required>
           {% for t in templates %}
-          <option value="{{ t }}">{{ t | replace("_"," ") | title }}</option>
+          <option value="{{ t }}" {% if edit_campaign and edit_campaign.template_type == t %}selected{% endif %}>
+            {{ t | replace("_"," ") | title }}
+          </option>
           {% endfor %}
         </select>
       </div>
@@ -57,7 +60,9 @@
         <label for="tone">Tone</label>
         <select id="tone" name="tone" required>
           {% for t in tones %}
-          <option value="{{ t }}">{{ t | title }}</option>
+          <option value="{{ t }}" {% if edit_campaign and edit_campaign.tone == t %}selected{% endif %}>
+            {{ t | title }}
+          </option>
           {% endfor %}
         </select>
       </div>
@@ -68,27 +73,33 @@
         <label for="language">Language</label>
         <select id="language" name="language" required>
           {% for l in languages %}
-          <option value="{{ l }}">{{ l }}</option>
+          <option value="{{ l }}" {% if edit_campaign and edit_campaign.language == l %}selected{% endif %}>
+            {{ l }}
+          </option>
           {% endfor %}
         </select>
       </div>
       <div class="form-group">
         <label for="duration_days">Duration (days)</label>
-        <input type="number" id="duration_days" name="duration_days" value="30" min="1" max="365" required>
+        <input type="number" id="duration_days" name="duration_days" min="1" max="365" required
+               value="{{ edit_campaign.duration_days if edit_campaign else 30 }}">
       </div>
       <div class="form-group">
         <label for="posts_per_week">Posts / Week</label>
-        <input type="number" id="posts_per_week" name="posts_per_week" value="3" min="1" max="14" required>
+        <input type="number" id="posts_per_week" name="posts_per_week" min="1" max="14" required
+               value="{{ edit_campaign.posts_per_week if edit_campaign else 3 }}">
       </div>
     </div>
 
+    {% if not edit_campaign %}
     <div class="notice" style="margin-bottom:24px;">
       After creating the campaign you can add posts manually or use AI generation once activated.
     </div>
+    {% endif %}
 
     <div class="actions">
-      <button type="submit" class="btn btn-primary">Create Campaign →</button>
-      <a href="/dashboard" class="btn btn-outline">Cancel</a>
+      <button type="submit" class="btn btn-primary">{% if edit_campaign %}Save Changes →{% else %}Create Campaign →{% endif %}</button>
+      <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}" class="btn btn-outline">Cancel</a>
     </div>
   </form>
 </div>

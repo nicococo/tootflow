@@ -133,6 +133,90 @@ async def regenerate_single_post(
     return response.choices[0].message.content.strip()[:500]
 
 
+async def generate_newsletter_digest(
+    campaign_name: str,
+    description: str,
+    tone: str,
+    language: str,
+    post_contents: List[str],
+) -> str:
+    """Generate a newsletter digest from a campaign's published/pending posts."""
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    safe_name = _sanitize(campaign_name, 200)
+    safe_desc = _sanitize(description, 2000)
+    safe_lang = _sanitize(language, 50)
+    tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
+    safe_posts = "\n\n".join(_sanitize(p, 500) for p in post_contents[:40])
+
+    system_prompt = (
+        f"You are a newsletter writer. Write a cohesive newsletter digest (400–700 words) "
+        f"based on a Mastodon campaign's posts. "
+        f"Start with a suggested subject line prefixed 'Subject: '. "
+        f"Then write the newsletter body: an engaging intro, the key insights woven into flowing prose, "
+        f"and a brief call-to-action at the end. "
+        f"Tone: {tone_desc}. Language: {safe_lang}. "
+        f"Output only the newsletter content — no meta-commentary."
+    )
+    user_prompt = (
+        f"Campaign: {safe_name}\n"
+        f"Topic: {safe_desc}\n\n"
+        f"Posts:\n{safe_posts}"
+    )
+
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.7,
+        max_completion_tokens=1200,
+    )
+    return response.choices[0].message.content.strip()
+
+
+async def generate_linkedin_summary(
+    campaign_name: str,
+    description: str,
+    tone: str,
+    language: str,
+    post_contents: List[str],
+) -> str:
+    """Generate a LinkedIn post summarising a campaign."""
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    safe_name = _sanitize(campaign_name, 200)
+    safe_desc = _sanitize(description, 2000)
+    safe_lang = _sanitize(language, 50)
+    tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
+    safe_posts = "\n\n".join(_sanitize(p, 500) for p in post_contents[:40])
+
+    system_prompt = (
+        f"You are a LinkedIn content writer. Write a single LinkedIn post (max 900 characters) "
+        f"that distils the key message of a Mastodon campaign. "
+        f"Start with a strong hook. Use short paragraphs. End with a question or call-to-action. "
+        f"Sound professional and authentic. Tone: {tone_desc}. Language: {safe_lang}. "
+        f"Output only the LinkedIn post — no meta-commentary, no character count."
+    )
+    user_prompt = (
+        f"Campaign: {safe_name}\n"
+        f"Topic: {safe_desc}\n\n"
+        f"Posts:\n{safe_posts}"
+    )
+
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.7,
+        max_completion_tokens=500,
+    )
+    return response.choices[0].message.content.strip()
+
+
 def schedule_posts(posts: List[str], start_date: datetime, posts_per_week: int) -> List[tuple]:
     """Return list of (content, scheduled_time) tuples spread across the campaign."""
     scheduled = []
