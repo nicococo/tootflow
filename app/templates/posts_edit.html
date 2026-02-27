@@ -164,7 +164,7 @@
       </div>
       {% if ai_available %}
       <form method="post" action="/campaigns/{{ campaign.id }}/generate"
-            onsubmit="return {% if pending_count > 0 %}confirm('Replace all {{ pending_count }} pending post(s) with AI-generated content?'){% else %}true{% endif %};">
+            onsubmit="return {% if pending_count > 0 %}confirmAndGenerate({{ pending_count }}){% else %}showAiLoading('Generating your campaign…', 'The AI is drafting all posts. This usually takes 15–30 seconds.'){% endif %};">
         <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
         <button type="submit" class="btn btn-primary">✦ Generate Campaign</button>
       </form>
@@ -225,7 +225,8 @@
         <div class="actions">
           {% if ai_available %}
           <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/regenerate"
-                style="display:inline;">
+                style="display:inline;"
+                onsubmit="showAiLoading('Regenerating post…', 'The AI is rewriting this post. Usually done in 5–10 seconds.');">
             <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
             <button type="submit" class="btn btn-outline btn-sm">✦ Regenerate</button>
           </form>
@@ -299,7 +300,33 @@
 
 </div>
 
+<!-- AI loading overlay -->
+<div id="ai-loading" style="display:none; position:fixed; inset:0; background:rgba(17,27,39,0.78); z-index:999; align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border:var(--border); box-shadow:var(--shadow-md); padding:36px 40px; max-width:360px; width:90%; text-align:center;">
+    <div style="font-size:24px; margin-bottom:16px; letter-spacing:6px;" id="loading-dots">⬛⬜⬜</div>
+    <div style="font-size:15px; font-weight:700; margin-bottom:8px;" id="loading-title">Generating…</div>
+    <div style="font-size:13px; color:var(--muted);" id="loading-msg"></div>
+  </div>
+</div>
+
 <script>
+function showAiLoading(title, msg) {
+  document.getElementById('loading-title').textContent = title;
+  document.getElementById('loading-msg').textContent = msg;
+  const overlay = document.getElementById('ai-loading');
+  overlay.style.display = 'flex';
+  const dots = ['⬛⬜⬜', '⬛⬛⬜', '⬛⬛⬛', '⬜⬛⬛', '⬜⬜⬛', '⬜⬜⬜'];
+  let i = 0;
+  setInterval(function() {
+    document.getElementById('loading-dots').textContent = dots[i++ % dots.length];
+  }, 400);
+  return true;
+}
+function confirmAndGenerate(count) {
+  if (!confirm('Replace all ' + count + ' pending post(s) with AI-generated content?')) return false;
+  return showAiLoading('Generating your campaign…', 'The AI is drafting all posts. This usually takes 15–30 seconds.');
+}
+
 function updateCount(textareaId, countId) {
   const ta = document.getElementById(textareaId);
   const counter = document.getElementById(countId);
