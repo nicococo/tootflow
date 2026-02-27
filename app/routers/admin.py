@@ -11,8 +11,9 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import Campaign, MastodonAccount, PageView, Payment, Post, User
+from app.models import Campaign, MastodonAccount, PageView, Payment, Post, SiteConfig, User
 from app.scheduler import update_metrics
+from app.site_config import get_banner, set_banner
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin")
@@ -129,6 +130,7 @@ def admin_page(
         "admin.html", {
             "request": request, "auth": True, "now": datetime.utcnow,
             "campaigns_list": campaigns_list, "account_by_user": account_by_user,
+            "banner_text": get_banner(),
             **stats,
         }
     )
@@ -143,6 +145,28 @@ async def collect_metrics_now(
         return RedirectResponse("/admin", status_code=302)
     await update_metrics()
     logger.info("Admin triggered manual metrics collection")
+    return RedirectResponse("/admin", status_code=302)
+
+
+@router.post("/banner")
+def update_banner(
+    request: Request,
+    banner_text: str = Form(""),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(verify_csrf),
+):
+    if not _is_authenticated(request):
+        return RedirectResponse("/admin", status_code=302)
+    text = banner_text.strip()
+    cfg = session.exec(select(SiteConfig).where(SiteConfig.key == "banner_text")).first()
+    if cfg:
+        cfg.value = text
+    else:
+        cfg = SiteConfig(key="banner_text", value=text)
+    session.add(cfg)
+    session.commit()
+    set_banner(text)
+    logger.info(f"Admin updated banner: {text!r}")
     return RedirectResponse("/admin", status_code=302)
 
 

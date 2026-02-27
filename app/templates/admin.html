@@ -102,6 +102,30 @@
   </table>
   </div>
 
+  <!-- Site Banner -->
+  <h2>Site Banner</h2>
+  <div style="margin-bottom:32px; max-width:640px;">
+    <form method="post" action="/admin/banner">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px;">
+        Banner text — shown on every page. Leave empty to hide.
+      </label>
+      <textarea name="banner_text" rows="2"
+        style="width:100%; font-family:inherit; font-size:14px; padding:8px 10px; border:var(--border); background:var(--surface); resize:vertical; margin-bottom:8px;"
+        placeholder="e.g. 🎉 Launch week — use code LAUNCH5 for 5€ per campaign (usually 29€)"
+      >{{ banner_text }}</textarea>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="submit" class="btn btn-primary btn-sm">Save Banner</button>
+        {% if banner_text %}
+        <button type="submit" name="banner_text" value="" class="btn btn-outline btn-sm">Clear Banner</button>
+        <span style="font-size:12px; color:var(--green);">● Banner is live</span>
+        {% else %}
+        <span style="font-size:12px; color:var(--muted);">● Banner is hidden</span>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
   <!-- Actions -->
   <h2>Actions</h2>
   <div style="margin-bottom:32px;">

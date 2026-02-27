@@ -15,11 +15,12 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.csrf import CSRFMiddleware
 from app.limiter import limiter
-from app.database import create_db_and_tables, get_session
+from app.database import create_db_and_tables, get_session, engine
 from sqlalchemy import func
 from app.models import Campaign, MastodonAccount, Post, User
 from app.auth import optional_current_user, get_current_user
 from app.scheduler import start_scheduler, stop_scheduler
+from app.site_config import get_banner, load_from_db
 from app.routers import auth, campaigns, posts, payments, metrics, account, admin
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,8 @@ async def lifespan(app: FastAPI):
         logger.critical("SECRET_KEY is set to the default placeholder — JWTs are forgeable")
 
     create_db_and_tables()
+    with Session(engine) as s:
+        load_from_db(s)
     start_scheduler()
     yield
     stop_scheduler()
@@ -49,6 +52,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Middleware (applied in reverse order — CSRF runs first, then security headers)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(SlowAPIMiddleware)
+
+
+@app.middleware("http")
+async def inject_banner(request: Request, call_next):
+    request.state.banner_text = get_banner()
+    return await call_next(request)
 
 
 @app.middleware("http")
