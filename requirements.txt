@@ -13,3 +13,4 @@ itsdangerous==2.2.0
 python-dotenv==1.0.1
 aiofiles==24.1.0
 slowapi==0.1.9
+psycopg2-binary==2.9.9

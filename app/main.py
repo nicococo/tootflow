@@ -168,6 +168,7 @@ def dashboard(
     campaign_ids = [c.id for c in campaigns_list]
     published_count = 0
     active_count = 0
+    paused_count = 0
     next_post = None
     next_post_campaign = None
 
