@@ -2,8 +2,8 @@ import httpx
 from typing import Optional
 from app.models import MastodonAccount
 
-# Minimal scopes: publish posts + read account info (Fix #9)
-OAUTH_SCOPES = "write:statuses read:accounts"
+# Minimal scopes: publish posts + read account info + read status metrics
+OAUTH_SCOPES = "write:statuses read:accounts read:statuses"
 
 
 def get_oauth_url(instance_url: str, client_id: str, redirect_uri: str, state: str) -> str:

@@ -102,6 +102,18 @@
   </table>
   </div>
 
+  <!-- Actions -->
+  <h2>Actions</h2>
+  <div style="margin-bottom:32px;">
+    <form method="post" action="/admin/collect-metrics" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <button type="submit" class="btn btn-outline btn-sm">↻ Collect Metrics Now</button>
+    </form>
+    <p class="muted text-sm" style="margin-top:8px;">
+      Fetches latest engagement data for all published posts from Mastodon. Runs automatically once per day.
+    </p>
+  </div>
+
   <!-- Manual Payment Override -->
   <h2>Manual Payment Override</h2>
   <div style="margin-bottom:32px; max-width:560px;">

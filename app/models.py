@@ -70,6 +70,13 @@ class Metrics(SQLModel, table=True):
     post: Optional[Post] = Relationship(back_populates="metrics")
 
 
+class FollowerSnapshot(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    count: int
+    recorded_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class PageView(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     visitor_hash: str   # SHA-256(ip + date), rotates daily — privacy-safe

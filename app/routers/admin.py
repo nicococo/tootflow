@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
 from app.models import Campaign, MastodonAccount, PageView, Payment, Post, User
+from app.scheduler import update_metrics
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin")
@@ -131,6 +132,18 @@ def admin_page(
             **stats,
         }
     )
+
+
+@router.post("/collect-metrics")
+async def collect_metrics_now(
+    request: Request,
+    _csrf: None = Depends(verify_csrf),
+):
+    if not _is_authenticated(request):
+        return RedirectResponse("/admin", status_code=302)
+    await update_metrics()
+    logger.info("Admin triggered manual metrics collection")
+    return RedirectResponse("/admin", status_code=302)
 
 
 @router.post("/campaigns/mark-paid")

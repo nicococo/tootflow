@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import Campaign, Post, Metrics, User, MastodonAccount
+from app.models import Campaign, Post, Metrics, User, MastodonAccount, FollowerSnapshot
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/campaigns")
@@ -37,8 +37,28 @@ def campaign_metrics(
     total_reblogs = sum((pm["metrics"].reblogs    if pm["metrics"] else 0) for pm in post_metrics)
     total_replies = sum((pm["metrics"].replies    if pm["metrics"] else 0) for pm in post_metrics)
 
+    # Follower snapshots for this user
+    snapshots = session.exec(
+        select(FollowerSnapshot)
+        .where(FollowerSnapshot.user_id == user.id)
+        .order_by(FollowerSnapshot.recorded_at)
+    ).all()
+
     # Build weekly engagement chart
-    chart = _build_weekly_chart(campaign, post_metrics)
+    chart = _build_weekly_chart(campaign, post_metrics, snapshots)
+
+    follower_current = snapshots[-1].count if snapshots else None
+    follower_start   = None
+    follower_delta   = None
+    if snapshots and campaign.start_date:
+        # First snapshot on or after campaign start
+        after_start = [s for s in snapshots if s.recorded_at >= campaign.start_date]
+        if after_start:
+            follower_start = after_start[0].count
+            follower_delta = follower_current - follower_start
+    elif len(snapshots) >= 2:
+        follower_start = snapshots[0].count
+        follower_delta = follower_current - follower_start
 
     return templates.TemplateResponse(
         "metrics.html",
@@ -51,11 +71,14 @@ def campaign_metrics(
             "total_reblogs": total_reblogs,
             "total_replies": total_replies,
             "chart": chart,
+            "snapshots": snapshots,
+            "follower_current": follower_current,
+            "follower_delta": follower_delta,
         },
     )
 
 
-def _build_weekly_chart(campaign: Campaign, post_metrics: list) -> list:
+def _build_weekly_chart(campaign: Campaign, post_metrics: list, snapshots: list = None) -> list:
     """Return weekly engagement buckets for the chart.
     Always returns at least one bucket using campaign dates as the timeline."""
     from datetime import datetime as dt
@@ -90,7 +113,20 @@ def _build_weekly_chart(campaign: Campaign, post_metrics: list) -> list:
         favs    = sum(f for p, f, rb, rp in all_posts if week_start <= p.scheduled_time < week_end)
         reblogs = sum(rb for p, f, rb, rp in all_posts if week_start <= p.scheduled_time < week_end)
         replies = sum(rp for p, f, rb, rp in all_posts if week_start <= p.scheduled_time < week_end)
-        buckets.append({"label": f"W{w + 1}", "favs": favs, "reblogs": reblogs, "replies": replies})
+
+        # Follower delta for this week
+        fdelta = None
+        if snapshots:
+            week_snaps = [s for s in snapshots if week_start <= s.recorded_at < week_end]
+            if len(week_snaps) >= 2:
+                fdelta = week_snaps[-1].count - week_snaps[0].count
+            elif week_snaps:
+                prev = [s for s in snapshots if s.recorded_at < week_start]
+                if prev:
+                    fdelta = week_snaps[-1].count - prev[-1].count
+
+        buckets.append({"label": f"W{w + 1}", "favs": favs, "reblogs": reblogs,
+                        "replies": replies, "follower_delta": fdelta})
 
     max_total = max((b["favs"] + b["reblogs"] + b["replies"]) for b in buckets) or 1
     for b in buckets:
@@ -99,5 +135,12 @@ def _build_weekly_chart(campaign: Campaign, post_metrics: list) -> list:
         b["fav_pct"]    = round(b["favs"]    / total * 100) if total else 0
         b["reblog_pct"] = round(b["reblogs"] / total * 100) if total else 0
         b["reply_pct"]  = 100 - b["fav_pct"] - b["reblog_pct"]
+
+    # Scale follower delta bars
+    max_fdelta = max((abs(b["follower_delta"]) for b in buckets
+                      if b["follower_delta"] is not None), default=0) or 1
+    for b in buckets:
+        fd = b["follower_delta"]
+        b["follower_pct"] = round(abs(fd) / max_fdelta * 100) if fd is not None else 0
 
     return buckets

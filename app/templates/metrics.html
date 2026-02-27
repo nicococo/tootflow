@@ -86,6 +86,42 @@
       </div>
     </div>
 
+    {% if follower_current is not none %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow" style="color:var(--green);">Followers</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>Current</strong>
+          {{ follower_current }}
+        </div>
+        {% if follower_delta is not none %}
+        <div class="info-row">
+          <strong>Since campaign start</strong>
+          <span style="color:{% if follower_delta >= 0 %}#c8a800{% else %}var(--red){% endif %}; font-weight:bold;">
+            {% if follower_delta >= 0 %}+{% endif %}{{ follower_delta }}
+          </span>
+        </div>
+        {% endif %}
+        {% if snapshots | length > 1 %}
+        <div class="info-row">
+          <strong>{{ snapshots | length }}-day trend</strong>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:32px; margin-top:6px;">
+            {% set min_c = snapshots | map(attribute='count') | min %}
+            {% set max_c = snapshots | map(attribute='count') | max %}
+            {% set range_c = [max_c - min_c, 1] | max %}
+            {% for s in snapshots[-14:] %}
+            <div style="flex:1; background:var(--green); min-height:2px; height:{{ ((s.count - min_c) / range_c * 28 + 4) | int }}px;"
+                 title="{{ s.recorded_at.strftime('%b %d') }}: {{ s.count }}"></div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <div class="info-panel">
       <div class="info-panel-head">
         <div class="eyebrow" style="color:var(--muted);">How It Updates</div>
@@ -133,7 +169,7 @@
       <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
     </div>
 
-    <div class="grid-3" style="margin-bottom:36px;">
+    <div style="display:grid; grid-template-columns: repeat({% if follower_delta is not none %}4{% else %}3{% endif %}, 1fr); gap:12px; margin-bottom:36px;">
       <div class="stat-box">
         <div class="num">{{ total_favs }}</div>
         <div class="label">Favourites</div>
@@ -146,6 +182,14 @@
         <div class="num">{{ total_replies }}</div>
         <div class="label">Replies</div>
       </div>
+      {% if follower_delta is not none %}
+      <div class="stat-box" style="border-top:4px solid #c8a800;">
+        <div class="num" style="color:{% if follower_delta >= 0 %}#c8a800{% else %}var(--red){% endif %};">
+          {% if follower_delta >= 0 %}+{% endif %}{{ follower_delta }}
+        </div>
+        <div class="label">Followers ±</div>
+      </div>
+      {% endif %}
     </div>
 
     {% if chart %}
@@ -175,10 +219,21 @@
         </div>
         {% endfor %}
       </div>
+      {% if chart | selectattr("follower_delta") | list %}
+      <div style="display:flex; align-items:flex-end; gap:{% if chart|length > 12 %}4{% else %}8{% endif %}px; height:36px; margin-top:10px; padding-top:8px; border-top:1px dashed #c8bfb4;">
+        {% for w in chart %}
+        <div style="flex:1; background:{% if w.follower_delta is not none and w.follower_delta >= 0 %}#c8a800{% elif w.follower_delta is not none %}var(--red){% else %}transparent{% endif %}; height:{{ w.follower_pct }}%; min-height:{% if w.follower_delta is not none %}2{% else %}0{% endif %}px;"
+             title="{% if w.follower_delta is not none %}{{ w.label }} followers: {% if w.follower_delta >= 0 %}+{% endif %}{{ w.follower_delta }}{% else %}{{ w.label }}: no data{% endif %}"></div>
+        {% endfor %}
+      </div>
+      {% endif %}
       <div style="display:flex; gap:20px; margin-top:12px; padding-top:10px; border-top:var(--border-soft); font-size:11px; letter-spacing:1px; text-transform:uppercase;">
         <span><span style="display:inline-block; width:10px; height:10px; background:var(--orange); margin-right:5px;"></span>Favs</span>
         <span><span style="display:inline-block; width:10px; height:10px; background:var(--purple); margin-right:5px;"></span>Reblogs</span>
         <span><span style="display:inline-block; width:10px; height:10px; background:var(--teal); margin-right:5px;"></span>Replies</span>
+        {% if chart | selectattr("follower_delta") | list %}
+        <span><span style="display:inline-block; width:10px; height:10px; background:#c8a800; margin-right:5px;"></span>Followers ±</span>
+        {% endif %}
       </div>
     </div>
     {% endif %}
