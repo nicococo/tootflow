@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}TootFlow – Mastodon Campaign Planner{% endblock %}
-{% block meta_description %}Plan and automate Mastodon campaigns with AI-assisted drafting. You bring the intention — TootFlow schedules it. Full editorial control. One-time 29€ per campaign, no subscription.{% endblock %}
+{% block meta_description %}Plan and automate Mastodon campaigns with AI-assisted drafting. No email, no card data stored, no tracking. Full editorial control. One-time 29€ per campaign, no subscription.{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {
@@ -153,7 +153,7 @@
   .benefits {
     margin-top: 24px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
   }
   .benefit-card {
@@ -256,6 +256,7 @@
     .landing-block + .landing-block { border-left: 0; border-top: var(--border); }
     .benefits,
     .proof-grid { grid-template-columns: 1fr; }
+    .benefit-card { border-top-width: 2px; }
   }
 </style>
 
@@ -295,6 +296,9 @@
       <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
         <a href="/login" class="btn btn-primary">Start Your Campaign →</a>
         <a href="#how-it-works" class="btn btn-outline" style="border-color:rgba(255,255,255,0.3); color:#b9cada;">See how it works</a>
+      </div>
+      <div style="margin-top:14px; font-size:12px; color:#7a9ab5; letter-spacing:0.3px;">
+        No email required &nbsp;·&nbsp; No card data stored &nbsp;·&nbsp; No tracking &nbsp;·&nbsp; No ads
       </div>
     </div>
   </div>
@@ -346,6 +350,11 @@
       <h3>Turn posts into more content</h3>
       <p>Export any campaign as a newsletter digest or LinkedIn summary — AI repurposes your posts into a new format, ready to copy and paste wherever you need it.</p>
     </article>
+    <article class="benefit-card" style="border-top: 4px solid var(--teal);">
+      <div class="eyebrow" style="color:var(--teal);">Privacy First</div>
+      <h3>Built for people who care about their data</h3>
+      <p>No email address required — sign in with Mastodon only. Payments handled entirely by LemonSqueezy; we never see your card. No tracking pixels, no advertising, no third-party analytics. Just your content and your schedule.</p>
+    </article>
   </div>
 
   <section class="workflow">
@@ -389,6 +398,9 @@
       <div class="eyebrow" style="color:var(--orange);">Simple Economics</div>
       <div class="proof-price">29€</div>
       <p class="proof-muted">One-time per campaign. No subscription lock-in, no seat pricing, no long-term commitment.</p>
+      <p class="proof-muted" style="margin-top:8px; font-size:12px;">
+        No email · No card data stored · No tracking
+      </p>
       <a href="/login" class="btn btn-outline" style="margin-top:14px;">Create Campaign</a>
     </section>
   </div>

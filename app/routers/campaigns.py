@@ -30,7 +30,20 @@ TEMPLATES = [
     "project_showcase",
     "newsletter_growth",
 ]
-TONES = ["professional", "casual", "technical", "inspiring"]
+TONES = [
+    "professional",
+    "casual",
+    "technical",
+    "inspiring",
+    "humorous",
+    "riddles",
+    "storytelling",
+    "hot take",
+    "minimalist",
+    "socratic",
+    "behind the scenes",
+    "rant",
+]
 LANGUAGES = ["English", "German", "French"]
 
 
