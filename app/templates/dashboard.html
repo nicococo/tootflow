@@ -200,6 +200,7 @@
           <th>Template</th>
           <th>Status</th>
           <th>Payment</th>
+          <th>Engagement</th>
           <th>Created</th>
           <th>Actions</th>
         </tr>
@@ -222,6 +223,10 @@
             {% else %}
               <span class="badge badge-unpaid">Unpaid</span>
             {% endif %}
+          </td>
+          <td style="font-size:13px; white-space:nowrap;">
+            {% set eng = engagement_by_campaign.get(c.id) %}
+            {% if eng is not none %}{{ "%.1f"|format(eng) }}{% else %}—{% endif %}
           </td>
           <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
           <td class="actions">

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Impressum – TootFlow{% endblock %}
+{% block meta_description %}Impressum (Legal Notice) for TootFlow — mandatory contact and operator information per §5 DDG.{% endblock %}
+{% block content %}
+<div class="container container-narrow">
+  <h1>Impressum</h1>
+  <p class="muted text-sm" style="margin-bottom:32px;">Legal notice required under §5 Digitale-Dienste-Gesetz (DDG), Germany.</p>
+
+  <div class="section-card" style="margin-bottom:20px;">
+    <h2 style="margin-bottom:16px;">Service Operator</h2>
+    <table style="border:0; box-shadow:none;">
+      <tr>
+        <th style="background:transparent; color:var(--muted); font-size:11px; width:140px; border:0; border-bottom:var(--border-soft);">Name</th>
+        <td style="border:0; border-bottom:var(--border-soft);">[VORNAME NACHNAME]</td>
+      </tr>
+      <tr>
+        <th style="background:transparent; color:var(--muted); font-size:11px; border:0; border-bottom:var(--border-soft);">Address</th>
+        <td style="border:0; border-bottom:var(--border-soft);">
+          [STRASSE HAUSNUMMER]<br>
+          [PLZ] [STADT]<br>
+          Germany
+        </td>
+      </tr>
+      <tr>
+        <th style="background:transparent; color:var(--muted); font-size:11px; border:0; border-bottom:var(--border-soft);">Email</th>
+        <td style="border:0; border-bottom:var(--border-soft);"><a href="mailto:hello@tootflow.com">hello@tootflow.com</a></td>
+      </tr>
+      <tr>
+        <th style="background:transparent; color:var(--muted); font-size:11px; border:0; border-bottom:var(--border-soft);">Phone</th>
+        <td style="border:0; border-bottom:var(--border-soft);">[+49 XXX XXXXXXXX]</td>
+      </tr>
+      <tr>
+        <th style="background:transparent; color:var(--muted); font-size:11px; border:0; border-bottom:var(--border-soft);">VAT ID</th>
+        <td style="border:0; border-bottom:var(--border-soft);">[DE XXXXXXXXX] — or: Not VAT-registered (Kleinunternehmer per §19 UStG)</td>
+      </tr>
+      <tr>
+        <th style="background:transparent; color:var(--muted); font-size:11px; border:0;">Responsible for content<br><span style="font-weight:normal;">(§18 Abs. 2 MStV)</span></th>
+        <td style="border:0;">[VORNAME NACHNAME], address as above</td>
+      </tr>
+    </table>
+  </div>
+
+  <details>
+    <summary>Dispute resolution</summary>
+    <p>
+      The European Commission provides a platform for online dispute resolution (ODR):
+      <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr</a>.
+    </p>
+    <p>
+      We are not obligated to participate in dispute resolution proceedings before a consumer arbitration board
+      and do not voluntarily do so.
+    </p>
+  </details>
+
+  <details>
+    <summary>Liability for content</summary>
+    <p>
+      As a service provider we are responsible for our own content on these pages in accordance with
+      general law (§7 Abs. 1 DDG). However, we are not obligated to monitor transmitted or stored
+      third-party information or to investigate circumstances that indicate illegal activity.
+    </p>
+    <p>
+      Obligations to remove or block the use of information under general law remain unaffected.
+      Liability in this regard is only possible from the time of knowledge of a specific legal violation.
+      Upon becoming aware of corresponding violations we will remove this content immediately.
+    </p>
+  </details>
+
+  <details>
+    <summary>Liability for links</summary>
+    <p>
+      Our service contains links to external third-party websites. We have no influence over the content
+      of those websites and therefore cannot accept any guarantee for their content. The respective
+      provider or operator of the linked pages is always responsible for their content.
+    </p>
+    <p>
+      The linked pages were checked for possible legal violations at the time of linking. Illegal content
+      was not recognisable at the time of linking. Permanent monitoring of the content of linked pages is
+      not reasonable without concrete indication of an infringement. Upon notification of violations we
+      will remove such links immediately.
+    </p>
+  </details>
+</div>
+{% endblock %}

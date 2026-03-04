@@ -261,6 +261,20 @@
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
           </div>
         </form>
+
+        {% if ai_available %}
+        <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/refine"
+              style="margin-top:14px; padding-top:14px; border-top:var(--border-soft); display:flex; gap:8px; align-items:flex-end;"
+              onsubmit="showAiLoading('Refining post…', 'The AI is refining this post. Usually done in 5–10 seconds.');">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <div class="form-group" style="flex:1; margin:0;">
+            <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted);">Refine instructions</label>
+            <input type="text" name="instructions" maxlength="300" required
+                   placeholder="e.g. make it shorter, end with a question, add a hashtag">
+          </div>
+          <button type="submit" class="btn btn-outline btn-sm" style="white-space:nowrap; flex-shrink:0;">✦ Refine</button>
+        </form>
+        {% endif %}
         {% else %}
         <div style="font-size:14px; white-space:pre-wrap; color:var(--muted);">{{ post.content }}</div>
         {% if post.mastodon_status_id %}

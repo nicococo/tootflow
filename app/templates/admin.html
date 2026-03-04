@@ -142,7 +142,7 @@
   <h2>Manual Payment Override</h2>
   <div style="margin-bottom:32px; max-width:560px;">
     {% if campaigns_list %}
-    <form method="post" action="/admin/campaigns/mark-paid" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+    <form method="post" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
       <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
       <div style="flex:1; min-width:260px;">
         <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px;">Campaign</label>
@@ -152,12 +152,13 @@
           <option value="{{ c.id }}">
             {% if acct %}{{ acct.username }}@{{ acct.instance_url | replace("https://","") }}{% else %}user #{{ c.user_id }}{% endif %}
             — {{ c.name }}
-            [{{ c.payment_status }}]
+            [{{ c.payment_status }}] [AI: {{ c.ai_posts_generated }}]
           </option>
           {% endfor %}
         </select>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm">Mark as Paid</button>
+      <button type="submit" formaction="/admin/campaigns/mark-paid" class="btn btn-primary btn-sm">Mark as Paid</button>
+      <button type="submit" formaction="/admin/campaigns/reset-ai-counter" class="btn btn-outline btn-sm">Reset AI Counter</button>
     </form>
     {% else %}
     <p class="muted text-sm">No campaigns yet.</p>

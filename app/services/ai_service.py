@@ -1,3 +1,4 @@
+import random
 import re
 from datetime import datetime, timedelta
 from typing import List
@@ -133,6 +134,56 @@ async def regenerate_single_post(
     return response.choices[0].message.content.strip()[:500]
 
 
+async def refine_single_post(
+    current_content: str,
+    instructions: str,
+    campaign_name: str,
+    description: str,
+    template_type: str,
+    tone: str,
+    language: str,
+) -> str:
+    """Refine an existing post based on user instructions, keeping campaign context."""
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
+    tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
+
+    safe_name = _sanitize(campaign_name, 200)
+    safe_desc = _sanitize(description, 2000)
+    safe_lang = _sanitize(language, 50)
+    safe_content = _sanitize(current_content, 500)
+    safe_instructions = _sanitize(instructions, 300)
+
+    system_prompt = (
+        f"You are a social media expert refining a Mastodon post for {template_desc}. "
+        f"Rewrite the provided post according to the user's instructions. "
+        f"The refined post must: be under 500 characters, match the {tone_desc} tone, "
+        f"feel natural for Mastodon (not Twitter-style), and optionally include 1-3 relevant hashtags. "
+        f"Output ONLY the refined post text. No explanation, no numbering, no quotes."
+    )
+
+    user_prompt = (
+        f"Campaign: {safe_name}\n"
+        f"Topic: {safe_desc}\n"
+        f"Language: {safe_lang}\n\n"
+        f"Current post:\n{safe_content}\n\n"
+        f"Instructions: {safe_instructions}"
+    )
+
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.7,
+        max_completion_tokens=min(settings.openai_max_tokens, 600),
+    )
+
+    return response.choices[0].message.content.strip()[:500]
+
+
 async def generate_newsletter_digest(
     campaign_name: str,
     description: str,
@@ -183,7 +234,7 @@ async def generate_linkedin_summary(
     language: str,
     post_contents: List[str],
 ) -> str:
-    """Generate a LinkedIn post summarising a campaign."""
+    """Generate a standalone long-form LinkedIn article from campaign insights."""
     client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     safe_name = _sanitize(campaign_name, 200)
@@ -193,16 +244,23 @@ async def generate_linkedin_summary(
     safe_posts = "\n\n".join(_sanitize(p, 500) for p in post_contents[:40])
 
     system_prompt = (
-        f"You are a LinkedIn content writer. Write a single LinkedIn post (max 900 characters) "
-        f"that distils the key message of a Mastodon campaign. "
-        f"Start with a strong hook. Use short paragraphs. End with a question or call-to-action. "
-        f"Sound professional and authentic. Tone: {tone_desc}. Language: {safe_lang}. "
-        f"Output only the LinkedIn post — no meta-commentary, no character count."
+        f"You are an expert LinkedIn content writer. "
+        f"Using the provided source material as inspiration, write a compelling, standalone LinkedIn article "
+        f"on the given topic. "
+        f"Requirements: "
+        f"Output a suggested headline on the first line, prefixed with 'Headline: '. "
+        f"Then write the body as 1–2 focused paragraphs. "
+        f"Condense the entire campaign into its single most important insight or argument — "
+        f"punchy, self-contained, and immediately useful to the reader. "
+        f"End with a concrete takeaway or call-to-action. "
+        f"Write as original expert content — never mention that this was derived from social media posts "
+        f"or any other platform. "
+        f"Tone: {tone_desc}. Language: {safe_lang}. "
+        f"Output only the headline line and article body — no meta-commentary."
     )
     user_prompt = (
-        f"Campaign: {safe_name}\n"
-        f"Topic: {safe_desc}\n\n"
-        f"Posts:\n{safe_posts}"
+        f"Topic: {safe_name} — {safe_desc}\n\n"
+        f"Key insights and points to incorporate:\n{safe_posts}"
     )
 
     response = await client.chat.completions.create(
@@ -212,7 +270,7 @@ async def generate_linkedin_summary(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.7,
-        max_completion_tokens=500,
+        max_completion_tokens=400,
     )
     return response.choices[0].message.content.strip()
 
@@ -224,6 +282,8 @@ def schedule_posts(posts: List[str], start_date: datetime, posts_per_week: int) 
     for i, content in enumerate(posts):
         offset = timedelta(days=i * interval_days + 1)
         scheduled_time = start_date + offset
+        jitter = random.randint(-18, 18)
         scheduled_time = scheduled_time.replace(hour=10, minute=0, second=0, microsecond=0)
+        scheduled_time += timedelta(minutes=jitter)
         scheduled.append((content, scheduled_time))
     return scheduled

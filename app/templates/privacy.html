@@ -7,10 +7,18 @@
   <p class="muted text-sm" style="margin-bottom:32px;">Last updated: 2026-02-25</p>
 
   <details open>
-    <summary>Who we are</summary>
+    <summary>Who we are / Data controller</summary>
     <p>
-      TootFlow is a tool for scheduling and managing Mastodon social media campaigns.
-      References to "we", "us", or "TootFlow" in this policy refer to the operator of this service.
+      TootFlow is a tool for scheduling and managing Mastodon social media campaigns,
+      operated by the individual identified in the <a href="/impressum">Impressum</a>.
+      References to "we", "us", or "TootFlow" refer to that operator, who is the data controller
+      within the meaning of the GDPR.
+    </p>
+    <p>
+      For any privacy-related enquiries or to exercise your rights, contact:
+      <a href="mailto:hello@tootflow.com">hello@tootflow.com</a>.
+      A data protection officer is not required for this service (Art. 37 GDPR — small private operator,
+      no large-scale processing of special-category data).
     </p>
   </details>
 
@@ -133,6 +141,49 @@
       Session cookies are signed with a server-side secret, marked <code>httpOnly</code>,
       and use <code>SameSite=Lax</code>. All requests are protected by CSRF tokens.
       In production the application is served over HTTPS only.
+    </p>
+  </details>
+
+  <details>
+    <summary>Legal basis for processing (GDPR Art. 6)</summary>
+    <div class="table-wrap" style="margin-top:4px;">
+    <table>
+      <thead>
+        <tr><th>Processing activity</th><th>Legal basis</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Account data, Mastodon tokens, campaigns, posts</td>
+          <td>Art. 6(1)(b) — performance of a contract (providing the Service you signed up for)</td>
+        </tr>
+        <tr>
+          <td>Payment records (order ID, amount)</td>
+          <td>Art. 6(1)(c) — legal obligation (commercial record-keeping requirements)</td>
+        </tr>
+        <tr>
+          <td>Security logs, CSRF tokens, rate-limit counters</td>
+          <td>Art. 6(1)(f) — legitimate interest (protecting the Service and its users from abuse)</td>
+        </tr>
+        <tr>
+          <td>Engagement metrics fetched from Mastodon</td>
+          <td>Art. 6(1)(b) — performance of a contract (engagement tracking is a core feature)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Supervisory authority</summary>
+    <p>
+      You have the right to lodge a complaint with a data protection supervisory authority.
+      The competent authority depends on your country of residence. In Germany the relevant authority
+      is the Datenschutzbeauftragter of the state (Bundesland) in which the operator resides —
+      see <a href="https://www.bfdi.bund.de/EN/VorschriftenVerfahren/Informationsfreiheitsrecht/informationsfreiheitsrecht_node.html" target="_blank" rel="noopener">bfdi.bund.de</a>
+      for a list of all German supervisory authorities.
+    </p>
+    <p>
+      EU residents may also contact the supervisory authority of their own member state.
     </p>
   </details>
 

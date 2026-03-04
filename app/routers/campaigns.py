@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -119,10 +119,12 @@ def campaign_detail(
         raise HTTPException(status_code=404)
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
+    now = datetime.utcnow()
+    stale_pending_count = sum(1 for p in posts if p.status == "pending" and p.scheduled_time < now)
     return templates.TemplateResponse(
         "campaign_detail.html",
         {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
-         "ai_max": settings.openai_max_posts_per_campaign},
+         "ai_max": settings.openai_max_posts_per_campaign, "stale_pending_count": stale_pending_count},
     )
 
 
@@ -206,6 +208,24 @@ def toggle_campaign(
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
     campaign.enabled = not campaign.enabled
+    session.add(campaign)
+    session.commit()
+    return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
+
+
+@router.post("/{campaign_id}/reset-start-date")
+def reset_start_date(
+    campaign_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.payment_status != "paid":
+        raise HTTPException(status_code=403)
+    campaign.start_date = datetime.utcnow()
     session.add(campaign)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)

@@ -11,7 +11,7 @@ from app.models import Campaign, Post, User
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
-from app.services.ai_service import generate_posts, regenerate_single_post, schedule_posts
+from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, schedule_posts
 
 settings = get_settings()
 
@@ -130,8 +130,8 @@ async def generate_campaign_posts(
         slots = max(0, settings.max_posts_per_campaign - len(non_pending))
         post_contents = post_contents[:slots]
 
-        # Schedule from campaign start_date (set at payment time)
-        start = campaign.start_date or datetime.utcnow()
+        # Use now if start_date is in the past (e.g. campaign paid but unused for a while)
+        start = max(campaign.start_date or datetime.utcnow(), datetime.utcnow())
         for content, sched_time in schedule_posts(post_contents, start, campaign.posts_per_week):
             session.add(Post(campaign_id=campaign_id, content=content, scheduled_time=sched_time))
         campaign.ai_posts_generated += len(post_contents)
@@ -184,6 +184,55 @@ async def regenerate_post(
         raise HTTPException(status_code=500, detail="AI regeneration failed — please try again")
 
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
+
+
+@router.post("/{campaign_id}/posts/{post_id}/refine")
+@limiter.limit("30/hour")
+async def refine_post(
+    campaign_id: int,
+    post_id: int,
+    request: Request,
+    instructions: str = Form(...),
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    """Refine a single pending post based on user instructions."""
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.payment_status != "paid":
+        raise HTTPException(status_code=403, detail="Campaign must be activated before refining posts")
+    if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
+        raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
+
+    post = session.get(Post, post_id)
+    if not post or post.campaign_id != campaign_id or post.status != "pending":
+        raise HTTPException(status_code=404)
+
+    instructions = instructions.strip()[:300]
+    if not instructions:
+        raise HTTPException(status_code=400, detail="Instructions cannot be empty")
+
+    try:
+        post.content = await refine_single_post(
+            current_content=post.content,
+            instructions=instructions,
+            campaign_name=campaign.name,
+            description=campaign.description,
+            template_type=campaign.template_type,
+            tone=campaign.tone,
+            language=campaign.language,
+        )
+        campaign.ai_posts_generated += 1
+        session.add(post)
+        session.add(campaign)
+        session.commit()
+    except Exception as e:
+        logger.error(f"AI refinement failed for post {post_id}: {e}")
+        raise HTTPException(status_code=500, detail="AI refinement failed — please try again")
+
+    return RedirectResponse(f"/campaigns/{campaign_id}/posts#post-{post_id}", status_code=302)
 
 
 @router.post("/{campaign_id}/posts/{post_id}/delete")

@@ -17,7 +17,7 @@ from app.csrf import CSRFMiddleware
 from app.limiter import limiter
 from app.database import create_db_and_tables, get_session, engine
 from sqlalchemy import func
-from app.models import Campaign, MastodonAccount, Post, User
+from app.models import Campaign, MastodonAccount, Metrics, Post, User
 from app.auth import optional_current_user, get_current_user
 from app.scheduler import start_scheduler, stop_scheduler
 from app.site_config import get_banner, load_from_db
@@ -146,6 +146,18 @@ def privacy(request: Request, session: Session = Depends(get_session)):
     return templates.TemplateResponse("privacy.html", {"request": request, "user": user})
 
 
+@app.get("/impressum", response_class=HTMLResponse)
+def impressum(request: Request, session: Session = Depends(get_session)):
+    user = optional_current_user(request, session)
+    return templates.TemplateResponse("impressum.html", {"request": request, "user": user})
+
+
+@app.get("/tos", response_class=HTMLResponse)
+def tos(request: Request, session: Session = Depends(get_session)):
+    user = optional_current_user(request, session)
+    return templates.TemplateResponse("tos.html", {"request": request, "user": user})
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request, session: Session = Depends(get_session)):
     user = optional_current_user(request, session)
@@ -188,11 +200,35 @@ def dashboard(
         if next_post:
             next_post_campaign = next(c for c in campaigns_list if c.id == next_post.campaign_id)
 
+    # Engagement score per campaign: (favs + reblogs + replies) / published posts
+    engagement_by_campaign: dict[int, float] = {}
+    if campaign_ids:
+        pub_posts = session.exec(
+            select(Post).where(Post.campaign_id.in_(campaign_ids), Post.status == "published")
+        ).all()
+        if pub_posts:
+            post_ids = [p.id for p in pub_posts]
+            metrics_map = {
+                m.post_id: m
+                for m in session.exec(select(Metrics).where(Metrics.post_id.in_(post_ids))).all()
+            }
+            from collections import defaultdict
+            posts_by_campaign: dict = defaultdict(list)
+            for p in pub_posts:
+                posts_by_campaign[p.campaign_id].append(p)
+            for cid, posts in posts_by_campaign.items():
+                total = sum(
+                    (metrics_map[p.id].favourites + metrics_map[p.id].reblogs + metrics_map[p.id].replies)
+                    for p in posts if p.id in metrics_map
+                )
+                engagement_by_campaign[cid] = round(total / len(posts), 1)
+
     return templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request, "user": user, "campaigns": campaigns_list, "mastodon": mastodon,
             "published_count": published_count, "active_count": active_count, "paused_count": paused_count,
             "next_post": next_post, "next_post_campaign": next_post_campaign,
+            "engagement_by_campaign": engagement_by_campaign,
         },
     )

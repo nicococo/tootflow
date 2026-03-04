@@ -10,7 +10,7 @@ from sqlmodel import Session, select
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import Campaign, MastodonAccount, Metrics, Payment, Post, User
+from app.models import Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/account")
@@ -52,6 +52,12 @@ def export_data(
     campaigns = session.exec(
         select(Campaign).where(Campaign.user_id == user.id)
     ).all()
+    payments = session.exec(
+        select(Payment).where(Payment.user_id == user.id).order_by(Payment.created_at)
+    ).all()
+    follower_snapshots = session.exec(
+        select(FollowerSnapshot).where(FollowerSnapshot.user_id == user.id).order_by(FollowerSnapshot.recorded_at)
+    ).all()
 
     export = {
         "exported_at": datetime.utcnow().isoformat() + "Z",
@@ -60,6 +66,23 @@ def export_data(
             "mastodon_instance": mastodon.instance_url if mastodon else None,
             "member_since": user.created_at.isoformat() + "Z",
         },
+        "payments": [
+            {
+                "lemonsqueezy_order_id": p.lemonsqueezy_order_id,
+                "amount": p.amount,
+                "currency": p.currency,
+                "status": p.status,
+                "created_at": p.created_at.isoformat() + "Z",
+            }
+            for p in payments
+        ],
+        "follower_snapshots": [
+            {
+                "count": s.count,
+                "recorded_at": s.recorded_at.isoformat() + "Z",
+            }
+            for s in follower_snapshots
+        ],
         "campaigns": [],
     }
 
@@ -72,14 +95,16 @@ def export_data(
             m = session.exec(select(Metrics).where(Metrics.post_id == p.id)).first()
             posts_data.append({
                 "content": p.content,
-                "scheduled_time": p.scheduled_time.isoformat(),
+                "scheduled_time": p.scheduled_time.isoformat() + "Z",
                 "status": p.status,
-                "published_at": p.published_at.isoformat() if p.published_at else None,
+                "created_at": p.created_at.isoformat() + "Z",
+                "published_at": p.published_at.isoformat() + "Z" if p.published_at else None,
                 "mastodon_status_id": p.mastodon_status_id,
                 "metrics": {
                     "favourites": m.favourites,
                     "reblogs": m.reblogs,
                     "replies": m.replies,
+                    "last_updated": m.last_updated.isoformat() + "Z",
                 } if m else None,
             })
 
@@ -89,11 +114,15 @@ def export_data(
             "template_type": c.template_type,
             "tone": c.tone,
             "language": c.language,
+            "duration_days": c.duration_days,
+            "posts_per_week": c.posts_per_week,
             "status": c.status,
+            "enabled": c.enabled,
             "payment_status": c.payment_status,
-            "created_at": c.created_at.isoformat(),
-            "start_date": c.start_date.isoformat() if c.start_date else None,
-            "end_date": c.end_date.isoformat() if c.end_date else None,
+            "ai_posts_generated": c.ai_posts_generated,
+            "created_at": c.created_at.isoformat() + "Z",
+            "start_date": c.start_date.isoformat() + "Z" if c.start_date else None,
+            "end_date": c.end_date.isoformat() + "Z" if c.end_date else None,
             "posts": posts_data,
         })
 

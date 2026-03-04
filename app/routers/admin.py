@@ -190,3 +190,22 @@ def mark_campaign_paid(
     session.commit()
     logger.info(f"Admin manually marked campaign {campaign_id} as paid")
     return RedirectResponse("/admin", status_code=302)
+
+
+@router.post("/campaigns/reset-ai-counter")
+def reset_ai_counter(
+    request: Request,
+    campaign_id: int = Form(...),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(verify_csrf),
+):
+    if not _is_authenticated(request):
+        return RedirectResponse("/admin", status_code=302)
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign:
+        return RedirectResponse("/admin", status_code=302)
+    campaign.ai_posts_generated = 0
+    session.add(campaign)
+    session.commit()
+    logger.info(f"Admin reset AI counter for campaign {campaign_id}")
+    return RedirectResponse("/admin", status_code=302)
