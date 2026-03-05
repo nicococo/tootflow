@@ -41,10 +41,10 @@
 
   <!-- 30-day chart -->
   <h2>30-Day Visitor Trend</h2>
-  <div style="background:var(--white); border:var(--border); padding:16px 16px 8px; margin-bottom:32px;">
+  <div style="background:var(--surface); border:var(--border); padding:16px 16px 8px; margin-bottom:32px;">
     <div style="display:flex; align-items:flex-end; gap:3px; height:80px;">
       {% for day in chart %}
-      <div style="flex:1; background:var(--blue); height:{{ [day.pct, 2] | max }}%; cursor:default;"
+      <div style="flex:1; background:#47b8b1; height:{{ [day.pct, 2] | max }}%; cursor:default;"
            title="{{ day.date }}: {{ day.count }}"></div>
       {% endfor %}
     </div>

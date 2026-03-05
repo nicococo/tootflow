@@ -23,9 +23,10 @@
   }
   .info-panel-head {
     padding: 10px 14px;
-    border-bottom: var(--border);
-    background: var(--surface-soft);
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
   }
+  .info-panel-head .eyebrow { color: #47b8b1; }
   .info-panel-body { padding: 4px 0; }
   .info-row {
     padding: 9px 14px;
@@ -36,9 +37,10 @@
   .info-row:last-child { border-bottom: 0; }
   .info-row strong {
     display: block;
-    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     color: var(--ink);
     margin-bottom: 2px;
   }
@@ -69,7 +71,7 @@
     <!-- Workflow -->
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--blue);">Workflow</div>
+        <div class="eyebrow">Workflow</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">
@@ -94,7 +96,7 @@
     <!-- Status legend -->
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--muted);">Status Guide</div>
+        <div class="eyebrow">Status Guide</div>
       </div>
       <div class="info-panel-body">
         <div class="status-row">
@@ -123,7 +125,7 @@
     <!-- Quick links -->
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--muted);">Quick Links</div>
+        <div class="eyebrow">Quick Links</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">
@@ -165,7 +167,7 @@
         <div style="font-size:11px; color:var(--muted); margin-top:4px;">paid &amp; publishing</div>
       </div>
 
-      <div class="stat-box" style="{% if next_post %}border-color:var(--blue);{% endif %}">
+      <div class="stat-box" style="{% if next_post %}border-top-color:var(--teal);{% endif %}">
         {% if next_post %}
           <div class="label" style="margin-bottom:4px;">Next Post</div>
           <div style="font-size:13px; font-weight:bold; margin-bottom:2px;">

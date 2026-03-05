@@ -2,69 +2,229 @@
 {% block title %}Sign In – TootFlow{% endblock %}
 {% block meta_description %}Sign in to TootFlow with your Mastodon account to plan and schedule social media campaigns. No password required — just authorise via Mastodon OAuth.{% endblock %}
 {% block content %}
-<div class="container container-tight">
-  <h1>Sign In</h1>
-  {% if error %}<div class="error">{{ error }}</div>{% endif %}
-  <form method="post" action="/login" class="form-card">
-    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-    <div class="form-group">
-      <label for="instance_url">Mastodon Instance</label>
-      <input type="text" id="instance_url" name="instance_url"
-        placeholder="https://mastodon.social" required autofocus>
-      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
-        {% for instance in [
-          "mastodon.social",
-          "mastodon.online",
-          "fosstodon.org",
-          "hachyderm.io",
-          "chaos.social",
-          "infosec.exchange",
-          "techhub.social",
-          "sigmoid.social"
-        ] %}
-        <button type="button" class="instance-chip"
-                onclick="pickInstance('https://{{ instance }}')">{{ instance }}</button>
-        {% endfor %}
-      </div>
-      <div class="muted text-sm" style="margin-top:8px;">
-        Not listed? Type your instance URL above.
-      </div>
-    </div>
-    <button type="submit" class="btn btn-primary" style="width:100%;">Continue with Mastodon →</button>
-  </form>
-  <p class="muted text-sm" style="margin-top:16px;">
-    You'll be redirected to your Mastodon instance to authorise TootFlow.
-    An account is created automatically on first sign-in.
-  </p>
-</div>
 
 <style>
-  .instance-chip {
-    font-family: inherit;
-    font-size: 12px;
-    padding: 4px 10px;
-    border: var(--border);
-    background: var(--surface);
-    color: var(--muted);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .instance-chip:hover {
-    background: var(--surface-soft);
-    color: var(--ink);
-    border-color: var(--ink);
-  }
-  .instance-chip.selected {
-    background: var(--ink);
-    color: var(--surface);
-    border-color: var(--ink);
-  }
+/* ─── Page shell ─── */
+.auth-page {
+  background: #0d1822;
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+/* ─── Card ─── */
+.auth-card {
+  background: #f2ece0;
+  border: 2px solid #1e3144;
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+}
+.auth-card-head {
+  background: #0d1822;
+  padding: 28px 32px 24px;
+  border-bottom: 3px solid #47b8b1;
+}
+.auth-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #47b8b1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.auth-eyebrow::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: #47b8b1;
+  flex-shrink: 0;
+}
+.auth-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 38px;
+  font-weight: 900;
+  font-style: italic;
+  color: #fff;
+  margin: 0;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+}
+.auth-card-body {
+  padding: 28px 32px 32px;
+}
+
+/* ─── Error ─── */
+.auth-error {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #d95f2a;
+  background: #fff;
+  border-left: 3px solid #d95f2a;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+}
+
+/* ─── Form elements ─── */
+.auth-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8a7d68;
+  display: block;
+  margin-bottom: 8px;
+}
+.auth-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 2px solid #c8bfaa;
+  background: #fff;
+  color: #0d1822;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.auth-input::placeholder {
+  color: #b0a592;
+}
+.auth-input:focus {
+  border-color: #0d1822;
+}
+
+/* ─── Instance chips ─── */
+.auth-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.auth-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
+  border: 1px solid #c8bfaa;
+  background: transparent;
+  color: #8a7d68;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+.auth-chip:hover {
+  border-color: #47b8b1;
+  color: #0d1822;
+  background: #fff;
+}
+.auth-chip.selected {
+  background: #0d1822;
+  color: #47b8b1;
+  border-color: #0d1822;
+}
+.auth-chip-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #b0a592;
+  letter-spacing: 0.3px;
+  margin-top: 10px;
+}
+
+/* ─── Submit button ─── */
+.auth-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+  width: 100%;
+  padding: 14px 20px;
+  background: #d95f2a;
+  color: #fff;
+  border: 2px solid #d95f2a;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: background 0.15s, color 0.15s;
+}
+.auth-btn:hover {
+  background: #0d1822;
+  border-color: #0d1822;
+}
+
+/* ─── Footer note ─── */
+.auth-foot {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #8a7d68;
+  letter-spacing: 0.3px;
+  line-height: 1.7;
+  padding: 16px 32px;
+  border-top: 1px solid #c8bfaa;
+}
 </style>
+
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-card-head">
+      <div class="auth-eyebrow">Mastodon OAuth</div>
+      <h1 class="auth-title">Sign In</h1>
+    </div>
+
+    <div class="auth-card-body">
+      {% if error %}
+      <div class="auth-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="/login">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+
+        <div>
+          <label class="auth-label" for="instance_url">Your Mastodon instance</label>
+          <input class="auth-input" type="text" id="instance_url" name="instance_url"
+            placeholder="https://mastodon.social" required autofocus>
+
+          <div class="auth-chips">
+            {% for instance in [
+              "mastodon.social",
+              "mastodon.online",
+              "fosstodon.org",
+              "hachyderm.io",
+              "chaos.social",
+              "infosec.exchange",
+              "techhub.social",
+              "sigmoid.social"
+            ] %}
+            <button type="button" class="auth-chip"
+                    onclick="pickInstance('https://{{ instance }}')">{{ instance }}</button>
+            {% endfor %}
+          </div>
+          <div class="auth-chip-hint">Not listed? Type your instance URL above.</div>
+        </div>
+
+        <button type="submit" class="auth-btn">Continue with Mastodon →</button>
+      </form>
+    </div>
+
+    <div class="auth-foot">
+      You'll be redirected to your Mastodon instance to authorise TootFlow.
+      An account is created automatically on first sign-in.
+    </div>
+
+  </div>
+</div>
 
 <script>
 function pickInstance(url) {
   document.getElementById('instance_url').value = url;
-  document.querySelectorAll('.instance-chip').forEach(btn => {
+  document.querySelectorAll('.auth-chip').forEach(btn => {
     btn.classList.toggle('selected', btn.textContent.trim() === url.replace('https://', ''));
   });
 }

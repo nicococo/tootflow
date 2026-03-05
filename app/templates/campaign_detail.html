@@ -23,9 +23,10 @@
   }
   .info-panel-head {
     padding: 10px 14px;
-    border-bottom: var(--border);
-    background: var(--surface-soft);
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
   }
+  .info-panel-head .eyebrow { color: #47b8b1; }
   .info-panel-body { padding: 4px 0; }
   .info-row {
     padding: 9px 14px;
@@ -59,7 +60,7 @@
     margin-top: 1px;
   }
   .step-icon.done { border-color: var(--green); color: var(--green); font-weight: bold; }
-  .step-icon.current { border-color: var(--blue); background: var(--blue); color: #fff; font-weight: bold; }
+  .step-icon.current { border-color: var(--orange); background: var(--orange); color: #fff; font-weight: bold; }
   .step-label { color: var(--ink); }
   .step-label.muted { color: var(--muted); }
   .step-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
@@ -98,8 +99,8 @@
     <!-- Paused notice -->
     {% if not campaign.enabled and campaign.payment_status == "paid" %}
     <div class="info-panel" style="border-color:var(--orange);">
-      <div class="info-panel-head" style="background:#fffaf3;">
-        <div class="eyebrow" style="color:var(--orange);">Paused</div>
+      <div class="info-panel-head" style="background:var(--orange);">
+        <div class="eyebrow" style="color:#fff;">Paused</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">No posts will publish until you resume the campaign.</div>
@@ -110,7 +111,7 @@
     <!-- Campaign progress -->
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--blue);">Progress</div>
+        <div class="eyebrow">Progress</div>
       </div>
       <div class="info-panel-body">
 
@@ -168,7 +169,7 @@
     {% if has_posts %}
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--muted);">Posts</div>
+        <div class="eyebrow">Posts</div>
       </div>
       <div class="info-panel-body">
         <div class="stat-row">
@@ -196,7 +197,7 @@
     <!-- Campaign settings summary -->
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--muted);">Settings</div>
+        <div class="eyebrow">Settings</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">
@@ -338,8 +339,8 @@
     {% if not campaign.enabled and stale_pending_count > 0 %}
     <div id="resume-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px;">
       <div style="background:var(--surface); border:var(--border); max-width:420px; width:100%; box-shadow:var(--shadow-md);">
-        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--surface-soft);">
-          <div class="eyebrow" style="color:var(--orange);">Heads up</div>
+        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--orange);">
+          <div class="eyebrow" style="color:#fff;">Heads up</div>
         </div>
         <div style="padding:20px 16px; font-size:13px; line-height:1.6;">
           <p style="margin:0 0 10px;">
@@ -366,8 +367,8 @@
     <!-- Export modal -->
     <div id="export-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px;">
       <div style="background:var(--surface); border:var(--border); max-width:700px; width:100%; box-shadow:var(--shadow-md);">
-        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--surface-soft); display:flex; justify-content:space-between; align-items:center;">
-          <div class="eyebrow" id="export-modal-title" style="color:var(--blue);">Export</div>
+        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--ink); display:flex; justify-content:space-between; align-items:center;">
+          <div class="eyebrow" id="export-modal-title" style="color:#47b8b1;">Export</div>
           <button type="button" class="btn btn-outline btn-sm" onclick="closeExportModal()">Close</button>
         </div>
         <div style="padding:16px;">

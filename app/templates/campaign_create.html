@@ -1,17 +1,71 @@
 {% extends "base.html" %}
 {% block title %}{% if edit_campaign %}Edit Campaign – {{ edit_campaign.name }}{% else %}New Campaign{% endif %} – TootFlow{% endblock %}
 {% block content %}
-<div class="container container-narrow">
-  <div class="page-head">
-    <h1>{% if edit_campaign %}Edit Campaign{% else %}New Campaign{% endif %}</h1>
-    <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}" class="btn btn-outline btn-sm">← {% if edit_campaign %}Campaign{% else %}Dashboard{% endif %}</a>
-  </div>
 
+<style>
+  .create-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+  }
+  .create-back {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .create-back:hover { color: var(--ink); }
+  .create-card {
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .create-card-head {
+    background: var(--ink);
+    padding: 24px 28px 20px;
+    border-bottom: 3px solid #47b8b1;
+  }
+  .create-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #47b8b1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .create-eyebrow::before {
+    content: '';
+    width: 20px;
+    height: 2px;
+    background: #47b8b1;
+    flex-shrink: 0;
+  }
+  .create-card-head h1 {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    color: #f2ece0;
+    font-size: 28px;
+  }
+  .create-card-body { padding: 28px; }
+</style>
+
+<div class="create-wrap">
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
   {% if existing_campaigns and not edit_campaign %}
-  <div class="form-card" style="margin-bottom:16px; padding:16px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-    <label for="copy_from" style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); white-space:nowrap; margin:0;">Copy from existing</label>
+  <div style="background:var(--surface); border:2px solid var(--ink); padding:14px 20px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow-sm);">
+    <label for="copy_from" style="margin:0; white-space:nowrap;">Copy from existing</label>
     <select id="copy_from" onchange="copyFromCampaign(this)" style="flex:1; min-width:200px;">
       <option value="">— select a campaign —</option>
       {% for c in existing_campaigns %}
@@ -30,7 +84,13 @@
   </div>
   {% endif %}
 
-  <form method="post" action="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}/edit{% else %}/campaigns/new{% endif %}" class="form-card">
+  <div class="create-card">
+    <div class="create-card-head">
+      <div class="create-eyebrow">{% if edit_campaign %}Edit Campaign{% else %}New Campaign{% endif %}</div>
+      <h1>{% if edit_campaign %}{{ edit_campaign.name }}{% else %}Create a Campaign{% endif %}</h1>
+    </div>
+    <div class="create-card-body">
+  <form method="post" action="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}/edit{% else %}/campaigns/new{% endif %}">
     <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
 
     <div class="form-group">
@@ -97,12 +157,16 @@
     </div>
     {% endif %}
 
-    <div class="actions">
-      <button type="submit" class="btn btn-primary">{% if edit_campaign %}Save Changes →{% else %}Create Campaign →{% endif %}</button>
-      <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}" class="btn btn-outline">Cancel</a>
+    <div class="actions" style="margin-top:8px;">
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:14px 20px; font-size:12px; letter-spacing:2px;">{% if edit_campaign %}Save Changes →{% else %}Create Campaign →{% endif %}</button>
+    </div>
+    <div style="text-align:center; margin-top:14px;">
+      <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}" class="create-back">← Cancel</a>
     </div>
   </form>
-</div>
+    </div><!-- create-card-body -->
+  </div><!-- create-card -->
+</div><!-- create-wrap -->
 
 <script>
 function copyFromCampaign(select) {

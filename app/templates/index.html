@@ -23,386 +23,693 @@
 {% block content %}
 
 <style>
-  .hero {
-    background: linear-gradient(150deg, #0f1b2b 0%, #16263a 70%);
-    color: var(--surface);
-    border-bottom: 3px solid var(--teal);
-    padding: 68px 24px;
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-    position: relative;
-    overflow: hidden;
-  }
-  .hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(104, 194, 255, 0.12) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(104, 194, 255, 0.12) 1px, transparent 1px);
-    background-size: 26px 26px;
-    opacity: 0.35;
-    pointer-events: none;
-  }
-  .hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(90deg,
-        rgba(82, 196, 255, 0.25) 0 34px,
-        transparent 34px 68px,
-        rgba(49, 160, 223, 0.22) 68px 102px,
-        transparent 102px 168px,
-        rgba(113, 210, 255, 0.2) 168px 202px,
-        transparent 202px 100%),
-      linear-gradient(90deg,
-        transparent 0 calc(100% - 210px),
-        rgba(55, 145, 210, 0.22) calc(100% - 210px) calc(100% - 170px),
-        transparent calc(100% - 170px) calc(100% - 112px),
-        rgba(89, 186, 234, 0.2) calc(100% - 112px) calc(100% - 72px),
-        transparent calc(100% - 72px) 100%);
-    background-size: 100% 62px, 100% 62px;
-    background-position: top left, bottom right;
-    background-repeat: no-repeat;
-    opacity: 0.7;
-    pointer-events: none;
-  }
-  .hero-inner {
-    max-width: 920px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 54px;
-    flex-wrap: wrap;
-    position: relative;
-    z-index: 1;
-  }
-  .hero-copy { flex: 1; min-width: 270px; }
-  .hero-copy .eyebrow { color: #86eee0; letter-spacing: 2.5px; }
-  .hero-copy h1 {
-    font-size: 56px;
-    border: 0;
-    margin: 12px 0 0;
-    padding: 0;
-    letter-spacing: -1.8px;
-    color: #ffffff;
-  }
-  .hero-copy p {
-    margin-top: 18px;
-    font-size: 17px;
-    color: #b9cada;
-    max-width: 500px;
-    line-height: 1.7;
-  }
-  .hero .btn { margin-top: 20px; }
+/* ─── shared ─── */
+.lp-section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #8a7d68;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.lp-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #c8bfaa;
+}
+.lp-section-label.on-dark { color: #3a5268; }
+.lp-section-label.on-dark::after { background: #1e3048; }
+.lp-section-label.on-white { color: #bbb3a8; }
+.lp-section-label.on-white::after { background: #e0d8ce; }
 
-  .landing {
-    max-width: 920px;
-    margin: 0 auto;
-    padding: 48px 24px 58px;
-  }
-  .landing-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border: var(--border);
-    background: var(--surface);
-    margin-bottom: 38px;
-    box-shadow: var(--shadow-sm);
-  }
-  .landing-block { padding: 28px; }
-  .landing-block + .landing-block {
-    border-left: var(--border);
-    background: var(--surface-soft);
-  }
-  .landing-block ol {
-    padding-left: 18px;
-    line-height: 2;
-    font-size: 14px;
-  }
-  .price {
-    font-size: 44px;
-    font-weight: 800;
-    letter-spacing: -1.5px;
-    line-height: 1;
-    color: var(--ink);
-    margin-top: 4px;
-  }
-  .price-sub {
-    font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 6px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-  }
-  .feature-list {
-    margin-top: 18px;
-    font-size: 13px;
-    line-height: 2;
-    color: var(--muted);
-  }
-  .feature-list div::before {
-    content: "\2713";
-    color: var(--green);
-    margin-right: 8px;
-    font-weight: 700;
-  }
+/* ─── HERO ─── */
+.lp-hero {
+  background: #0d1822;
+  color: #fff;
+  overflow: hidden;
+  border-bottom: 3px solid #47b8b1;
+}
+.lp-hero-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0;
+  padding: 72px 24px 64px;
+}
+.lp-hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 56px;
+}
+.lp-hero-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #47b8b1;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lp-hero-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: #47b8b1;
+  flex-shrink: 0;
+}
+h1.lp-hero-headline {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(40px, 5.5vw, 68px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.05;
+  color: #fff;
+  letter-spacing: -1px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 24px;
+}
+h1.lp-hero-headline em {
+  font-style: normal;
+  color: #47b8b1;
+}
+.lp-hero-sub {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #8fa8c0;
+  max-width: 440px;
+  margin-bottom: 32px;
+}
+.lp-hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.lp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #d95f2a;
+  color: #fff;
+  border: 2px solid #d95f2a;
+  padding: 13px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.lp-btn-primary:hover { background: #bf4e1f; border-color: #bf4e1f; color: #fff; }
+.lp-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #8fa8c0;
+  border: 2px solid rgba(255,255,255,0.15);
+  padding: 13px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lp-btn-ghost:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+.lp-hero-trust {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #3a5268;
+  letter-spacing: 1px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.lp-hero-trust span::before { content: '✓ '; color: #47b8b1; }
 
-  .landing-cta { text-align: center; }
+.lp-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  padding-left: 32px;
+}
+.lp-price-badge {
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 24px 28px;
+  text-align: center;
+  background: rgba(255,255,255,0.03);
+  width: 100%;
+}
+.lp-price-badge .amount {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+}
+.lp-price-badge .per {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #3a5268;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+.lp-price-badge .no-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #d95f2a;
+  text-transform: uppercase;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 10px;
+}
 
-  .benefits {
-    margin-top: 24px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .benefit-card {
-    border: var(--border);
-    background: var(--surface);
-    box-shadow: var(--shadow-sm);
-    padding: 20px;
-  }
-  .benefit-card h3 {
-    font-size: 15px;
-    margin-bottom: 8px;
-  }
-  .benefit-card p {
-    color: var(--muted);
-    font-size: 14px;
-    margin: 0;
-  }
-  .benefit-card .eyebrow {
-    margin-bottom: 8px;
-    color: var(--blue);
-  }
+/* entrance animations */
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.lp-hero-kicker   { animation: lp-rise 0.5s ease both 0.05s; }
+h1.lp-hero-headline { animation: lp-rise 0.55s ease both 0.12s; }
+.lp-hero-sub      { animation: lp-rise 0.5s ease both 0.2s; }
+.lp-hero-actions  { animation: lp-rise 0.5s ease both 0.28s; }
+.lp-hero-trust    { animation: lp-rise 0.5s ease both 0.35s; }
+.lp-hero-right    { animation: lp-rise 0.6s ease both 0.18s; }
 
-  .workflow {
-    margin-top: 28px;
-    border: var(--border);
-    background: var(--surface);
-    box-shadow: var(--shadow-sm);
-  }
-  .workflow-head {
-    padding: 16px 20px;
-    border-bottom: var(--border-soft);
-    background: var(--surface-soft);
-  }
-  .workflow-list {
-    padding: 12px 20px 18px;
-  }
-  .workflow-step {
-    display: grid;
-    grid-template-columns: 28px 1fr;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: var(--border-soft);
-  }
-  .workflow-step:last-child { border-bottom: 0; }
-  .workflow-step .num {
-    width: 28px;
-    height: 28px;
-    border: 2px solid var(--ink);
-    font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-    font-size: 11px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface-soft);
-  }
-  .workflow-step p {
-    margin: 0;
-    font-size: 14px;
-    color: var(--muted);
-  }
+/* ─── BAND ─── */
+.lp-band {
+  background: #d95f2a;
+  padding: 11px 24px;
+  text-align: center;
+  border-bottom: 2px solid #bf4e1f;
+}
+.lp-band p {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 0;
+}
 
-  .proof-grid {
-    margin-top: 18px;
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    gap: 14px;
-  }
-  .proof-box {
-    border: var(--border);
-    background: var(--surface);
-    box-shadow: var(--shadow-sm);
-    padding: 20px;
-  }
-  .proof-box ul {
-    margin: 10px 0 0 18px;
-    color: var(--muted);
-    line-height: 1.8;
-    font-size: 14px;
-  }
-  .proof-price {
-    font-size: 42px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: -1.2px;
-  }
-  .proof-muted {
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 8px;
-  }
+/* ─── HOW IT WORKS ─── */
+.lp-how {
+  background: #f2ece0;
+  padding: 80px 24px;
+  border-bottom: 2px solid #0d1822;
+}
+.lp-how-inner { max-width: 1040px; margin: 0 auto; }
+.lp-how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 2px solid #0d1822;
+  background: #0d1822;
+  gap: 2px;
+}
+.lp-how-step {
+  background: #f2ece0;
+  padding: 28px 24px 48px;
+  position: relative;
+  overflow: hidden;
+}
+.lp-step-num {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 88px;
+  font-weight: 900;
+  line-height: 0.85;
+  color: #e4d8c8;
+  position: absolute;
+  bottom: 4px;
+  right: 10px;
+  pointer-events: none;
+  user-select: none;
+}
+h3.lp-step-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  font-style: italic;
+  margin: 0 0 10px;
+  color: #0d1822;
+  position: relative;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+}
+.lp-how-step p {
+  font-size: 13px;
+  color: #6a5f50;
+  line-height: 1.65;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
 
-  @media (max-width: 760px) {
-    .hero { padding: 48px 16px; }
-    .hero::before { opacity: 0.2; background-size: 22px 22px; }
-    .hero::after { opacity: 0.45; }
-    .hero-copy h1 { font-size: 42px; }
-    .landing { padding: 32px 16px 44px; }
-    .landing-grid { grid-template-columns: 1fr; }
-    .landing-block + .landing-block { border-left: 0; border-top: var(--border); }
-    .benefits,
-    .proof-grid { grid-template-columns: 1fr; }
-    .benefit-card { border-top-width: 2px; }
+/* ─── BENEFITS ─── */
+.lp-benefits {
+  background: #0d1822;
+  padding: 80px 24px;
+  border-bottom: 2px solid #47b8b1;
+}
+.lp-benefits-inner { max-width: 1040px; margin: 0 auto; }
+h2.lp-benefits-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 40px;
+  line-height: 1.15;
+  border: 0;
+  padding: 0;
+}
+.lp-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  background: #1e3048;
+}
+.lp-benefit-card {
+  background: #0d1822;
+  padding: 32px 28px;
+  transition: background 0.2s;
+}
+.lp-benefit-card:hover { background: #111f2e; }
+.lp-benefit-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #47b8b1;
+  margin-bottom: 14px;
+  display: block;
+}
+h3.lp-benefit-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 19px;
+  font-weight: 700;
+  font-style: italic;
+  color: #fff;
+  margin: 0 0 10px;
+  border: 0;
+  padding: 0;
+}
+.lp-benefit-card p {
+  font-size: 13px;
+  color: #5a7a94;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ─── WORKFLOW ─── */
+.lp-workflow {
+  background: #fff;
+  padding: 80px 24px;
+  border-bottom: 2px solid #0d1822;
+}
+.lp-workflow-inner { max-width: 1040px; margin: 0 auto; }
+h2.lp-workflow-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  font-style: italic;
+  color: #0d1822;
+  margin-bottom: 48px;
+  border: 0;
+  padding: 0;
+}
+.lp-workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 2px solid #0d1822;
+}
+.lp-wf-step {
+  padding: 28px 20px 28px 0;
+  border-right: 1px solid #e0d8ce;
+  margin-right: 20px;
+}
+.lp-wf-step:last-child { border-right: 0; margin-right: 0; }
+.lp-wf-num {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 44px;
+  font-weight: 900;
+  color: #e0d8ce;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+h4.lp-wf-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0d1822;
+  margin: 0 0 8px;
+}
+.lp-wf-step p { font-size: 12px; color: #7a6e60; line-height: 1.6; margin: 0; }
+
+/* ─── PROOF / CLOSING ─── */
+.lp-proof {
+  background: #f2ece0;
+  padding: 80px 24px;
+}
+.lp-proof-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  border: 2px solid #0d1822;
+  background: #0d1822;
+  gap: 2px;
+}
+.lp-proof-left {
+  background: #fff;
+  padding: 40px 36px;
+}
+h2.lp-proof-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  margin: 0 0 24px;
+  color: #0d1822;
+  border: 0;
+  padding: 0;
+}
+.lp-proof-list { list-style: none; padding: 0; margin: 0; }
+.lp-proof-list li {
+  font-size: 13px;
+  color: #4a5868;
+  line-height: 1.6;
+  padding: 10px 0;
+  border-bottom: 1px solid #e8e0d4;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.lp-proof-list li:last-child { border-bottom: 0; }
+.lp-proof-list li::before {
+  content: '→';
+  color: #d95f2a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.lp-proof-right {
+  background: #0d1822;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.lp-proof-price {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 72px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.lp-proof-price-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #3a5268;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1e3048;
+}
+.lp-proof-perks { list-style: none; padding: 0; margin: 0 0 28px; }
+.lp-proof-perks li {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #47b8b1;
+  text-transform: uppercase;
+  padding: 7px 0;
+  border-bottom: 1px solid #1a2e40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lp-proof-perks li:last-child { border-bottom: 0; }
+.lp-proof-perks li::before { content: '✓'; font-size: 11px; }
+.lp-cta-final {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #d95f2a;
+  color: #fff;
+  border: 2px solid #d95f2a;
+  padding: 14px 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.lp-cta-final:hover { background: #bf4e1f; border-color: #bf4e1f; color: #fff; }
+
+/* ─── Responsive ─── */
+@media (max-width: 860px) {
+  .lp-hero-inner { grid-template-columns: 1fr; gap: 40px; }
+  .lp-hero-left { padding-right: 0; }
+  .lp-hero-right {
+    border-left: 0;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-left: 0;
+    padding-top: 32px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 32px;
   }
+  .lp-price-badge { max-width: 220px; }
+  .lp-how-grid { grid-template-columns: 1fr 1fr; }
+  .lp-benefits-grid { grid-template-columns: 1fr; }
+  .lp-proof-inner { grid-template-columns: 1fr; }
+  .lp-workflow-steps { grid-template-columns: 1fr 1fr; }
+  .lp-wf-step:nth-child(2) { border-right: 0; }
+  .lp-wf-step:nth-child(n+3) { border-top: 1px solid #e0d8ce; }
+}
+@media (max-width: 560px) {
+  .lp-how-grid { grid-template-columns: 1fr; }
+  .lp-workflow-steps { grid-template-columns: 1fr; }
+  .lp-wf-step { border-right: 0 !important; margin-right: 0; }
+  .lp-hero-right { flex-direction: column; align-items: flex-start; }
+  .lp-proof-price { font-size: 56px; }
+}
 </style>
 
-<div class="hero">
-  <div class="hero-inner">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104"
-         width="108" height="94" aria-label="TootFlow mascot"
-         style="flex-shrink:0;">
-      <rect x="4" y="14" width="30" height="40" fill="#47b8b1"/>
-      <rect x="86" y="14" width="30" height="40" fill="#47b8b1"/>
-      <rect x="10" y="20" width="18" height="26" fill="#2d8f96"/>
-      <rect x="92" y="20" width="18" height="26" fill="#2d8f96"/>
-      <rect x="22" y="6" width="76" height="62" fill="white"/>
-      <rect x="36" y="20" width="12" height="12" fill="#141210"/>
-      <rect x="72" y="20" width="12" height="12" fill="#141210"/>
-      <rect x="38" y="22" width="4" height="4" fill="white"/>
-      <rect x="74" y="22" width="4" height="4" fill="white"/>
-      <rect x="42" y="44" width="36" height="20" fill="#e8eef4"/>
-      <rect x="50" y="52" width="7" height="6" fill="#a8b8c6"/>
-      <rect x="63" y="52" width="7" height="6" fill="#a8b8c6"/>
-      <rect x="50" y="68" width="20" height="26" fill="white"/>
-      <rect x="38" y="86" width="32" height="10" fill="white"/>
-      <rect x="38" y="90" width="14" height="6" fill="white"/>
-      <polygon points="24,68 18,68 10,94 18,94" fill="#47b8b1"/>
-      <polygon points="96,68 102,68 110,94 102,94" fill="#47b8b1"/>
-    </svg>
 
-    <div class="hero-copy">
-      <p class="eyebrow">Mastodon Campaign Tool</p>
-      <h1>TootFlow</h1>
-      <p>
+<!-- ═══ HERO ═══ -->
+<section class="lp-hero">
+  <div class="lp-hero-inner">
+    <div class="lp-hero-left">
+      <p class="lp-hero-kicker">Mastodon Campaign Tool</p>
+      <h1 class="lp-hero-headline">
+        Your voice,<br>
+        on schedule,<br>
+        <em>in your control.</em>
+      </h1>
+      <p class="lp-hero-sub">
         You bring the intention. TootFlow helps you say it — consistently,
         on schedule, in your voice. Tell it what you want to share,
         and it drafts a campaign around your ideas. You edit, refine,
         and decide what goes out.
       </p>
-      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
-        <a href="/login" class="btn btn-primary">Start Your Campaign →</a>
-        <a href="#how-it-works" class="btn btn-outline" style="border-color:rgba(255,255,255,0.3); color:#b9cada;">See how it works</a>
+      <div class="lp-hero-actions">
+        <a href="/login" class="lp-btn-primary">Start Your Campaign →</a>
+        <a href="#how-it-works" class="lp-btn-ghost">See how it works</a>
       </div>
-      <div style="margin-top:14px; font-size:12px; color:#7a9ab5; letter-spacing:0.3px;">
-        No email required &nbsp;·&nbsp; No card data stored &nbsp;·&nbsp; No tracking &nbsp;·&nbsp; No ads
+      <div class="lp-hero-trust">
+        <span>No email required</span>
+        <span>No card data stored</span>
+        <span>No tracking</span>
+        <span>No ads</span>
+      </div>
+    </div>
+
+    <div class="lp-hero-right">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104"
+           width="112" height="97" aria-label="TootFlow mascot" style="opacity:0.85; flex-shrink:0;">
+        <rect x="4" y="14" width="30" height="40" fill="#47b8b1"/>
+        <rect x="86" y="14" width="30" height="40" fill="#47b8b1"/>
+        <rect x="10" y="20" width="18" height="26" fill="#2d8f96"/>
+        <rect x="92" y="20" width="18" height="26" fill="#2d8f96"/>
+        <rect x="22" y="6" width="76" height="62" fill="white"/>
+        <rect x="36" y="20" width="12" height="12" fill="#141210"/>
+        <rect x="72" y="20" width="12" height="12" fill="#141210"/>
+        <rect x="38" y="22" width="4" height="4" fill="white"/>
+        <rect x="74" y="22" width="4" height="4" fill="white"/>
+        <rect x="42" y="44" width="36" height="20" fill="#e8eef4"/>
+        <rect x="50" y="52" width="7" height="6" fill="#a8b8c6"/>
+        <rect x="63" y="52" width="7" height="6" fill="#a8b8c6"/>
+        <rect x="50" y="68" width="20" height="26" fill="white"/>
+        <rect x="38" y="86" width="32" height="10" fill="white"/>
+        <rect x="38" y="90" width="14" height="6" fill="white"/>
+        <polygon points="24,68 18,68 10,94 18,94" fill="#47b8b1"/>
+        <polygon points="96,68 102,68 110,94 102,94" fill="#47b8b1"/>
+      </svg>
+      <div class="lp-price-badge">
+        <div class="amount">29€</div>
+        <div class="per">per campaign</div>
+        <div class="no-sub">no subscription ever</div>
       </div>
     </div>
   </div>
+</section>
+
+<!-- ═══ BAND ═══ -->
+<div class="lp-band">
+  <p>AI-assisted drafting &nbsp;·&nbsp; Full editorial control &nbsp;·&nbsp; Automated publishing &nbsp;·&nbsp; Engagement insights</p>
 </div>
 
-<div class="landing" id="how-it-works">
-  <div class="landing-grid">
-    <div class="landing-block">
-      <div class="eyebrow" style="color:var(--blue); margin-bottom:12px;">How it works</div>
-      <ol>
-        <li>Sign in with your Mastodon account</li>
-        <li>Create a campaign — topic, template, tone, language</li>
-        <li>Pay once (29€) to activate</li>
-        <li>AI generates your full post schedule</li>
-        <li>Edit and regenerate until every post is perfect</li>
-        <li>Posts go live on schedule — track engagement</li>
-      </ol>
-    </div>
-    <div class="landing-block">
-      <div class="eyebrow" style="color:var(--orange); margin-bottom:12px;">Pricing</div>
-      <div class="price">29€</div>
-      <div class="price-sub">per campaign · no subscription</div>
-      <div class="feature-list">
-        <div>AI-assisted post drafting</div>
-        <div>Full editorial control</div>
-        <div>Automated publishing</div>
-        <div>Engagement insights</div>
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="lp-how" id="how-it-works">
+  <div class="lp-how-inner">
+    <div class="lp-section-label">How it works</div>
+    <div class="lp-how-grid">
+      <div class="lp-how-step">
+        <h3 class="lp-step-title">Sign in with Mastodon</h3>
+        <p>OAuth login — no email, no password. Your Mastodon account is your identity.</p>
+        <span class="lp-step-num">1</span>
+      </div>
+      <div class="lp-how-step">
+        <h3 class="lp-step-title">Create a campaign</h3>
+        <p>Set your topic, choose a template, tone, and language. Pick your posting cadence.</p>
+        <span class="lp-step-num">2</span>
+      </div>
+      <div class="lp-how-step">
+        <h3 class="lp-step-title">Pay once to activate</h3>
+        <p>One-time 29€ unlocks AI generation and automated publishing for this campaign.</p>
+        <span class="lp-step-num">3</span>
+      </div>
+      <div class="lp-how-step">
+        <h3 class="lp-step-title">AI drafts your schedule</h3>
+        <p>A full post schedule is generated instantly. Every post is yours to edit or regenerate.</p>
+        <span class="lp-step-num">4</span>
+      </div>
+      <div class="lp-how-step">
+        <h3 class="lp-step-title">Edit until it's right</h3>
+        <p>Rewrite, refine, or regenerate individual posts. Nothing goes out without your approval.</p>
+        <span class="lp-step-num">5</span>
+      </div>
+      <div class="lp-how-step">
+        <h3 class="lp-step-title">Publish and track</h3>
+        <p>Posts go live on schedule automatically. Track favourites, reblogs, and replies per post.</p>
+        <span class="lp-step-num">6</span>
       </div>
     </div>
   </div>
+</section>
 
-  <div class="landing-cta">
-    <a href="/login" class="btn btn-primary">Start Your First Campaign →</a>
-  </div>
-
-  <div class="benefits">
-    <article class="benefit-card">
-      <div class="eyebrow">Share What You Know</div>
-      <h3>Turn expertise into an audience</h3>
-      <p>Templates for knowledge sharing, research insights, and developer tips — structured campaigns that consistently surface your expertise to people who care.</p>
-    </article>
-    <article class="benefit-card">
-      <div class="eyebrow">Human In The Loop</div>
-      <h3>AI draft, your words</h3>
-      <p>Generate a full post schedule in seconds, then edit, regenerate, or rewrite every post before anything goes live. You stay in control.</p>
-    </article>
-    <article class="benefit-card">
-      <div class="eyebrow">Write Once, Publish Everywhere</div>
-      <h3>Turn posts into more content</h3>
-      <p>Export any campaign as a newsletter digest or LinkedIn summary — AI repurposes your posts into a new format, ready to copy and paste wherever you need it.</p>
-    </article>
-    <article class="benefit-card" style="border-top: 4px solid var(--teal);">
-      <div class="eyebrow" style="color:var(--teal);">Privacy First</div>
-      <h3>Built for people who care about their data</h3>
-      <p>No email address required — sign in with Mastodon only. Payments handled entirely by LemonSqueezy; we never see your card. No tracking pixels, no advertising, no third-party analytics. Just your content and your schedule.</p>
-    </article>
-  </div>
-
-  <section class="workflow">
-    <div class="workflow-head">
-      <div class="eyebrow">Fast Workflow</div>
-      <h3 style="margin:6px 0 0;">From idea to running campaign in one focused flow</h3>
+<!-- ═══ BENEFITS ═══ -->
+<section class="lp-benefits">
+  <div class="lp-benefits-inner">
+    <div class="lp-section-label on-dark">Why TootFlow</div>
+    <h2 class="lp-benefits-title">Built for people who publish<br>with intention.</h2>
+    <div class="lp-benefits-grid">
+      <article class="lp-benefit-card">
+        <span class="lp-benefit-tag">Share What You Know</span>
+        <h3 class="lp-benefit-title">Turn expertise into an audience</h3>
+        <p>Templates for knowledge sharing, research insights, and developer tips — structured campaigns that consistently surface your expertise to people who care.</p>
+      </article>
+      <article class="lp-benefit-card">
+        <span class="lp-benefit-tag">Human In The Loop</span>
+        <h3 class="lp-benefit-title">AI draft, your words</h3>
+        <p>Generate a full post schedule in seconds, then edit, regenerate, or rewrite every post before anything goes live. You stay in control.</p>
+      </article>
+      <article class="lp-benefit-card">
+        <span class="lp-benefit-tag">Write Once, Publish Everywhere</span>
+        <h3 class="lp-benefit-title">Turn posts into more content</h3>
+        <p>Export any campaign as a newsletter digest or LinkedIn article — AI repurposes your posts into a new format, ready to copy and paste wherever you need it.</p>
+      </article>
+      <article class="lp-benefit-card">
+        <span class="lp-benefit-tag">Privacy First</span>
+        <h3 class="lp-benefit-title">Built for people who care about their data</h3>
+        <p>No email required — sign in with Mastodon only. Payments via LemonSqueezy; we never see your card. No tracking pixels, no advertising, no third-party analytics.</p>
+      </article>
     </div>
-    <div class="workflow-list">
-      <div class="workflow-step">
-        <span class="num">01</span>
-        <p>Sign in with Mastodon OAuth, then create a campaign with topic, template, tone, and cadence.</p>
+  </div>
+</section>
+
+<!-- ═══ WORKFLOW ═══ -->
+<section class="lp-workflow">
+  <div class="lp-workflow-inner">
+    <div class="lp-section-label on-white">Fast workflow</div>
+    <h2 class="lp-workflow-title">From idea to running campaign<br>in one focused flow.</h2>
+    <div class="lp-workflow-steps">
+      <div class="lp-wf-step">
+        <div class="lp-wf-num">01</div>
+        <h4 class="lp-wf-label">Connect</h4>
+        <p>Sign in with Mastodon OAuth, create a campaign with topic, template, tone, and cadence.</p>
       </div>
-      <div class="workflow-step">
-        <span class="num">02</span>
+      <div class="lp-wf-step">
+        <div class="lp-wf-num">02</div>
+        <h4 class="lp-wf-label">Activate</h4>
         <p>Pay once (29€) to activate, then generate a full AI post schedule with one click.</p>
       </div>
-      <div class="workflow-step">
-        <span class="num">03</span>
+      <div class="lp-wf-step">
+        <div class="lp-wf-num">03</div>
+        <h4 class="lp-wf-label">Refine</h4>
         <p>Edit and regenerate individual posts until every one is exactly right before anything goes live.</p>
       </div>
-      <div class="workflow-step">
-        <span class="num">04</span>
+      <div class="lp-wf-step">
+        <div class="lp-wf-num">04</div>
+        <h4 class="lp-wf-label">Publish</h4>
         <p>TootFlow publishes on schedule automatically. Track favourites, reblogs, and replies per post.</p>
       </div>
     </div>
-  </section>
-
-  <div class="proof-grid">
-    <section class="proof-box">
-      <div class="eyebrow" style="color:var(--teal);">What You Get</div>
-      <h3 style="margin:6px 0 0;">Everything needed to run a focused campaign</h3>
-      <ul>
-        <li>10 templates — knowledge sharing, research insights, developer tips, community building, personal brand, project showcase, newsletter growth, product launch, open source release, event promotion</li>
-        <li>Up to 500 characters per post with Mastodon-friendly writing</li>
-        <li>Manual scheduling controls and post-level editing at any time</li>
-        <li>Automated publishing plus engagement tracking in one place</li>
-        <li>Export any campaign as a newsletter digest or LinkedIn summary with one click</li>
-      </ul>
-    </section>
-    <section class="proof-box">
-      <div class="eyebrow" style="color:var(--orange);">Simple Economics</div>
-      <div class="proof-price">29€</div>
-      <p class="proof-muted">One-time per campaign. No subscription lock-in, no seat pricing, no long-term commitment.</p>
-      <p class="proof-muted" style="margin-top:8px; font-size:12px;">
-        No email · No card data stored · No tracking
-      </p>
-      <a href="/login" class="btn btn-outline" style="margin-top:14px;">Create Campaign</a>
-    </section>
   </div>
-</div>
+</section>
+
+<!-- ═══ PROOF / CLOSING CTA ═══ -->
+<section class="lp-proof">
+  <div class="lp-proof-inner">
+    <div class="lp-proof-left">
+      <h2 class="lp-proof-title">Everything you need to run a focused campaign.</h2>
+      <ul class="lp-proof-list">
+        <li>10 campaign templates — knowledge sharing, research insights, developer tips, community building, personal brand, project showcase, newsletter growth, product launch, open source release, event promotion</li>
+        <li>Up to 500 characters per post, Mastodon-optimised writing</li>
+        <li>Manual scheduling controls and post-level editing at any time</li>
+        <li>Regenerate or refine individual posts with AI at any time</li>
+        <li>Automated publishing plus per-post engagement tracking</li>
+        <li>Export campaigns as newsletter digest or LinkedIn article</li>
+      </ul>
+    </div>
+    <div class="lp-proof-right">
+      <div class="lp-proof-price">29€</div>
+      <div class="lp-proof-price-sub">one-time &nbsp;·&nbsp; per campaign</div>
+      <ul class="lp-proof-perks">
+        <li>No subscription</li>
+        <li>No seat pricing</li>
+        <li>No email required</li>
+        <li>No card data stored</li>
+        <li>No tracking</li>
+      </ul>
+      <a href="/login" class="lp-cta-final">Start Your Campaign →</a>
+    </div>
+  </div>
+</section>
+
 {% endblock %}

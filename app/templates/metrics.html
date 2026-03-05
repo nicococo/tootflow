@@ -23,9 +23,10 @@
   }
   .info-panel-head {
     padding: 10px 14px;
-    border-bottom: var(--border);
-    background: var(--surface-soft);
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
   }
+  .info-panel-head .eyebrow { color: #47b8b1; }
   .info-panel-body { padding: 4px 0; }
   .info-row {
     padding: 9px 14px;
@@ -35,7 +36,10 @@
     color: var(--muted);
   }
   .info-row:last-child { border-bottom: 0; }
-  .info-row strong { color: var(--ink); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .info-row strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink); display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;
+  }
 
   .metric-def {
     display: flex;
@@ -68,7 +72,7 @@
 
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--blue);">What Each Metric Means</div>
+        <div class="eyebrow">What Each Metric Means</div>
       </div>
       <div class="info-panel-body">
         <div class="metric-def">
@@ -89,7 +93,7 @@
     {% if follower_current is not none %}
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--green);">Followers</div>
+        <div class="eyebrow">Followers</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">
@@ -124,7 +128,7 @@
 
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--muted);">How It Updates</div>
+        <div class="eyebrow">How It Updates</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">
@@ -140,7 +144,7 @@
 
     <div class="info-panel">
       <div class="info-panel-head">
-        <div class="eyebrow" style="color:var(--muted);">Reading the Chart</div>
+        <div class="eyebrow">Reading the Chart</div>
       </div>
       <div class="info-panel-body">
         <div class="info-row">
@@ -194,7 +198,7 @@
 
     {% if chart %}
     <h2>Engagement by Week</h2>
-    <div style="background:var(--white); border:var(--border); padding:20px 20px 10px; margin-bottom:32px;">
+    <div style="background:var(--surface); border:var(--border); padding:20px 20px 10px; margin-bottom:32px;">
       <div style="display:flex; align-items:flex-end; gap:{% if chart|length > 12 %}4{% else %}8{% endif %}px; height:100px;">
         {% for w in chart %}
         {% set total = w.favs + w.reblogs + w.replies %}

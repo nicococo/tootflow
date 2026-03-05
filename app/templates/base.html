@@ -17,24 +17,26 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   {% block jsonld %}{% endblock %}
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=JetBrains+Mono:wght@400;600&display=swap');
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:            #eef3f7;
-      --bg-rim:        #dfe8ef;
+      --bg:            #f2ece0;
+      --bg-rim:        #e8e0cf;
       --surface:       #ffffff;
-      --surface-soft:  #f4f8fb;
+      --surface-soft:  #f7f4ed;
       --white:         var(--surface);
       --canvas:        var(--surface-soft);
-      --ink:           #111b27;
-      --ink-soft:      #223042;
-      --muted:         #5f6f80;
+      --ink:           #0d1822;
+      --ink-soft:      #1e3144;
+      --muted:         #6b7a8a;
 
       --blue:          #1565c0;
       --blue-dark:     #0f4f98;
       --blue-light:    #e8f2ff;
 
-      --orange:        #d1603d;
+      --orange:        #d95f2a;
       --orange-light:  #fff1eb;
 
       --green:         #177a61;
@@ -49,25 +51,22 @@
       --amber:         #9a5a2a;
       --amber-light:   #fdf2df;
 
-      --teal:          #137b83;
-      --teal-light:    #e0f5f7;
+      --teal:          #47b8b1;
+      --teal-light:    #e0f7f5;
 
       --border:        2px solid var(--ink);
       --border-soft:   1px solid #cfc3b5;
       --radius:        0px;
 
-      --shadow-sm:     0 2px 0 rgba(0, 0, 0, 0.14);
-      --shadow-md:     0 4px 0 rgba(0, 0, 0, 0.16);
+      --shadow-sm:     0 2px 0 rgba(0, 0, 0, 0.12);
+      --shadow-md:     0 4px 0 rgba(0, 0, 0, 0.14);
     }
 
     body {
       font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
       font-size: 15px;
       line-height: 1.55;
-      background:
-        radial-gradient(circle at 10% -10%, var(--bg-rim) 0%, transparent 40%),
-        radial-gradient(circle at 90% -20%, #d5e4ef 0%, transparent 45%),
-        var(--bg);
+      background: var(--bg);
       color: var(--ink);
       min-height: 100vh;
     }
@@ -105,22 +104,23 @@
       min-width: 0;
     }
     .logo {
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-      font-size: 17px;
-      font-weight: 700;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 900;
+      font-style: italic;
       text-decoration: none;
-      color: #6ee7d7;
-      letter-spacing: 2.2px;
-      text-transform: uppercase;
-      padding: 0 20px;
+      color: #f2ece0;
+      letter-spacing: -0.5px;
+      padding: 0 22px;
       border-right: 1px solid #2a3848;
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
     }
-    .logo:hover { color: #9af2e7; background: #182331; }
+    .logo:hover { color: #47b8b1; background: #182331; }
 
     .header-sub {
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
       font-size: 10px;
       letter-spacing: 2.2px;
       text-transform: uppercase;
@@ -140,7 +140,7 @@
       justify-content: flex-end;
     }
     header nav a {
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
       font-size: 11px;
       color: #c1ceda;
       text-decoration: none;
@@ -152,14 +152,14 @@
       text-transform: uppercase;
       min-height: 64px;
     }
-    header nav a:hover { background: #182331; color: #9af2e7; }
+    header nav a:hover { background: #182331; color: #47b8b1; }
     header nav .nav-cta {
-      background: var(--blue);
+      background: var(--orange);
       color: #ffffff;
-      border-left: 2px solid var(--blue-dark);
-      font-weight: 700;
+      border-left: 2px solid #b54920;
+      font-weight: 600;
     }
-    header nav .nav-cta:hover { background: var(--blue-dark); color: #ffffff; }
+    header nav .nav-cta:hover { background: #0d1822; border-color: #0d1822; color: #ffffff; }
 
     /* Layout */
     .container { max-width: 1040px; margin: 0 auto; padding: 44px 24px; }
@@ -203,13 +203,15 @@
 
     /* Typography */
     h1 {
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: 30px;
-      font-weight: 800;
+      font-weight: 900;
+      font-style: italic;
       border-bottom: var(--border);
       padding-bottom: 10px;
       margin-bottom: 28px;
-      letter-spacing: -0.6px;
-      line-height: 1.15;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
     }
     h2 {
       font-size: 19px;
@@ -222,7 +224,7 @@
     p { margin-bottom: 12px; }
 
     .eyebrow {
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
       font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -241,9 +243,9 @@
       border: var(--border);
       background: var(--ink);
       color: var(--surface);
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       text-transform: uppercase;
@@ -256,8 +258,8 @@
     .btn-outline { background: transparent; color: var(--ink); }
     .btn-outline:hover { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 
-    .btn-primary { background: var(--blue); border-color: var(--blue); color: var(--surface); }
-    .btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); color: var(--surface); }
+    .btn-primary { background: var(--orange); border-color: var(--orange); color: #ffffff; }
+    .btn-primary:hover { background: #b54920; border-color: #b54920; color: #ffffff; }
 
     .btn-danger { background: var(--red); border-color: var(--red); color: var(--surface); }
     .btn-danger:hover { background: #8f1b24; border-color: #8f1b24; color: var(--surface); }
@@ -278,12 +280,12 @@
     .form-group { margin-bottom: 20px; }
     label {
       display: block;
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-      font-weight: 700;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
+      font-weight: 600;
       margin-bottom: 7px;
-      font-size: 10px;
+      font-size: 9px;
       text-transform: uppercase;
-      letter-spacing: 1.7px;
+      letter-spacing: 2px;
       color: var(--muted);
     }
     input[type="text"], input[type="email"], input[type="password"], input[type="number"],
@@ -298,8 +300,8 @@
     }
     input:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px var(--blue-light);
+      border-color: var(--ink);
+      box-shadow: 0 0 0 3px rgba(13, 24, 34, 0.1);
     }
     textarea { resize: vertical; min-height: 100px; }
     select {
@@ -347,25 +349,25 @@
     table { width: 100%; border-collapse: collapse; border: var(--border); background: var(--surface); }
     th, td { border: var(--border-soft); padding: 10px 14px; text-align: left; vertical-align: top; }
     th {
-      background: #2149b7;
-      color: var(--surface);
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-      font-weight: 700;
+      background: var(--ink);
+      color: #f2ece0;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
+      font-weight: 600;
       text-transform: uppercase;
       font-size: 10px;
       letter-spacing: 1.5px;
-      border-color: #18398f;
+      border-color: #1e3144;
     }
     tr:nth-child(even) td { background: var(--surface-soft); }
-    tbody tr:hover td { background: var(--blue-light); }
+    tbody tr:hover td { background: #f0f0e8; }
 
     /* Badges */
     .badge {
       display: inline-block;
       padding: 2px 8px;
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1.1px;
     }
@@ -382,27 +384,33 @@
 
     /* Stats */
     .stat-box {
-      background: var(--surface);
-      border: var(--border);
+      background: var(--ink);
+      border: 2px solid var(--ink);
       padding: 24px 16px;
       text-align: center;
       box-shadow: var(--shadow-sm);
     }
-    .stat-box .num { font-size: 42px; font-weight: 800; line-height: 1; }
+    .stat-box .num {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      color: #f2ece0;
+    }
     .stat-box .label {
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
       font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: var(--muted);
+      color: #47b8b1;
       margin-top: 8px;
     }
     .stat-box:nth-child(1) { border-top: 4px solid var(--orange); }
     .stat-box:nth-child(1) .num { color: var(--orange); }
-    .stat-box:nth-child(2) { border-top: 4px solid var(--purple); }
-    .stat-box:nth-child(2) .num { color: var(--purple); }
-    .stat-box:nth-child(3) { border-top: 4px solid var(--teal); }
-    .stat-box:nth-child(3) .num { color: var(--teal); }
+    .stat-box:nth-child(2) { border-top: 4px solid var(--teal); }
+    .stat-box:nth-child(2) .num { color: var(--teal); }
+    .stat-box:nth-child(3) { border-top: 4px solid #f2ece0; }
+    .stat-box:nth-child(3) .num { color: #f2ece0; }
 
     /* Misc */
     .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -442,20 +450,20 @@
       cursor: pointer;
       font-weight: 700;
       padding: 12px 16px;
-      border-left: 4px solid var(--blue);
+      border-left: 4px solid var(--orange);
       list-style: none;
       letter-spacing: 0.3px;
     }
     details summary::marker, details summary::-webkit-details-marker { display: none; }
     details summary::before {
       content: "+ ";
-      color: var(--blue);
+      color: var(--orange);
       font-weight: 700;
-      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
     }
     details[open] summary {
       border-bottom: var(--border-soft);
-      background: var(--blue-light);
+      background: var(--surface-soft);
     }
     details[open] summary::before { content: "- "; }
     details[open] > *:not(summary) { padding: 16px; }
@@ -468,18 +476,18 @@
     }
 
     footer {
-      border-top: var(--border-soft);
-      padding: 18px 24px;
-      font-size: 11px;
-      color: var(--muted);
+      border-top: 3px solid #47b8b1;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', "SFMono-Regular", Menlo, monospace;
+      font-size: 10px;
+      color: #8a9db0;
       text-align: center;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
-      background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(3px);
+      background: #0d1822;
     }
-    footer a { color: var(--muted); text-decoration: none; border-bottom: 1px solid #b8ab9b; }
-    footer a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+    footer a { color: #8a9db0; text-decoration: none; border-bottom: 1px solid #2a3848; }
+    footer a:hover { color: #f2ece0; border-bottom-color: #47b8b1; }
 
     @media (max-width: 900px) {
       .header-inner { display: block; }
@@ -522,7 +530,7 @@
     </div>
   </header>
   {% if request.state.banner_text %}
-  <div style="background:#c8a800; color:#111; padding:10px 24px; text-align:center; font-size:14px; font-weight:600; border-bottom:2px solid #9a7e00; letter-spacing:0.2px;">
+  <div style="background:#d95f2a; color:#fff; padding:10px 24px; text-align:center; font-family:'JetBrains Mono','SFMono-Regular',Menlo,monospace; font-size:11px; font-weight:600; letter-spacing:1px; border-bottom:2px solid #b54920;">
     {{ request.state.banner_text }}
   </div>
   {% endif %}
@@ -531,15 +539,15 @@
   </main>
   <footer>
     <a href="/impressum">Impressum</a>
-    <span style="margin:0 12px;">·</span>
+    <span style="margin:0 12px; color:#2a3848;">·</span>
     <a href="/privacy">Privacy</a>
-    <span style="margin:0 12px;">·</span>
+    <span style="margin:0 12px; color:#2a3848;">·</span>
     <a href="/tos">Terms</a>
-    <span style="margin:0 12px;">·</span>
+    <span style="margin:0 12px; color:#2a3848;">·</span>
     TootFlow
-    <span style="margin:0 12px;">·</span>
+    <span style="margin:0 12px; color:#2a3848;">·</span>
     <a href="mailto:hello@tootflow.com">hello@tootflow.com</a>
-    <span style="margin:0 12px;">·</span>
+    <span style="margin:0 12px; color:#2a3848;">·</span>
     <a href="https://mastodon.social/@tootflow" target="_blank" rel="noopener">@tootflow@mastodon.social</a>
   </footer>
 </body>
