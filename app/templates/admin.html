@@ -71,7 +71,7 @@
   <table>
     <tr><th style="width:200px;">Total campaigns</th><td>{{ campaigns_total }}</td></tr>
     <tr><th>Paid / activated</th><td>{{ campaigns_paid }}</td></tr>
-    <tr><th>Currently active</th><td>{{ campaigns_active }}</td></tr>
+    <tr><th>Currently active</th><td>{{ campaigns_active }} <span class="muted text-sm">(un-paused)</span></td></tr>
     <tr>
       <th>Conversion rate</th>
       <td>
@@ -97,7 +97,9 @@
   <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
   <table>
     <tr><th style="width:200px;">Published</th><td><span class="badge badge-published">{{ posts_published }}</span></td></tr>
-    <tr><th>Pending</th><td><span class="badge badge-pending">{{ posts_pending }}</span></td></tr>
+    <tr><th>Pending — running</th><td><span class="badge badge-pending">{{ posts_pending_running }}</span></td></tr>
+    <tr><th>Pending — paused</th><td><span class="badge badge-pending">{{ posts_pending_paused }}</span></td></tr>
+    <tr><th>Pending — unpaid</th><td><span class="badge badge-pending">{{ posts_pending_unpaid }}</span></td></tr>
     <tr><th>Failed</th><td><span class="badge badge-failed">{{ posts_failed }}</span></td></tr>
   </table>
   </div>
@@ -123,6 +125,58 @@
         <span style="font-size:12px; color:var(--muted);">● Banner is hidden</span>
         {% endif %}
       </div>
+    </form>
+  </div>
+
+  <!-- Runtime Settings -->
+  <h2>Runtime Settings</h2>
+  <div style="margin-bottom:32px; max-width:640px;">
+    <p class="muted text-sm" style="margin-bottom:14px;">
+      ⚠ In-memory only — changes apply immediately but reset on restart. Update your <code>.env</code> file to persist them.
+    </p>
+    <form method="post" action="/admin/settings">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <div class="table-wrap">
+      <table>
+        <tr>
+          <th style="width:220px;">Campaign price</th>
+          <td><input type="text" name="campaign_price" value="{{ settings.campaign_price }}"
+              style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);">
+          </td>
+        </tr>
+        <tr>
+          <th>Campaign currency</th>
+          <td><input type="text" name="campaign_currency" value="{{ settings.campaign_currency }}"
+              style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);" maxlength="3">
+          </td>
+        </tr>
+        <tr>
+          <th>OpenAI model</th>
+          <td><input type="text" name="openai_model" value="{{ settings.openai_model }}"
+              style="width:200px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);">
+          </td>
+        </tr>
+        <tr>
+          <th>Max AI posts per campaign</th>
+          <td><input type="number" name="openai_max_posts_per_campaign" value="{{ settings.openai_max_posts_per_campaign }}"
+              min="1" max="200" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);">
+          </td>
+        </tr>
+        <tr>
+          <th>Max tokens per AI request</th>
+          <td><input type="number" name="openai_max_tokens" value="{{ settings.openai_max_tokens }}"
+              min="256" max="32000" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);">
+          </td>
+        </tr>
+        <tr>
+          <th>Max posts per campaign (hard cap)</th>
+          <td><input type="number" name="max_posts_per_campaign" value="{{ settings.max_posts_per_campaign }}"
+              min="1" max="500" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);">
+          </td>
+        </tr>
+      </table>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="margin-top:10px;">Apply Changes</button>
     </form>
   </div>
 

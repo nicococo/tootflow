@@ -25,6 +25,8 @@ env/
 *.sqlite
 *.sqlite3
 tootflow.db
+*.db-wal
+*.db-shm
 
 # Logs
 *.log

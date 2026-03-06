@@ -83,13 +83,32 @@ def _build_stats(session: Session) -> dict:
         # Campaigns
         "campaigns_total":  count(Campaign),
         "campaigns_paid":   count(Campaign, Campaign.payment_status == "paid"),
-        "campaigns_active": count(Campaign, Campaign.status.in_(["active", "running"])),
+        "campaigns_active": count(Campaign, Campaign.status.in_(["active", "running"]) & (Campaign.enabled == True)),
         # Revenue
         "revenue_total": round(revenue, 2),
         # Posts
         "posts_published": count(Post, Post.status == "published"),
-        "posts_pending":   count(Post, Post.status == "pending"),
         "posts_failed":    count(Post, Post.status == "failed"),
+        "posts_pending_running": session.exec(
+            select(func.count()).select_from(Post)
+            .join(Campaign, Post.campaign_id == Campaign.id)
+            .where(Post.status == "pending",
+                   Campaign.status.in_(["active", "running"]),
+                   Campaign.enabled == True)
+        ).one() or 0,
+        "posts_pending_paused": session.exec(
+            select(func.count()).select_from(Post)
+            .join(Campaign, Post.campaign_id == Campaign.id)
+            .where(Post.status == "pending",
+                   Campaign.status.in_(["active", "running"]),
+                   Campaign.enabled == False)
+        ).one() or 0,
+        "posts_pending_unpaid": session.exec(
+            select(func.count()).select_from(Post)
+            .join(Campaign, Post.campaign_id == Campaign.id)
+            .where(Post.status == "pending",
+                   Campaign.payment_status != "paid")
+        ).one() or 0,
         # Chart
         "chart": chart,
     }
@@ -190,6 +209,33 @@ def mark_campaign_paid(
     session.add(campaign)
     session.commit()
     logger.info(f"Admin manually marked campaign {campaign_id} as paid")
+    return RedirectResponse("/admin", status_code=302)
+
+
+@router.post("/settings")
+def update_settings(
+    request: Request,
+    campaign_price: str = Form(...),
+    campaign_currency: str = Form(...),
+    openai_model: str = Form(...),
+    openai_max_posts_per_campaign: int = Form(...),
+    openai_max_tokens: int = Form(...),
+    max_posts_per_campaign: int = Form(...),
+    _csrf: None = Depends(verify_csrf),
+):
+    if not _is_authenticated(request):
+        return RedirectResponse("/admin", status_code=302)
+    settings.campaign_price = campaign_price.strip()
+    settings.campaign_currency = campaign_currency.strip().upper()
+    settings.openai_model = openai_model.strip()
+    settings.openai_max_posts_per_campaign = openai_max_posts_per_campaign
+    settings.openai_max_tokens = openai_max_tokens
+    settings.max_posts_per_campaign = max_posts_per_campaign
+    logger.info(
+        f"Admin updated in-memory settings: price={settings.campaign_price} "
+        f"currency={settings.campaign_currency} model={settings.openai_model} "
+        f"max_posts={settings.openai_max_posts_per_campaign}"
+    )
     return RedirectResponse("/admin", status_code=302)
 
 
