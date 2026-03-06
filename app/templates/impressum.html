@@ -161,31 +161,33 @@ h1.legal-title {
         <div class="legal-operator-head">Service Operator</div>
         <div class="legal-op-row">
           <span class="legal-op-key">Name</span>
-          <span class="legal-op-val">[VORNAME NACHNAME]</span>
+          <span class="legal-op-val">{{ settings.operator_name or "[OPERATOR NAME not set]" }}</span>
         </div>
         <div class="legal-op-row">
           <span class="legal-op-key">Address</span>
           <span class="legal-op-val">
-            [STRASSE HAUSNUMMER]<br>
-            [PLZ] [STADT]<br>
+            {{ settings.operator_street or "[STREET not set]" }}<br>
+            {{ settings.operator_city or "[CITY not set]" }}<br>
             Germany
           </span>
         </div>
         <div class="legal-op-row">
           <span class="legal-op-key">Email</span>
-          <span class="legal-op-val"><a href="mailto:hello@tootflow.com">hello@tootflow.com</a></span>
+          <span class="legal-op-val"><a href="mailto:{{ settings.operator_email }}">{{ settings.operator_email }}</a></span>
         </div>
+        {% if settings.operator_phone %}
         <div class="legal-op-row">
           <span class="legal-op-key">Phone</span>
-          <span class="legal-op-val">[+49 XXX XXXXXXXX]</span>
+          <span class="legal-op-val">{{ settings.operator_phone }}</span>
         </div>
+        {% endif %}
         <div class="legal-op-row">
           <span class="legal-op-key">VAT ID</span>
-          <span class="legal-op-val">[DE XXXXXXXXX] — or: Not VAT-registered (Kleinunternehmer per §19 UStG)</span>
+          <span class="legal-op-val">{{ settings.operator_vat_id or "[VAT ID not set]" }}</span>
         </div>
         <div class="legal-op-row">
           <span class="legal-op-key">Responsible for content<br>(§18 Abs. 2 MStV)</span>
-          <span class="legal-op-val">[VORNAME NACHNAME], address as above</span>
+          <span class="legal-op-val">{{ settings.operator_name or "[OPERATOR NAME not set]" }}, address as above</span>
         </div>
       </div>
 

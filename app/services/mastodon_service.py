@@ -70,13 +70,21 @@ async def get_account_info(instance_url: str, access_token: str) -> dict:
         return resp.json()
 
 
-async def publish_post(account: MastodonAccount, content: str) -> dict:
+async def publish_post(
+    account: MastodonAccount,
+    content: str,
+    poll_options: list[str] | None = None,
+    poll_expires_in: int = 86400,
+) -> dict:
     base = account.instance_url.rstrip("/")
+    body: dict = {"status": content}
+    if poll_options and len(poll_options) >= 2:
+        body["poll"] = {"options": poll_options, "expires_in": poll_expires_in}
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{base}/api/v1/statuses",
             headers={"Authorization": f"Bearer {account.access_token}"},
-            json={"status": content},
+            json=body,
         )
         resp.raise_for_status()
         return resp.json()
@@ -91,8 +99,10 @@ async def fetch_status_metrics(account: MastodonAccount, status_id: str) -> dict
         )
         resp.raise_for_status()
         data = resp.json()
+        poll = data.get("poll") or {}
         return {
             "favourites": data.get("favourites_count", 0),
             "reblogs": data.get("reblogs_count", 0),
             "replies": data.get("replies_count", 0),
+            "poll_voters": poll.get("voters_count") or 0,
         }

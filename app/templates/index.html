@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% block title %}TootFlow – Mastodon Campaign Planner{% endblock %}
-{% block meta_description %}Plan and automate Mastodon campaigns with AI-assisted drafting. No email, no card data stored, no tracking. Full editorial control. One-time 29€ per campaign, no subscription.{% endblock %}
+{% block meta_description %}Plan and automate Mastodon campaigns with AI-assisted drafting. Includes poll support. No email, no card data stored, no tracking. Full editorial control. One-time {{ settings.campaign_price }}€ per campaign, no subscription.{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "TootFlow",
-  "description": "Plan, draft, and automate Mastodon social media campaigns with AI-assisted post scheduling and full editorial control.",
+  "description": "Plan, draft, and automate Mastodon social media campaigns with AI-assisted post scheduling, poll support, and full editorial control.",
   "applicationCategory": "SocialNetworkingApplication",
   "operatingSystem": "Web",
   "offers": {
     "@type": "Offer",
-    "price": "29.00",
-    "priceCurrency": "EUR",
+    "price": "{{ settings.campaign_price }}.00",
+    "priceCurrency": "{{ settings.campaign_currency }}",
     "description": "One-time per campaign, no subscription"
   },
   "url": "{{ request.url.scheme }}://{{ request.url.netloc }}/"
@@ -571,7 +571,7 @@ h2.lp-proof-title {
         <polygon points="96,68 102,68 110,94 102,94" fill="#47b8b1"/>
       </svg>
       <div class="lp-price-badge">
-        <div class="amount">29€</div>
+        <div class="amount">{{ settings.campaign_price }}€</div>
         <div class="per">per campaign</div>
         <div class="no-sub">no subscription ever</div>
       </div>
@@ -581,7 +581,7 @@ h2.lp-proof-title {
 
 <!-- ═══ BAND ═══ -->
 <div class="lp-band">
-  <p>AI-assisted drafting &nbsp;·&nbsp; Full editorial control &nbsp;·&nbsp; Automated publishing &nbsp;·&nbsp; Engagement insights</p>
+  <p>AI-assisted drafting &nbsp;·&nbsp; Full editorial control &nbsp;·&nbsp; Poll support &nbsp;·&nbsp; Automated publishing &nbsp;·&nbsp; Engagement insights</p>
 </div>
 
 <!-- ═══ HOW IT WORKS ═══ -->
@@ -601,12 +601,12 @@ h2.lp-proof-title {
       </div>
       <div class="lp-how-step">
         <h3 class="lp-step-title">Pay once to activate</h3>
-        <p>One-time 29€ unlocks AI generation and automated publishing for this campaign.</p>
+        <p>One-time {{ settings.campaign_price }}€ unlocks AI generation and automated publishing for this campaign.</p>
         <span class="lp-step-num">3</span>
       </div>
       <div class="lp-how-step">
         <h3 class="lp-step-title">AI drafts your schedule</h3>
-        <p>A full post schedule is generated instantly. Every post is yours to edit or regenerate.</p>
+        <p>Up to {{ settings.openai_max_posts_per_campaign }} posts generated instantly. Add polls to any post. Every post is yours to edit or regenerate.</p>
         <span class="lp-step-num">4</span>
       </div>
       <div class="lp-how-step">
@@ -616,7 +616,7 @@ h2.lp-proof-title {
       </div>
       <div class="lp-how-step">
         <h3 class="lp-step-title">Publish and track</h3>
-        <p>Posts go live on schedule automatically. Track favourites, reblogs, and replies per post.</p>
+        <p>Posts go live on schedule automatically. Track favourites, reblogs, replies, and poll voters per post.</p>
         <span class="lp-step-num">6</span>
       </div>
     </div>
@@ -667,7 +667,7 @@ h2.lp-proof-title {
       <div class="lp-wf-step">
         <div class="lp-wf-num">02</div>
         <h4 class="lp-wf-label">Activate</h4>
-        <p>Pay once (29€) to activate, then generate a full AI post schedule with one click.</p>
+        <p>Pay once ({{ settings.campaign_price }}€) to activate, then generate a full AI post schedule with one click.</p>
       </div>
       <div class="lp-wf-step">
         <div class="lp-wf-num">03</div>
@@ -691,14 +691,15 @@ h2.lp-proof-title {
       <ul class="lp-proof-list">
         <li>10 campaign templates — knowledge sharing, research insights, developer tips, community building, personal brand, project showcase, newsletter growth, product launch, open source release, event promotion</li>
         <li>Up to 500 characters per post, Mastodon-optimised writing</li>
+        <li>Add polls (up to 4 options) to any post — poll voter counts tracked automatically</li>
         <li>Manual scheduling controls and post-level editing at any time</li>
-        <li>Regenerate or refine individual posts with AI at any time</li>
-        <li>Automated publishing plus per-post engagement tracking</li>
+        <li>Regenerate or refine individual posts with AI — up to {{ settings.openai_max_posts_per_campaign }} AI-generated posts per campaign</li>
+        <li>Automated publishing plus per-post engagement tracking (favourites, reblogs, replies, poll voters)</li>
         <li>Export campaigns as newsletter digest or LinkedIn article</li>
       </ul>
     </div>
     <div class="lp-proof-right">
-      <div class="lp-proof-price">29€</div>
+      <div class="lp-proof-price">{{ settings.campaign_price }}€</div>
       <div class="lp-proof-price-sub">one-time &nbsp;·&nbsp; per campaign</div>
       <ul class="lp-proof-perks">
         <li>No subscription</li>

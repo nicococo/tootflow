@@ -5,12 +5,14 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.database import get_session
 from app.models import Campaign, Post, Metrics, User, MastodonAccount, FollowerSnapshot
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/campaigns")
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["settings"] = get_settings()
 
 
 @router.get("/{campaign_id}/metrics", response_class=HTMLResponse)
@@ -33,9 +35,11 @@ def campaign_metrics(
         m = session.exec(select(Metrics).where(Metrics.post_id == post.id)).first()
         post_metrics.append({"post": post, "metrics": m})
 
-    total_favs    = sum((pm["metrics"].favourites if pm["metrics"] else 0) for pm in post_metrics)
-    total_reblogs = sum((pm["metrics"].reblogs    if pm["metrics"] else 0) for pm in post_metrics)
-    total_replies = sum((pm["metrics"].replies    if pm["metrics"] else 0) for pm in post_metrics)
+    total_favs    = sum((pm["metrics"].favourites  if pm["metrics"] else 0) for pm in post_metrics)
+    total_reblogs = sum((pm["metrics"].reblogs     if pm["metrics"] else 0) for pm in post_metrics)
+    total_replies = sum((pm["metrics"].replies     if pm["metrics"] else 0) for pm in post_metrics)
+    total_voters  = sum((pm["metrics"].poll_voters if pm["metrics"] else 0) for pm in post_metrics
+                        if pm["post"].poll_options)
 
     # Follower snapshots for this user
     snapshots = session.exec(
@@ -70,6 +74,7 @@ def campaign_metrics(
             "total_favs": total_favs,
             "total_reblogs": total_reblogs,
             "total_replies": total_replies,
+            "total_voters": total_voters,
             "chart": chart,
             "snapshots": snapshots,
             "follower_current": follower_current,

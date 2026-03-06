@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
@@ -17,8 +18,19 @@ settings = get_settings()
 
 logger = logging.getLogger(__name__)
 
+
+def _parse_poll(poll_option: list[str], poll_expires_in: int):
+    """Returns (options_json_or_none, expires_in, error_or_none)."""
+    clean = [o.strip() for o in poll_option if o.strip()]
+    if len(clean) == 0:
+        return None, poll_expires_in, None
+    if len(clean) == 1:
+        return None, poll_expires_in, "A poll needs at least 2 options."
+    return json.dumps(clean[:4]), poll_expires_in, None
+
 router = APIRouter(prefix="/campaigns")
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["settings"] = settings
 
 
 @router.get("/{campaign_id}/posts", response_class=HTMLResponse)
@@ -34,11 +46,19 @@ def edit_posts_page(
     posts = session.exec(
         select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)
     ).all()
+    poll_data = {}
+    for p in posts:
+        if p.poll_options:
+            try:
+                poll_data[p.id] = json.loads(p.poll_options)
+            except Exception:
+                pass
     return templates.TemplateResponse(
         "posts_edit.html",
         {"request": request, "user": user, "campaign": campaign, "posts": posts,
          "max_posts": settings.max_posts_per_campaign,
-         "ai_max": settings.openai_max_posts_per_campaign},
+         "ai_max": settings.openai_max_posts_per_campaign,
+         "poll_data": poll_data},
     )
 
 
@@ -47,6 +67,8 @@ def add_post(
     campaign_id: int,
     content: str = Form(...),
     scheduled_time: str = Form(...),
+    poll_option: list[str] = Form(default=[]),
+    poll_expires_in: int = Form(default=86400),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
@@ -57,8 +79,12 @@ def add_post(
     current_count = session.exec(select(Post).where(Post.campaign_id == campaign_id)).all()
     if len(current_count) >= settings.max_posts_per_campaign:
         raise HTTPException(status_code=400, detail=f"Campaign has reached the maximum of {settings.max_posts_per_campaign} posts")
+    opts_json, expires_in, err = _parse_poll(poll_option, poll_expires_in)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
     sched = datetime.fromisoformat(scheduled_time)
-    post = Post(campaign_id=campaign_id, content=content[:500], scheduled_time=sched)
+    post = Post(campaign_id=campaign_id, content=content[:500], scheduled_time=sched,
+                poll_options=opts_json, poll_expires_in=expires_in)
     session.add(post)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
@@ -70,6 +96,8 @@ def edit_post(
     post_id: int,
     content: str = Form(...),
     scheduled_time: str = Form(...),
+    poll_option: list[str] = Form(default=[]),
+    poll_expires_in: int = Form(default=86400),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
@@ -80,8 +108,13 @@ def edit_post(
     post = session.get(Post, post_id)
     if not post or post.campaign_id != campaign_id:
         raise HTTPException(status_code=404)
+    opts_json, expires_in, err = _parse_poll(poll_option, poll_expires_in)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
     post.content = content[:500]
     post.scheduled_time = datetime.fromisoformat(scheduled_time)
+    post.poll_options = opts_json
+    post.poll_expires_in = expires_in
     session.add(post)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
@@ -215,6 +248,7 @@ async def refine_post(
         raise HTTPException(status_code=400, detail="Instructions cannot be empty")
 
     try:
+        poll_opts = json.loads(post.poll_options) if post.poll_options else None
         post.content = await refine_single_post(
             current_content=post.content,
             instructions=instructions,
@@ -223,6 +257,7 @@ async def refine_post(
             template_type=campaign.template_type,
             tone=campaign.tone,
             language=campaign.language,
+            poll_options=poll_opts,
         )
         campaign.ai_posts_generated += 1
         session.add(post)

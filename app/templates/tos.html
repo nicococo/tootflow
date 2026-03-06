@@ -210,7 +210,7 @@ h1.legal-title {
       <details open>
         <summary>3. Campaigns and pricing</summary>
         <p>
-          Each campaign requires a one-time activation payment of <strong>29 EUR</strong> (including applicable VAT).
+          Each campaign requires a one-time activation payment of <strong>{{ settings.campaign_price }} {{ settings.campaign_currency }}</strong> (including applicable VAT).
           This is a single charge per campaign — there are no subscriptions, recurring fees, or hidden costs.
         </p>
         <p>
@@ -243,9 +243,9 @@ h1.legal-title {
           by post or email) of your decision to withdraw from this contract:
         </p>
         <div class="legal-address">
-          [VORNAME NACHNAME]<br>
-          [STRASSE HAUSNUMMER, PLZ STADT, Germany]<br>
-          Email: <a href="mailto:hello@tootflow.com">hello@tootflow.com</a>
+          {{ settings.operator_name or "[OPERATOR NAME not set]" }}<br>
+          {{ settings.operator_street or "[STREET not set]" }}, {{ settings.operator_city or "[CITY not set]" }}, Germany<br>
+          Email: <a href="mailto:{{ settings.operator_email }}">{{ settings.operator_email }}</a>
         </div>
         <p>
           To meet the withdrawal deadline it is sufficient for you to send your communication concerning the
@@ -354,7 +354,7 @@ h1.legal-title {
         </p>
         <p>
           The place of jurisdiction for all disputes arising from or in connection with these Terms is
-          <strong>[IHRE STADT]</strong>, Germany, to the extent permitted by law.
+          <strong>{{ settings.operator_city or "[CITY not set]" }}</strong>, Germany, to the extent permitted by law.
         </p>
       </details>
 
@@ -364,7 +364,7 @@ h1.legal-title {
           For questions about these Terms, refund requests, or withdrawal notices:
         </p>
         <div class="legal-address">
-          <a href="mailto:hello@tootflow.com">hello@tootflow.com</a><br>
+          <a href="mailto:{{ settings.operator_email }}">{{ settings.operator_email }}</a><br>
           Postal address: see <a href="/impressum">Impressum</a>
         </div>
       </details>

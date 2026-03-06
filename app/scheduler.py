@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -41,7 +42,13 @@ async def publish_due_posts():
             try:
                 # Decrypt token for use — do not persist the decrypted value (Fix #1)
                 account.access_token = decrypt_token(account.access_token)
-                result = await mastodon_service.publish_post(account, post.content)
+                _poll_opts = json.loads(post.poll_options) if post.poll_options else None
+                result = await mastodon_service.publish_post(
+                    account,
+                    post.content,
+                    poll_options=_poll_opts,
+                    poll_expires_in=post.poll_expires_in,
+                )
                 post.status = "published"
                 post.mastodon_status_id = result["id"]
                 post.published_at = datetime.utcnow()
@@ -119,6 +126,7 @@ async def update_metrics():
                     metrics.favourites = data["favourites"]
                     metrics.reblogs = data["reblogs"]
                     metrics.replies = data["replies"]
+                    metrics.poll_voters = data["poll_voters"]
                     metrics.last_updated = datetime.utcnow()
                 else:
                     metrics = Metrics(
@@ -126,6 +134,7 @@ async def update_metrics():
                         favourites=data["favourites"],
                         reblogs=data["reblogs"],
                         replies=data["replies"],
+                        poll_voters=data["poll_voters"],
                     )
                 session.add(metrics)
             except Exception as e:
@@ -146,8 +155,6 @@ async def update_metrics():
                 .where(FollowerSnapshot.recorded_at >= today_start)
                 .where(FollowerSnapshot.recorded_at < today_end)
             ).first()
-            if already:
-                continue
 
             if user_id not in decrypted:
                 try:
@@ -161,7 +168,11 @@ async def update_metrics():
                     account.instance_url, decrypted[user_id]
                 )
                 count = info.get("followers_count", 0)
-                session.add(FollowerSnapshot(user_id=user_id, count=count))
+                if already:
+                    already.count = count
+                    session.add(already)
+                else:
+                    session.add(FollowerSnapshot(user_id=user_id, count=count))
                 logger.info(f"Follower snapshot user {user_id}: {count}")
             except Exception as e:
                 logger.error(f"Failed to fetch followers for user {user_id}: {e}")

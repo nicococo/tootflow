@@ -53,6 +53,8 @@ class Post(SQLModel, table=True):
     status: str = "pending"
     mastodon_status_id: Optional[str] = None
     published_at: Optional[datetime] = None
+    poll_options: Optional[str] = None   # JSON list e.g. '["Yes","No","Maybe"]'
+    poll_expires_in: int = 86400         # seconds; default = 1 day
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     campaign: Optional[Campaign] = Relationship(back_populates="posts")
@@ -65,6 +67,7 @@ class Metrics(SQLModel, table=True):
     favourites: int = 0
     reblogs: int = 0
     replies: int = 0
+    poll_voters: int = 0
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
     post: Optional[Post] = Relationship(back_populates="metrics")

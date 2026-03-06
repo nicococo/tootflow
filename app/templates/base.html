@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}TootFlow{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}TootFlow — plan, draft, and automate Mastodon campaigns. AI-assisted post scheduling with full editorial control. One-time 29€ per campaign.{% endblock %}">
+  <meta name="description" content="{% block meta_description %}TootFlow — plan, draft, and automate Mastodon campaigns. AI-assisted post scheduling with full editorial control. One-time {{ settings.campaign_price }}€ per campaign.{% endblock %}">
   <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.netloc }}{{ request.url.path }}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="TootFlow">

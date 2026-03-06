@@ -23,6 +23,17 @@ class Settings(BaseSettings):
 
     admin_secret: str = ""  # set a strong random string to enable /admin
 
+    # Legal / Impressum details
+    operator_name: str = ""
+    operator_street: str = ""
+    operator_city: str = ""          # e.g. "12345 Berlin"
+    operator_phone: str = ""
+    operator_vat_id: str = ""        # e.g. "DE123456789" or "Kleinunternehmer per §19 UStG"
+    operator_email: str = "hello@tootflow.com"
+
+    campaign_price: str = "29"        # digits only, no currency symbol
+    campaign_currency: str = "EUR"    # ISO code; used in JSON-LD + ToS formal text
+
     class Config:
         env_file = ".env"
 

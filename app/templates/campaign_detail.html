@@ -129,7 +129,7 @@
           <div>
             <div class="step-label {% if not is_paid %}{% else %}{% endif %}">Activated</div>
             {% if not is_paid %}
-            <div class="step-hint">Pay 29€ to unlock AI generation.</div>
+            <div class="step-hint">Pay {{ settings.campaign_price }}€ to unlock AI generation.</div>
             {% endif %}
           </div>
         </div>
@@ -305,7 +305,7 @@
       {% if campaign.payment_status != "paid" %}
         <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          <button type="submit" class="btn btn-success">Activate Campaign — 29€</button>
+          <button type="submit" class="btn btn-success">Activate Campaign — {{ settings.campaign_price }}€</button>
         </form>
       {% endif %}
 

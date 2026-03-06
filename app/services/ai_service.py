@@ -142,6 +142,7 @@ async def refine_single_post(
     template_type: str,
     tone: str,
     language: str,
+    poll_options: list[str] | None = None,
 ) -> str:
     """Refine an existing post based on user instructions, keeping campaign context."""
     client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -155,6 +156,15 @@ async def refine_single_post(
     safe_content = _sanitize(current_content, 500)
     safe_instructions = _sanitize(instructions, 300)
 
+    poll_note = ""
+    if poll_options and len(poll_options) >= 2:
+        safe_opts = [_sanitize(o, 50) for o in poll_options[:4]]
+        poll_note = (
+            f"\n\nThis post has an attached poll with these options: "
+            + ", ".join(f'"{o}"' for o in safe_opts)
+            + ". Refine the post text to complement the poll — do not modify the poll options themselves."
+        )
+
     system_prompt = (
         f"You are a social media expert refining a Mastodon post for {template_desc}. "
         f"Rewrite the provided post according to the user's instructions. "
@@ -167,7 +177,7 @@ async def refine_single_post(
         f"Campaign: {safe_name}\n"
         f"Topic: {safe_desc}\n"
         f"Language: {safe_lang}\n\n"
-        f"Current post:\n{safe_content}\n\n"
+        f"Current post:\n{safe_content}{poll_note}\n\n"
         f"Instructions: {safe_instructions}"
     )
 

@@ -87,6 +87,12 @@
           <div class="metric-swatch" style="background:var(--teal);"></div>
           <div><strong style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Replies</strong>Direct engagement — someone took the time to respond. High-quality signal.</div>
         </div>
+        {% if total_voters > 0 %}
+        <div class="metric-def">
+          <div class="metric-swatch" style="background:var(--green);"></div>
+          <div><strong style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Poll Voters</strong>Unique accounts that voted in one of your polls. Strong active-participation signal.</div>
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -173,7 +179,8 @@
       <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
     </div>
 
-    <div style="display:grid; grid-template-columns: repeat({% if follower_delta is not none %}4{% else %}3{% endif %}, 1fr); gap:12px; margin-bottom:36px;">
+    {% set card_count = 3 + (1 if follower_delta is not none else 0) + (1 if total_voters > 0 else 0) %}
+    <div style="display:grid; grid-template-columns: repeat({{ card_count }}, 1fr); gap:12px; margin-bottom:36px;">
       <div class="stat-box">
         <div class="num">{{ total_favs }}</div>
         <div class="label">Favourites</div>
@@ -186,6 +193,12 @@
         <div class="num">{{ total_replies }}</div>
         <div class="label">Replies</div>
       </div>
+      {% if total_voters > 0 %}
+      <div class="stat-box" style="border-top:4px solid var(--green);">
+        <div class="num" style="color:var(--green);">{{ total_voters }}</div>
+        <div class="label">Poll Voters</div>
+      </div>
+      {% endif %}
       {% if follower_delta is not none %}
       <div class="stat-box" style="border-top:4px solid #c8a800;">
         <div class="num" style="color:{% if follower_delta >= 0 %}#c8a800{% else %}var(--red){% endif %};">
@@ -257,6 +270,7 @@
           <th style="width:60px; text-align:center;">Favs</th>
           <th style="width:70px; text-align:center;">Reblogs</th>
           <th style="width:70px; text-align:center;">Replies</th>
+          <th style="width:70px; text-align:center;">Voters</th>
         </tr>
       </thead>
       <tbody>
@@ -271,6 +285,7 @@
           <td style="text-align:center; font-weight:bold; color:var(--orange);">{{ m.favourites if m else "—" }}</td>
           <td style="text-align:center; font-weight:bold; color:var(--purple);">{{ m.reblogs if m else "—" }}</td>
           <td style="text-align:center; font-weight:bold; color:var(--teal);">{{ m.replies if m else "—" }}</td>
+          <td style="text-align:center; font-weight:bold; color:var(--muted);">{{ m.poll_voters if (m and p.poll_options) else "—" }}</td>
         </tr>
         {% endfor %}
       </tbody>

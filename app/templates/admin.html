@@ -112,7 +112,7 @@
       </label>
       <textarea name="banner_text" rows="2"
         style="width:100%; font-family:inherit; font-size:14px; padding:8px 10px; border:var(--border); background:var(--surface); resize:vertical; margin-bottom:8px;"
-        placeholder="e.g. 🎉 Launch week — use code LAUNCH5 for 5€ per campaign (usually 29€)"
+        placeholder="e.g. 🎉 Launch week — use code LAUNCH5 for 5€ per campaign (usually {{ settings.campaign_price }}€)"
       >{{ banner_text }}</textarea>
       <div style="display:flex; gap:8px; align-items:center;">
         <button type="submit" class="btn btn-primary btn-sm">Save Banner</button>

@@ -84,6 +84,175 @@
     .edit-wrap { grid-template-columns: 1fr; }
     .nav-sidebar { display: none; }
   }
+
+  /* ── Post edit form (pef) ─────────────────────── */
+  .pef-edit-zone { padding: 20px; }
+
+  .pef-field { margin-bottom: 14px; }
+  .pef-field:last-of-type { margin-bottom: 0; }
+
+  .pef-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .pef-label-sub {
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 11px;
+  }
+  .pef-char {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .pef-char.over { color: var(--red, #c0392b); }
+
+  .pef-textarea {
+    width: 100%;
+    font-size: 14px;
+    line-height: 1.65;
+    resize: vertical;
+    min-height: 110px;
+    box-sizing: border-box;
+    display: block;
+  }
+
+  .pef-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pef-schedule-row .pef-label { margin-bottom: 0; flex-shrink: 0; }
+  .pef-datetime { flex: 1; font-size: 13px; }
+
+  .pef-poll-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: var(--border-soft);
+  }
+  .pef-poll-toggle-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .pef-poll-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .pef-poll-body {
+    margin-top: 10px;
+    padding: 14px;
+    background: var(--surface-soft);
+    border: var(--border-soft);
+  }
+  .pef-poll-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .pef-poll-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .pef-poll-input { flex: 1; font-size: 13px; }
+  .pef-poll-cnt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 28px;
+    text-align: right;
+  }
+  .pef-poll-expires-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: var(--border-soft);
+  }
+  .pef-poll-expires-row select { font-size: 13px; }
+  .pef-poll-hint { font-size: 11px; color: var(--muted); flex: 1; }
+
+  .pef-save {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 11px 0;
+    background: var(--orange);
+    color: #fff;
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+  }
+  .pef-save:hover { opacity: 0.88; }
+
+  .pef-refine-zone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--ink);
+    border-top: 2px solid var(--ink);
+  }
+  .pef-refine-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #47b8b1;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pef-refine-input {
+    flex: 1;
+    font-size: 13px;
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.15);
+    color: #e8e0d6;
+  }
+  .pef-refine-input::placeholder { color: rgba(200,191,180,0.45); }
+  .pef-refine-input:focus { border-color: #47b8b1; outline: none; }
+  .pef-refine-btn {
+    flex-shrink: 0;
+    color: #c1ceda !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    white-space: nowrap;
+  }
+  .pef-refine-btn:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
 </style>
 
 <div class="edit-wrap">
@@ -126,6 +295,14 @@
         <div class="tip">
           <strong>Read it aloud</strong>
           If it sounds robotic, rewrite it. Real voice outperforms polish.
+        </div>
+        <div class="tip">
+          <strong>Polls drive replies</strong>
+          A simple 2-option poll can double engagement. Keep options short and the question obvious.
+        </div>
+        <div class="tip">
+          <strong>Poll timing</strong>
+          1-day polls create urgency. 7-day polls suit slow-burn topics or weekly check-ins.
         </div>
       </div>
     </div>
@@ -248,39 +425,77 @@
         {% endif %}
       </div>
 
-      <div style="padding:16px;">
-        {% if post.status == "pending" %}
-        <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/edit">
-          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          <div class="form-group">
-            <textarea name="content" id="content-{{ post.id }}" rows="4" maxlength="500"
+      {% if post.status == "pending" %}
+      <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/edit">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <div class="pef-edit-zone">
+
+          {# Content #}
+          <div class="pef-field">
+            <div class="pef-label">
+              Content
+              <span class="pef-char" id="count-{{ post.id }}">{{ post.content | length }} / 500</span>
+            </div>
+            <textarea class="pef-textarea" name="content" id="content-{{ post.id }}" rows="5" maxlength="500"
               oninput="updateCount('content-{{ post.id }}','count-{{ post.id }}')">{{ post.content }}</textarea>
-            <div class="char-count" id="count-{{ post.id }}">{{ post.content | length }} / 500</div>
           </div>
-          <div style="display:flex; gap:16px; align-items:flex-end;">
-            <div class="form-group" style="flex:1; margin:0;">
-              <label>Scheduled Time <span style="font-weight:normal; color:var(--muted);">(UTC)</span></label>
-              <input type="datetime-local" name="scheduled_time"
+
+          {# Schedule #}
+          <div class="pef-field">
+            <div class="pef-schedule-row">
+              <div class="pef-label">Schedule <span class="pef-label-sub">(UTC)</span></div>
+              <input class="pef-datetime" type="datetime-local" name="scheduled_time"
                 value="{{ post.scheduled_time.strftime('%Y-%m-%dT%H:%M') }}" required>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">Save</button>
           </div>
-        </form>
 
-        {% if ai_available %}
-        <form method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/refine"
-              style="margin-top:14px; padding-top:14px; border-top:var(--border-soft); display:flex; gap:8px; align-items:flex-end;"
-              onsubmit="showAiLoading('Refining post…', 'The AI is refining this post. Usually done in 5–10 seconds.');">
-          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          <div class="form-group" style="flex:1; margin:0;">
-            <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted);">Refine instructions</label>
-            <input type="text" name="instructions" maxlength="300" required
-                   placeholder="e.g. make it shorter, end with a question, add a hashtag">
+          {# Poll #}
+          {% set existing_opts = poll_data.get(post.id, []) %}
+          <div class="pef-poll-header" onclick="togglePoll({{ post.id }})">
+            <span class="pef-poll-toggle-label" id="poll-toggle-{{ post.id }}">{% if existing_opts %}▾ Poll{% else %}▸ Poll{% endif %}</span>
+            <span class="pef-poll-badge" id="poll-badge-{{ post.id }}"{% if not existing_opts %} style="display:none;"{% endif %}>● Active</span>
           </div>
-          <button type="submit" class="btn btn-outline btn-sm" style="white-space:nowrap; flex-shrink:0;">✦ Refine</button>
-        </form>
-        {% endif %}
-        {% else %}
+          <div class="pef-poll-body" id="poll-section-{{ post.id }}"{% if not existing_opts %} style="display:none;"{% endif %}>
+            {% for i in range(4) %}
+            {% set opt_val = existing_opts[i] if i < existing_opts|length else "" %}
+            <div class="pef-poll-row">
+              <span class="pef-poll-num">{{ i+1 }}{% if i < 2 %}*{% endif %}</span>
+              <input type="text" class="pef-poll-input" name="poll_option"
+                     id="poll-opt-{{ post.id }}-{{ i }}"
+                     maxlength="50" value="{{ opt_val }}"
+                     placeholder="Option {{ i+1 }}{% if i >= 2 %} (optional){% endif %}"
+                     oninput="updatePollCount({{ post.id }}, {{ i }}, this.value)">
+              <span class="pef-poll-cnt" id="poll-count-{{ post.id }}-{{ i }}">{{ opt_val|length }}/50</span>
+            </div>
+            {% endfor %}
+            <div class="pef-poll-expires-row">
+              <span class="pef-poll-num">Exp</span>
+              <select name="poll_expires_in">
+                <option value="86400" {% if post.poll_expires_in == 86400 %}selected{% endif %}>1 day</option>
+                <option value="259200" {% if post.poll_expires_in == 259200 %}selected{% endif %}>3 days</option>
+                <option value="604800" {% if post.poll_expires_in == 604800 %}selected{% endif %}>7 days</option>
+              </select>
+              <span class="pef-poll-hint">Leave all options blank to remove.</span>
+            </div>
+          </div>
+
+          <button type="submit" class="pef-save">Save Changes</button>
+        </div>
+      </form>
+
+      {% if ai_available %}
+      <form class="pef-refine-zone" method="post" action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/refine"
+            onsubmit="showAiLoading('Refining post…', 'The AI is refining this post. Usually done in 5–10 seconds.');">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <span class="pef-refine-eyebrow">✦ Refine</span>
+        <input class="pef-refine-input" type="text" name="instructions" maxlength="300" required
+               placeholder="e.g. make it shorter, end with a question, add a hashtag">
+        <button type="submit" class="btn btn-outline btn-sm pef-refine-btn">Go</button>
+      </form>
+      {% endif %}
+
+      {% else %}
+      <div style="padding:16px;">
         <div style="font-size:14px; white-space:pre-wrap; color:var(--muted);">{{ post.content }}</div>
         {% if post.mastodon_status_id %}
         <p style="font-size:12px; color:var(--muted); margin-top:8px; border-top:var(--border-soft); padding-top:8px;">
@@ -288,8 +503,8 @@
           &middot; Status ID: <code>{{ post.mastodon_status_id }}</code>
         </p>
         {% endif %}
-        {% endif %}
       </div>
+      {% endif %}
     </div>
     {% endfor %}
     {% endif %}
@@ -358,6 +573,25 @@ document.querySelectorAll('textarea[id^="content-"], textarea[id="new-content"]'
   const counter = document.getElementById(countId);
   if (counter) counter.textContent = ta.value.length + ' / 500';
 });
+
+function togglePoll(postId) {
+  const section = document.getElementById('poll-section-' + postId);
+  const toggle = document.getElementById('poll-toggle-' + postId);
+  const badge = document.getElementById('poll-badge-' + postId);
+  const isOpen = section.style.display !== 'none';
+  section.style.display = isOpen ? 'none' : '';
+  toggle.textContent = isOpen ? '▸ Poll' : '▾ Poll';
+  // Required attrs
+  for (let i = 0; i < 2; i++) {
+    const inp = document.getElementById('poll-opt-' + postId + '-' + i);
+    if (inp) inp.required = !isOpen;
+  }
+}
+
+function updatePollCount(postId, idx, val) {
+  const el = document.getElementById('poll-count-' + postId + '-' + idx);
+  if (el) el.textContent = val.length + '/50';
+}
 
 // Scroll spy: highlight active post in right nav
 const navItems = document.querySelectorAll('.post-nav-item[data-post-id]');

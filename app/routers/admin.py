@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="app/templates")
 settings = get_settings()
+templates.env.globals["settings"] = settings
 
 ADMIN_COOKIE = "admin_session"
 

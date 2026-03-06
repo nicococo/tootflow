@@ -108,6 +108,7 @@ app.include_router(admin.router)
 
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["now"] = datetime.utcnow
+templates.env.globals["settings"] = settings
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -143,19 +144,19 @@ def sitemap_xml(request: Request):
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy(request: Request, session: Session = Depends(get_session)):
     user = optional_current_user(request, session)
-    return templates.TemplateResponse("privacy.html", {"request": request, "user": user})
+    return templates.TemplateResponse("privacy.html", {"request": request, "user": user, "settings": get_settings()})
 
 
 @app.get("/impressum", response_class=HTMLResponse)
 def impressum(request: Request, session: Session = Depends(get_session)):
     user = optional_current_user(request, session)
-    return templates.TemplateResponse("impressum.html", {"request": request, "user": user})
+    return templates.TemplateResponse("impressum.html", {"request": request, "user": user, "settings": get_settings()})
 
 
 @app.get("/tos", response_class=HTMLResponse)
 def tos(request: Request, session: Session = Depends(get_session)):
     user = optional_current_user(request, session)
-    return templates.TemplateResponse("tos.html", {"request": request, "user": user})
+    return templates.TemplateResponse("tos.html", {"request": request, "user": user, "settings": get_settings()})
 
 
 @app.get("/", response_class=HTMLResponse)

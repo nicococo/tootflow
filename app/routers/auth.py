@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 settings = get_settings()
+templates.env.globals["settings"] = settings
 
 # OAuth state store: state_token → {instance_url, client_id, client_secret}
 _oauth_apps: dict[str, dict] = {}

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campaigns")
 settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["settings"] = settings
 
 TEMPLATES = [
     "product_launch",

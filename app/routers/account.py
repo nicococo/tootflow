@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
 from app.auth import get_current_user
+from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
 from app.models import Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User
@@ -15,6 +16,7 @@ from app.models import Campaign, FollowerSnapshot, MastodonAccount, Metrics, Pay
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/account")
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["settings"] = get_settings()
 
 
 @router.get("", response_class=HTMLResponse)
@@ -93,6 +95,7 @@ def export_data(
         posts_data = []
         for p in posts:
             m = session.exec(select(Metrics).where(Metrics.post_id == p.id)).first()
+            poll = json.loads(p.poll_options) if p.poll_options else None
             posts_data.append({
                 "content": p.content,
                 "scheduled_time": p.scheduled_time.isoformat() + "Z",
@@ -100,10 +103,12 @@ def export_data(
                 "created_at": p.created_at.isoformat() + "Z",
                 "published_at": p.published_at.isoformat() + "Z" if p.published_at else None,
                 "mastodon_status_id": p.mastodon_status_id,
+                "poll": {"options": poll, "expires_in_seconds": p.poll_expires_in} if poll else None,
                 "metrics": {
                     "favourites": m.favourites,
                     "reblogs": m.reblogs,
                     "replies": m.replies,
+                    "poll_voters": m.poll_voters,
                     "last_updated": m.last_updated.isoformat() + "Z",
                 } if m else None,
             })
