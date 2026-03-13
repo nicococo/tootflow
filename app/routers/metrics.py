@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request, HTTPException
@@ -8,9 +9,12 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.crypto import decrypt_token
 from app.database import get_session
+from app.limiter import limiter
 from app.models import Campaign, Post, Metrics, User, MastodonAccount, FollowerSnapshot
 from app.auth import get_current_user
 from app.services import mastodon_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/campaigns")
 templates = Jinja2Templates(directory="app/templates")
@@ -158,6 +162,7 @@ post_router = APIRouter(prefix="/posts")
 
 
 @post_router.get("/{post_id}/replies", response_class=HTMLResponse)
+@limiter.limit("30/hour")
 async def post_replies(
     post_id: int,
     request: Request,
@@ -173,20 +178,21 @@ async def post_replies(
         raise HTTPException(status_code=404)
 
     if not post.mastodon_status_id:
-        return HTMLResponse("<p>No published status found for this post.</p>")
+        return HTMLResponse('<div class="reply-empty">No published status found for this post.</div>')
 
     account = session.exec(
         select(MastodonAccount).where(MastodonAccount.user_id == user.id)
     ).first()
     if not account:
-        return HTMLResponse("<p>No Mastodon account connected.</p>")
+        return HTMLResponse('<div class="reply-empty">No Mastodon account connected.</div>')
 
     account.access_token = decrypt_token(account.access_token)
 
     try:
         replies = await mastodon_service.fetch_replies(account, post.mastodon_status_id)
-    except Exception:
-        return HTMLResponse("<p>Could not load replies right now. Try again later.</p>")
+    except Exception as e:
+        logger.error("fetch_replies failed for post %s: %s", post_id, e)
+        return HTMLResponse('<div class="reply-empty">Could not load replies right now. Try again later.</div>')
 
     return templates.TemplateResponse(
         "replies_fragment.html",

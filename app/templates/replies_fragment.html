@@ -3,10 +3,10 @@
   {% for r in replies %}
   <div class="reply-item reply-item-{{ loop.index }}" {% if loop.index > 3 %}style="display:none;"{% endif %}>
     <div class="reply-meta">
-      <span class="reply-author">@{{ r.account_name }}</span>
+      <span class="reply-author">@{{ r.account_name | e }}</span>
       <span class="reply-time">{{ r.created_at[:10] if r.created_at else "" }}</span>
     </div>
-    <div class="reply-content">{{ r.content }}</div>
+    <div class="reply-content">{{ r.content | e }}</div>
   </div>
   {% endfor %}
   {% if replies | length > 3 %}
