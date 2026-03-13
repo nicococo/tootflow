@@ -1,0 +1,21 @@
+{% if replies %}
+<div class="replies-list">
+  {% for r in replies %}
+  <div class="reply-item reply-item-{{ loop.index }}" {% if loop.index > 3 %}style="display:none;"{% endif %}>
+    <div class="reply-meta">
+      <span class="reply-author">@{{ r.account_name }}</span>
+      <span class="reply-time">{{ r.created_at[:10] if r.created_at else "" }}</span>
+    </div>
+    <div class="reply-content">{{ r.content }}</div>
+  </div>
+  {% endfor %}
+  {% if replies | length > 3 %}
+  <button class="reply-show-more" onclick="
+    this.closest('.replies-list').querySelectorAll('.reply-item').forEach(el => el.style.display = '');
+    this.remove();
+  ">+ {{ replies | length - 3 }} more repl{{ 'y' if replies | length - 3 == 1 else 'ies' }}</button>
+  {% endif %}
+</div>
+{% else %}
+<div class="reply-empty">No direct replies found.</div>
+{% endif %}
