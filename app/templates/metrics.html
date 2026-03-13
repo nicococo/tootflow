@@ -371,7 +371,10 @@ function toggleReplies(postId, btn) {
   row.style.display = '';
   if (container.dataset.loaded) return;
   fetch('/posts/' + postId + '/replies')
-    .then(function(r) { return r.text(); })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
     .then(function(html) {
       container.innerHTML = html;
       container.dataset.loaded = '1';
