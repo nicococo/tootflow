@@ -106,3 +106,26 @@ async def fetch_status_metrics(account: MastodonAccount, status_id: str) -> dict
             "replies": data.get("replies_count", 0),
             "poll_voters": poll.get("voters_count") or 0,
         }
+
+
+async def fetch_replies(account: MastodonAccount, status_id: str) -> list[dict]:
+    """Fetch direct replies to a published post from the Mastodon context API."""
+    base = account.instance_url.rstrip("/")
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{base}/api/v1/statuses/{status_id}/context",
+            headers={"Authorization": f"Bearer {account.access_token}"},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    replies = []
+    for s in data.get("descendants", []):
+        if s.get("in_reply_to_id") == status_id:
+            acct = s.get("account", {})
+            replies.append({
+                "account_name": acct.get("acct", "unknown"),
+                "content": s.get("content", ""),
+                "created_at": s.get("created_at", ""),
+            })
+    return replies
