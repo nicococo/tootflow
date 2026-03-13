@@ -6,9 +6,11 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
 from app.config import get_settings
+from app.crypto import decrypt_token
 from app.database import get_session
 from app.models import Campaign, Post, Metrics, User, MastodonAccount, FollowerSnapshot
 from app.auth import get_current_user
+from app.services import mastodon_service
 
 router = APIRouter(prefix="/campaigns")
 templates = Jinja2Templates(directory="app/templates")
@@ -149,3 +151,44 @@ def _build_weekly_chart(campaign: Campaign, post_metrics: list, snapshots: list 
         b["follower_pct"] = round(abs(fd) / max_fdelta * 100) if fd is not None else 0
 
     return buckets
+
+
+# Separate router for post-level reply fetching
+post_router = APIRouter(prefix="/posts")
+
+
+@post_router.get("/{post_id}/replies", response_class=HTMLResponse)
+async def post_replies(
+    post_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    post = session.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404)
+
+    campaign = session.get(Campaign, post.campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+
+    if not post.mastodon_status_id:
+        return HTMLResponse("<p>No published status found for this post.</p>")
+
+    account = session.exec(
+        select(MastodonAccount).where(MastodonAccount.user_id == user.id)
+    ).first()
+    if not account:
+        return HTMLResponse("<p>No Mastodon account connected.</p>")
+
+    account.access_token = decrypt_token(account.access_token)
+
+    try:
+        replies = await mastodon_service.fetch_replies(account, post.mastodon_status_id)
+    except Exception:
+        return HTMLResponse("<p>Could not load replies right now. Try again later.</p>")
+
+    return templates.TemplateResponse(
+        "replies_fragment.html",
+        {"request": request, "replies": replies},
+    )
