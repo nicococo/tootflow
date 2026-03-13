@@ -1,3 +1,5 @@
+import html
+import re
 import httpx
 from typing import Optional
 from app.models import MastodonAccount
@@ -108,8 +110,13 @@ async def fetch_status_metrics(account: MastodonAccount, status_id: str) -> dict
         }
 
 
+def _strip_html(text: str) -> str:
+    return html.unescape(re.sub(r"<[^>]+>", " ", text)).strip()
+
+
 async def fetch_replies(account: MastodonAccount, status_id: str) -> list[dict]:
-    """Fetch direct replies to a published post from the Mastodon context API."""
+    """Fetch direct replies to a published post from the Mastodon context API.
+    Returns plain-text content (HTML tags stripped)."""
     base = account.instance_url.rstrip("/")
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -118,14 +125,13 @@ async def fetch_replies(account: MastodonAccount, status_id: str) -> list[dict]:
         )
         resp.raise_for_status()
         data = resp.json()
-
-    replies = []
-    for s in data.get("descendants", []):
-        if s.get("in_reply_to_id") == status_id:
-            acct = s.get("account", {})
-            replies.append({
-                "account_name": acct.get("acct", "unknown"),
-                "content": s.get("content", ""),
-                "created_at": s.get("created_at", ""),
-            })
-    return replies
+        replies = []
+        for s in data.get("descendants", []):
+            if s.get("in_reply_to_id") == status_id:
+                acct = s.get("account", {})
+                replies.append({
+                    "account_name": acct.get("acct", "unknown"),
+                    "content": _strip_html(s.get("content", "")),
+                    "created_at": s.get("created_at", ""),
+                })
+        return replies
