@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import Campaign, Post, User, MastodonAccount
+from app.models import Campaign, Metrics, Post, User, MastodonAccount
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
@@ -173,7 +173,6 @@ def campaign_detail(
     stale_pending_count = sum(1 for p in posts if p.status == "pending" and p.scheduled_time < now)
     # Overview metrics for all campaigns (publishing is free)
     overview_favs = overview_reblogs = overview_replies = 0
-    from app.models import Metrics
     published_posts = [p for p in posts if p.status == "published"]
     for p in published_posts:
         m = session.exec(select(Metrics).where(Metrics.post_id == p.id)).first()
