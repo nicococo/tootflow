@@ -162,7 +162,7 @@ Use **LemonSqueezy Checkout** for payment handling.
 Flow:
 
 1. User creates a campaign
-2. Campaign status = `draft_unpaid`
+2. Campaign status = `draft`
 3. User clicks **Activate Campaign**
 4. Redirect to LemonSqueezy Checkout
 5. After successful payment:
@@ -192,7 +192,7 @@ Webhook processing:
 
 ### Campaign States
 
-- `draft_unpaid`
+- `draft`
 - `active`
 - `running`
 - `completed`
