@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import Campaign, Payment, User
+from app.models import Campaign, Payment, Post, User
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.services.payment_service import create_checkout_url, verify_webhook_signature
@@ -116,10 +116,8 @@ async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_
     # Only advance to "active" if the campaign already has posts; otherwise
     # it stays "draft" until the user adds posts.
     if campaign.status == "draft":
-        from sqlmodel import select as _select
-        from app.models import Post as _Post
         has_posts = session.exec(
-            _select(_Post).where(_Post.campaign_id == campaign_id)
+            select(Post).where(Post.campaign_id == campaign_id)
         ).first()
         if has_posts:
             campaign.status = "active"
