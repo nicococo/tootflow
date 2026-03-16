@@ -171,36 +171,63 @@ h1.lp-hero-headline em {
   padding-left: 32px;
 }
 .lp-price-badge {
-  border: 1px solid rgba(255,255,255,0.12);
-  padding: 24px 28px;
-  text-align: center;
-  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.02);
   width: 100%;
+  overflow: hidden;
 }
-.lp-price-badge .amount {
+.lp-price-badge-free {
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.lp-price-badge-free .free-word {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 58px;
+  font-size: 64px;
   font-weight: 900;
   line-height: 1;
-  color: #fff;
+  color: #47b8b1;
+  letter-spacing: -1px;
 }
-.lp-price-badge .per {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: #3a5268;
-  text-transform: uppercase;
-  margin-top: 6px;
-}
-.lp-price-badge .no-sub {
+.lp-price-badge-free .free-sub {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  letter-spacing: 1.5px;
-  color: #d95f2a;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  margin-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.07);
-  padding-top: 10px;
+  color: #3a5268;
+  margin-top: 6px;
+}
+.lp-price-badge-features {
+  list-style: none;
+  padding: 12px 24px;
+  margin: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.lp-price-badge-features li {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #5a7a94;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.3px;
+}
+.lp-price-badge-features li::before {
+  content: '✓';
+  color: #47b8b1;
+  flex-shrink: 0;
+}
+.lp-price-badge-upgrade {
+  padding: 12px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #3a5268;
+  letter-spacing: 0.5px;
+  line-height: 1.7;
+}
+.lp-price-badge-upgrade strong {
+  color: #d95f2a;
+  font-weight: 700;
 }
 
 /* entrance animations */
@@ -604,7 +631,7 @@ h2.lp-proof-title {
 
     <div class="lp-hero-right">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 104"
-           width="112" height="97" aria-label="TootFlow mascot" style="opacity:0.85; flex-shrink:0;">
+           width="72" height="62" aria-label="TootFlow mascot" style="opacity:0.5; flex-shrink:0;">
         <rect x="4" y="14" width="30" height="40" fill="#47b8b1"/>
         <rect x="86" y="14" width="30" height="40" fill="#47b8b1"/>
         <rect x="10" y="20" width="18" height="26" fill="#2d8f96"/>
@@ -624,9 +651,18 @@ h2.lp-proof-title {
         <polygon points="96,68 102,68 110,94 102,94" fill="#47b8b1"/>
       </svg>
       <div class="lp-price-badge">
-        <div class="amount">{{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
-        <div class="per">AI · metrics · export</div>
-        <div class="no-sub">no subscription ever</div>
+        <div class="lp-price-badge-free">
+          <div class="free-word">FREE</div>
+          <div class="free-sub">to publish</div>
+        </div>
+        <ul class="lp-price-badge-features">
+          <li>Unlimited campaigns</li>
+          <li>Manual post scheduling</li>
+          <li>Automated publishing</li>
+        </ul>
+        <div class="lp-price-badge-upgrade">
+          <strong>+ {{ settings.campaign_price }} {{ settings.campaign_currency }}</strong> unlocks AI generation,<br>metrics &amp; export — no subscription
+        </div>
       </div>
     </div>
   </div>
