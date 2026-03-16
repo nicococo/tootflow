@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.config import get_settings
@@ -20,18 +21,21 @@ templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = settings
 
 FREE_CAMPAIGN_LIMIT = 1
+# "completed" is intentionally excluded: finished unpaid campaigns free up the slot
 FREE_ACTIVE_STATUSES = ("draft_unpaid", "active", "running")
 
 
 def count_active_unpaid_campaigns(session: Session, user_id: int) -> int:
-    """Count campaigns that occupy the user's free slot."""
-    campaigns = session.exec(
-        select(Campaign).where(Campaign.user_id == user_id)
-    ).all()
-    return sum(
-        1 for c in campaigns
-        if c.payment_status == "unpaid" and c.status in FREE_ACTIVE_STATUSES
-    )
+    """Count campaigns that occupy the user's free slot.
+    Only draft_unpaid/active/running + unpaid status counts — completed campaigns do not block the slot."""
+    result = session.exec(
+        select(func.count()).select_from(Campaign).where(
+            Campaign.user_id == user_id,
+            Campaign.payment_status == "unpaid",
+            Campaign.status.in_(FREE_ACTIVE_STATUSES),
+        )
+    ).one()
+    return result
 
 TEMPLATES = [
     "product_launch",
