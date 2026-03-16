@@ -88,6 +88,7 @@
 {% set published_count = posts | selectattr("status", "equalto", "published") | list | length %}
 {% set failed_count    = posts | selectattr("status", "equalto", "failed")    | list | length %}
 {% set is_paid         = campaign.payment_status == "paid" %}
+{% set metrics_locked = request.query_params.get("metrics_locked") == "1" %}
 {% set is_running      = campaign.status in ("running", "completed") %}
 {% set has_posts       = posts | length > 0 %}
 
@@ -297,10 +298,21 @@
     </div>
     {% endif %}
 
+    {% if metrics_locked %}
+    <div class="notice" style="border-color:var(--orange); background:#fffaf3; margin-bottom:20px;">
+      <strong>Full metrics require an activated campaign.</strong>
+      Activate this campaign for {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock per-post metrics, engagement charts, and reply tracking.
+    </div>
+    {% endif %}
+
     <div class="actions" style="margin-bottom:36px;">
       <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts ({{ posts | length }})</a>
       <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
+      {% if is_paid %}
       <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
+      {% else %}
+      <span class="btn btn-outline" style="opacity:0.5; cursor:not-allowed;" title="Activate campaign to unlock full metrics">View Metrics 🔒</span>
+      {% endif %}
 
       {% if campaign.payment_status != "paid" %}
         <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="display:inline;">
