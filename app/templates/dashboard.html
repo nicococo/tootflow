@@ -233,7 +233,7 @@
           <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
           <td class="actions">
             <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
-            <a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>
+            {% if c.payment_status == "paid" %}<a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>{% endif %}
           </td>
         </tr>
         {% endfor %}
