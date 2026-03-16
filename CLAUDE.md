@@ -58,8 +58,8 @@ AI generates full campaign content plan based on template, tone, and language. P
 1. User creates campaign (status: `draft`)
 2. User clicks "Activate Campaign" → redirect to LemonSqueezy Checkout
 3. LemonSqueezy webhook confirms payment
-4. Campaign status → `active`, start_date is set
-5. Scheduler begins publishing posts
+4. `payment_status` → `paid`; `start_date` and `end_date` set. Campaign advances to `active` only if posts already exist (otherwise stays `draft` until posts are added).
+5. Scheduler publishes posts for campaigns where `payment_status == "paid"` AND `status in ("active", "running")`.
 
 ### Background Services
 - **Scheduler**: Runs every minute, publishes due posts for active campaigns
