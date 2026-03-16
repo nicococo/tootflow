@@ -389,6 +389,18 @@
         <div class="mgmt-row-left">
           <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts <span style="color:var(--teal);">({{ posts | length }})</span></a>
           <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
+          {% if has_posts %}
+          <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="margin:0;" id="toggle-form">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            {% if not campaign.enabled and stale_pending_count > 0 %}
+            <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline">
+              {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
+            </button>
+            {% endif %}
+          </form>
+          {% endif %}
         </div>
         <form method="post" action="/campaigns/{{ campaign.id }}/delete"
               onsubmit="return confirm('Delete this campaign and all its posts?');"
@@ -416,16 +428,6 @@
       <div class="paid-row paid-row-active">
         <div class="paid-row-tag" style="background:var(--teal);">Activated ✓</div>
         <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
-        <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="margin:0;" id="toggle-form">
-          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          {% if not campaign.enabled and stale_pending_count > 0 %}
-          <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
-          {% else %}
-          <button type="submit" class="btn btn-outline">
-            {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
-          </button>
-          {% endif %}
-        </form>
         {% if has_posts %}
         <div class="paid-row-exports">
           <button type="button" class="btn btn-outline" onclick="triggerExport('newsletter')">Export Newsletter</button>
