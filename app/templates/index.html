@@ -581,7 +581,7 @@ h2.lp-proof-title {
         <polygon points="96,68 102,68 110,94 102,94" fill="#47b8b1"/>
       </svg>
       <div class="lp-price-badge">
-        <div class="amount">{{ settings.campaign_price }}€</div>
+        <div class="amount">{{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
         <div class="per">per campaign</div>
         <div class="no-sub">no subscription ever</div>
       </div>
@@ -709,7 +709,7 @@ h2.lp-proof-title {
       </ul>
     </div>
     <div class="lp-proof-right">
-      <div class="lp-proof-price">{{ settings.campaign_price }}€</div>
+      <div class="lp-proof-price">{{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
       <div class="lp-proof-price-sub">one-time &nbsp;·&nbsp; per campaign</div>
       <ul class="lp-proof-perks">
         <li>No subscription</li>
