@@ -169,10 +169,22 @@ def campaign_detail(
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
     now = datetime.utcnow()
     stale_pending_count = sum(1 for p in posts if p.status == "pending" and p.scheduled_time < now)
+    # Overview metrics for paid campaigns
+    overview_favs = overview_reblogs = overview_replies = 0
+    if campaign.payment_status == "paid":
+        from app.models import Metrics
+        published_posts = [p for p in posts if p.status == "published"]
+        for p in published_posts:
+            m = session.exec(select(Metrics).where(Metrics.post_id == p.id)).first()
+            if m:
+                overview_favs    += m.favourites
+                overview_reblogs += m.reblogs
+                overview_replies += m.replies
     return templates.TemplateResponse(
         "campaign_detail.html",
         {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
-         "ai_max": settings.openai_max_posts_per_campaign, "stale_pending_count": stale_pending_count},
+         "ai_max": settings.openai_max_posts_per_campaign, "stale_pending_count": stale_pending_count,
+         "overview_favs": overview_favs, "overview_reblogs": overview_reblogs, "overview_replies": overview_replies},
     )
 
 

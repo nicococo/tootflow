@@ -130,7 +130,7 @@
           <div>
             <div class="step-label {% if not is_paid %}{% else %}{% endif %}">Activated</div>
             {% if not is_paid %}
-            <div class="step-hint">Pay {{ settings.campaign_price }}€ to unlock AI generation.</div>
+            <div class="step-hint">Pay {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock AI generation, full metrics, and export.</div>
             {% endif %}
           </div>
         </div>
@@ -214,6 +214,43 @@
         {% endif %}
       </div>
     </div>
+
+    <!-- Engagement overview -->
+    {% if is_paid %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Engagement</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="stat-row">
+          <span>Favourites</span>
+          <strong style="color:var(--orange);">{{ overview_favs }}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Reblogs</span>
+          <strong style="color:var(--purple);">{{ overview_reblogs }}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Replies</span>
+          <strong style="color:var(--teal);">{{ overview_replies }}</strong>
+        </div>
+        <div class="stat-row">
+          <a href="/campaigns/{{ campaign.id }}/metrics" style="font-size:11px; letter-spacing:0.5px;">View full metrics →</a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Engagement</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row" style="color:var(--muted); font-size:12px;">
+          Activate this campaign to publish posts and track engagement.
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
   </aside>
 
@@ -317,7 +354,7 @@
       {% if campaign.payment_status != "paid" %}
         <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          <button type="submit" class="btn btn-success">Activate Campaign — {{ settings.campaign_price }}€</button>
+          <button type="submit" class="btn btn-success">Activate Campaign — {{ settings.campaign_price }} {{ settings.campaign_currency }}</button>
         </form>
       {% endif %}
 
