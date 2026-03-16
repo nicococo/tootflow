@@ -78,9 +78,62 @@
   .stat-row:last-child { border-bottom: 0; }
   .stat-row strong { color: var(--ink); font-size: 13px; }
 
+  /* ── Action bar ── */
+  .action-bar { margin-bottom: 36px; }
+
+  .mgmt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .mgmt-row-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .paid-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px 12px;
+    border: 2px solid var(--ink);
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .paid-row-locked { border-color: var(--orange); background: #fffaf3; }
+  .paid-row-active  { border-color: var(--teal);   background: var(--teal-light); }
+
+  .paid-row-tag {
+    position: absolute;
+    top: -11px;
+    left: 12px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    font-weight: bold;
+  }
+  .paid-feature-list {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .paid-feature-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+  .paid-row-exports { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
   @media (max-width: 760px) {
     .camp-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
     .camp-sidebar { position: static; margin-bottom: 24px; }
+    .paid-row-exports { margin-left: 0; }
   }
 </style>
 
@@ -342,46 +395,59 @@
     </div>
     {% endif %}
 
-    <div class="actions" style="margin-bottom:36px;">
-      <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts ({{ posts | length }})</a>
-      <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
-      {% if is_paid %}
-      <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
-      {% else %}
-      <span class="btn btn-outline" style="opacity:0.5; cursor:not-allowed;" title="Activate campaign to unlock full metrics">View Metrics 🔒</span>
-      {% endif %}
+    <div class="action-bar">
 
-      {% if campaign.payment_status != "paid" %}
-        <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="display:inline;">
+      <!-- Row 1: Campaign management -->
+      <div class="mgmt-row">
+        <div class="mgmt-row-left">
+          <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts <span style="color:var(--teal);">({{ posts | length }})</span></a>
+          <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
+        </div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/delete"
+              onsubmit="return confirm('Delete this campaign and all its posts?');"
+              style="margin:0;">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          <button type="submit" class="btn btn-success">Activate Campaign — {{ settings.campaign_price }} {{ settings.campaign_currency }}</button>
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
-      {% endif %}
+      </div>
 
-      {% if campaign.payment_status == "paid" %}
-      <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="display:inline;" id="toggle-form">
-        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-        {% if not campaign.enabled and stale_pending_count > 0 %}
-        <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
-        {% else %}
-        <button type="submit" class="btn btn-outline">
-          {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
-        </button>
+      <!-- Row 2: Paid features -->
+      {% if not is_paid %}
+      <div class="paid-row paid-row-locked">
+        <div class="paid-row-tag" style="background:var(--orange);">Paid Features</div>
+        <div class="paid-feature-list">
+          <span class="paid-feature-item">⬡ AI Generation</span>
+          <span class="paid-feature-item">⬡ Full Metrics</span>
+          <span class="paid-feature-item">⬡ Newsletter &amp; LinkedIn Export</span>
+        </div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="margin:0; margin-left:auto;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-primary">Activate — {{ settings.campaign_price }} {{ settings.campaign_currency }} →</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="paid-row paid-row-active">
+        <div class="paid-row-tag" style="background:var(--teal);">Activated ✓</div>
+        <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
+        <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="margin:0;" id="toggle-form">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          {% if not campaign.enabled and stale_pending_count > 0 %}
+          <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
+          {% else %}
+          <button type="submit" class="btn btn-outline">
+            {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
+          </button>
+          {% endif %}
+        </form>
+        {% if has_posts %}
+        <div class="paid-row-exports">
+          <button type="button" class="btn btn-outline" onclick="triggerExport('newsletter')">Export Newsletter</button>
+          <button type="button" class="btn btn-outline" onclick="triggerExport('linkedin')">Export LinkedIn</button>
+        </div>
         {% endif %}
-      </form>
+      </div>
       {% endif %}
 
-      {% if campaign.payment_status == "paid" and has_posts %}
-      <button type="button" class="btn btn-outline" onclick="triggerExport('newsletter')">Export Newsletter</button>
-      <button type="button" class="btn btn-outline" onclick="triggerExport('linkedin')">Export LinkedIn Article</button>
-      {% endif %}
-
-      <form method="post" action="/campaigns/{{ campaign.id }}/delete"
-            onsubmit="return confirm('Delete this campaign and all its posts?');"
-            style="display:inline; margin-left:auto;">
-        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-        <button type="submit" class="btn btn-danger btn-sm">Delete Campaign</button>
-      </form>
     </div>
 
     <!-- Resume warning modal -->
