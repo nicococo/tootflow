@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     operator_vat_id: str = ""        # e.g. "DE123456789" or "Kleinunternehmer per §19 UStG"
     operator_email: str = "hello@tootflow.com"
 
-    campaign_price: str = "29"        # digits only, no currency symbol
+    campaign_price: str = "5"         # digits only, no currency symbol
     campaign_currency: str = "EUR"    # ISO code; used in JSON-LD + ToS formal text
 
     class Config:
