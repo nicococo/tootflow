@@ -186,5 +186,46 @@ function setSelect(id, value) {
     if (opt.value === value) { el.value = value; break; }
   }
 }
+
+const TEMPLATE_SCAFFOLDS = {
+  product_launch:
+    "Product name: \nWhat it does: \nTarget audience: \nKey benefit: \nLaunch date: ",
+  open_source_release:
+    "Project name: \nWhat it does: \nWhy I built it: \nTech stack: \nRepository: ",
+  event_promotion:
+    "Event name: \nDate & location: \nWhat it's about: \nWho should attend: \nHow to register: ",
+  knowledge_sharing:
+    "Topic: \nKey insight: \nWho it's for: \nMy background with this: ",
+  developer_tips:
+    "Topic / technology: \nTips to share: \nTarget skill level: \nContext or motivation: ",
+  research_insights:
+    "Research topic: \nKey finding: \nMethodology (brief): \nWhy it matters: ",
+  personal_brand:
+    "My role / expertise: \nWhat I stand for: \nWho I help: \nMy story in one line: ",
+  community_building:
+    "Community / project name: \nWhat it's about: \nWho should join: \nHow to get involved: ",
+  project_showcase:
+    "Project name: \nWhat it does: \nTech used: \nWhat I'm most proud of: ",
+  newsletter_growth:
+    "Newsletter name: \nTopic / niche: \nWhat subscribers get: \nPublishing cadence: ",
+};
+
+const descEl = document.getElementById('description');
+const tmplEl = document.getElementById('template_type');
+
+function applyScaffold(template) {
+  const scaffold = TEMPLATE_SCAFFOLDS[template];
+  if (!scaffold) return;
+  // Only pre-fill if empty or if it matches a known scaffold (switching templates)
+  const currentIsScaffold = Object.values(TEMPLATE_SCAFFOLDS).some(s => descEl.value === s);
+  if (descEl.value.trim() === '' || currentIsScaffold) {
+    descEl.value = scaffold;
+  }
+}
+
+tmplEl.addEventListener('change', () => applyScaffold(tmplEl.value));
+
+// Apply on page load if description is empty (new campaign only)
+if (descEl.value.trim() === '') applyScaffold(tmplEl.value);
 </script>
 {% endblock %}
