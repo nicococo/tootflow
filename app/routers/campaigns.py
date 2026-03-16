@@ -27,12 +27,14 @@ FREE_ACTIVE_STATUSES = ("draft_unpaid", "active", "running")
 
 def count_active_unpaid_campaigns(session: Session, user_id: int) -> int:
     """Count campaigns that occupy the user's free slot.
-    Only draft_unpaid/active/running + unpaid status counts — completed campaigns do not block the slot."""
+    Only draft_unpaid/active/running + unpaid + enabled campaigns count.
+    Completed and disabled (e.g. refunded) campaigns do not block the slot."""
     result = session.exec(
         select(func.count()).select_from(Campaign).where(
             Campaign.user_id == user_id,
             Campaign.payment_status == "unpaid",
             Campaign.status.in_(FREE_ACTIVE_STATUSES),
+            Campaign.enabled == True,
         )
     ).one()
     return result
