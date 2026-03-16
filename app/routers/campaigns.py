@@ -22,12 +22,12 @@ templates.env.globals["settings"] = settings
 
 FREE_CAMPAIGN_LIMIT = 1
 # "completed" is intentionally excluded: finished unpaid campaigns free up the slot
-FREE_ACTIVE_STATUSES = ("draft_unpaid", "active", "running")
+FREE_ACTIVE_STATUSES = ("draft", "active", "running")
 
 
 def count_active_unpaid_campaigns(session: Session, user_id: int) -> int:
     """Count campaigns that occupy the user's free slot.
-    Only draft_unpaid/active/running + unpaid + enabled campaigns count.
+    Only draft/active/running + unpaid + enabled campaigns count.
     Completed and disabled (e.g. refunded) campaigns do not block the slot."""
     result = session.exec(
         select(func.count()).select_from(Campaign).where(
