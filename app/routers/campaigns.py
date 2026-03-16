@@ -19,6 +19,20 @@ settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = settings
 
+FREE_CAMPAIGN_LIMIT = 1
+FREE_ACTIVE_STATUSES = ("draft_unpaid", "active", "running")
+
+
+def count_active_unpaid_campaigns(session: Session, user_id: int) -> int:
+    """Count campaigns that occupy the user's free slot."""
+    campaigns = session.exec(
+        select(Campaign).where(Campaign.user_id == user_id)
+    ).all()
+    return sum(
+        1 for c in campaigns
+        if c.payment_status == "unpaid" and c.status in FREE_ACTIVE_STATUSES
+    )
+
 TEMPLATES = [
     "product_launch",
     "open_source_release",
@@ -57,10 +71,18 @@ def list_campaigns(request: Request, session: Session = Depends(get_session), us
 @router.get("/new", response_class=HTMLResponse)
 def new_campaign_page(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     existing = session.exec(select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())).all()
+    active_unpaid = count_active_unpaid_campaigns(session, user.id)
     return templates.TemplateResponse(
         "campaign_create.html",
-        {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
-         "existing_campaigns": existing},
+        {
+            "request": request,
+            "user": user,
+            "templates": TEMPLATES,
+            "tones": TONES,
+            "languages": LANGUAGES,
+            "existing_campaigns": existing,
+            "free_limit_hit": active_unpaid >= FREE_CAMPAIGN_LIMIT,
+        },
     )
 
 
@@ -90,6 +112,27 @@ async def create_campaign(
     # Clamp numeric inputs
     duration_days = max(1, min(365, duration_days))
     posts_per_week = max(1, min(14, posts_per_week))
+
+    # Free tier: max 1 active unpaid campaign
+    active_unpaid = count_active_unpaid_campaigns(session, user.id)
+    if active_unpaid >= FREE_CAMPAIGN_LIMIT:
+        existing = session.exec(
+            select(Campaign).where(Campaign.user_id == user.id)
+            .order_by(Campaign.created_at.desc())
+        ).all()
+        return templates.TemplateResponse(
+            "campaign_create.html",
+            {
+                "request": request,
+                "user": user,
+                "templates": TEMPLATES,
+                "tones": TONES,
+                "languages": LANGUAGES,
+                "existing_campaigns": existing,
+                "free_limit_hit": True,
+            },
+            status_code=400,
+        )
 
     campaign = Campaign(
         user_id=user.id,
