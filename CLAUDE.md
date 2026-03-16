@@ -55,7 +55,7 @@ Campaign progression: `draft` (no posts) → `active` (posts added) → `running
 AI generates full campaign content plan based on template, tone, and language. Posts must be fully editable by users (human-in-the-loop workflow). Users can modify, delete, or add posts manually.
 
 ### Payment Flow
-1. User creates campaign (status: `draft_unpaid`)
+1. User creates campaign (status: `draft`)
 2. User clicks "Activate Campaign" → redirect to LemonSqueezy Checkout
 3. LemonSqueezy webhook confirms payment
 4. Campaign status → `active`, start_date is set
