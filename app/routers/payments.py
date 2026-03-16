@@ -83,7 +83,7 @@ async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_
     if event_name == "order_refunded":
         # Revoke access and stop publishing
         campaign.payment_status = "unpaid"
-        campaign.status = "draft_unpaid"
+        campaign.status = "draft"
         campaign.enabled = False
         session.add(campaign)
         payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
@@ -112,7 +112,17 @@ async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_
         session.add(payment)
 
     campaign.payment_status = "paid"
-    campaign.status = "active"
+    # Status is driven by post lifecycle, not payment.
+    # Only advance to "active" if the campaign already has posts; otherwise
+    # it stays "draft" until the user adds posts.
+    if campaign.status == "draft":
+        from sqlmodel import select as _select
+        from app.models import Post as _Post
+        has_posts = session.exec(
+            _select(_Post).where(_Post.campaign_id == campaign_id)
+        ).first()
+        if has_posts:
+            campaign.status = "active"
     campaign.start_date = datetime.utcnow()
     campaign.end_date = datetime.utcnow() + timedelta(days=campaign.duration_days)
     session.add(campaign)
