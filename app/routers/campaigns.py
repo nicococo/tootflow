@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.config import get_settings
@@ -19,25 +18,6 @@ router = APIRouter(prefix="/campaigns")
 settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = settings
-
-FREE_CAMPAIGN_LIMIT = 1
-# "completed" is intentionally excluded: finished unpaid campaigns free up the slot
-FREE_ACTIVE_STATUSES = ("draft", "active", "running")
-
-
-def count_active_unpaid_campaigns(session: Session, user_id: int) -> int:
-    """Count campaigns that occupy the user's free slot.
-    Only draft/active/running + unpaid + enabled campaigns count.
-    Completed and disabled (e.g. refunded) campaigns do not block the slot."""
-    result = session.exec(
-        select(func.count()).select_from(Campaign).where(
-            Campaign.user_id == user_id,
-            Campaign.payment_status == "unpaid",
-            Campaign.status.in_(FREE_ACTIVE_STATUSES),
-            Campaign.enabled == True,
-        )
-    ).one()
-    return result
 
 TEMPLATES = [
     "product_launch",
@@ -77,7 +57,6 @@ def list_campaigns(request: Request, session: Session = Depends(get_session), us
 @router.get("/new", response_class=HTMLResponse)
 def new_campaign_page(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     existing = session.exec(select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())).all()
-    active_unpaid = count_active_unpaid_campaigns(session, user.id)
     return templates.TemplateResponse(
         "campaign_create.html",
         {
@@ -87,7 +66,6 @@ def new_campaign_page(request: Request, session: Session = Depends(get_session),
             "tones": TONES,
             "languages": LANGUAGES,
             "existing_campaigns": existing,
-            "free_limit_hit": active_unpaid >= FREE_CAMPAIGN_LIMIT,
         },
     )
 
@@ -118,27 +96,6 @@ async def create_campaign(
     # Clamp numeric inputs
     duration_days = max(1, min(365, duration_days))
     posts_per_week = max(1, min(14, posts_per_week))
-
-    # Free tier: max 1 active unpaid campaign
-    active_unpaid = count_active_unpaid_campaigns(session, user.id)
-    if active_unpaid >= FREE_CAMPAIGN_LIMIT:
-        existing = session.exec(
-            select(Campaign).where(Campaign.user_id == user.id)
-            .order_by(Campaign.created_at.desc())
-        ).all()
-        return templates.TemplateResponse(
-            "campaign_create.html",
-            {
-                "request": request,
-                "user": user,
-                "templates": TEMPLATES,
-                "tones": TONES,
-                "languages": LANGUAGES,
-                "existing_campaigns": existing,
-                "free_limit_hit": True,
-            },
-            status_code=400,
-        )
 
     campaign = Campaign(
         user_id=user.id,

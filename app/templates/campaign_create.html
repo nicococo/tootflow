@@ -63,14 +63,6 @@
 <div class="create-wrap">
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  {% if free_limit_hit %}
-  <div class="notice" style="border-color:var(--orange); background:#fffaf3; margin-bottom:24px;">
-    <strong>Free campaign slot in use.</strong>
-    You already have an active campaign. Activate it for {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock AI generation, metrics, and export — or delete it to start a new free campaign.
-    <a href="/dashboard" style="margin-left:8px;">← Back to Dashboard</a>
-  </div>
-  {% endif %}
-
   {% if existing_campaigns and not edit_campaign %}
   <div style="background:var(--surface); border:2px solid var(--ink); padding:14px 20px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow-sm);">
     <label for="copy_from" style="margin:0; white-space:nowrap;">Copy from existing</label>
@@ -166,7 +158,7 @@
     {% endif %}
 
     <div class="actions" style="margin-top:8px;">
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:14px 20px; font-size:12px; letter-spacing:2px;" {% if free_limit_hit %}disabled title="Free slot in use"{% endif %}>{% if edit_campaign %}Save Changes →{% else %}Create Campaign →{% endif %}</button>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:14px 20px; font-size:12px; letter-spacing:2px;">{% if edit_campaign %}Save Changes →{% else %}Create Campaign →{% endif %}</button>
     </div>
     <div style="text-align:center; margin-top:14px;">
       <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}" class="create-back">← Cancel</a>
