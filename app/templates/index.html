@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}TootFlow – Mastodon Campaign Planner{% endblock %}
-{% block meta_description %}Plan and automate Mastodon campaigns with AI-assisted drafting. Includes poll support. No email, no card data stored, no tracking. Full editorial control. One-time {{ settings.campaign_price }} {{ settings.campaign_currency }} per campaign, no subscription.{% endblock %}
+{% block meta_description %}Plan and publish Mastodon campaigns for free. AI drafting, full metrics, and export available for a one-time {{ settings.campaign_price }} {{ settings.campaign_currency }} per campaign. No email, no subscription, no tracking.{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {
@@ -582,7 +582,7 @@ h2.lp-proof-title {
       </svg>
       <div class="lp-price-badge">
         <div class="amount">{{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
-        <div class="per">per campaign</div>
+        <div class="per">AI · metrics · export</div>
         <div class="no-sub">no subscription ever</div>
       </div>
     </div>
@@ -645,14 +645,14 @@ h2.lp-proof-title {
         <p>Templates for knowledge sharing, research insights, and developer tips — structured campaigns that consistently surface your expertise to people who care.</p>
       </article>
       <article class="lp-benefit-card">
-        <span class="lp-benefit-tag">Human In The Loop</span>
+        <span class="lp-benefit-tag">Human In The Loop · Premium</span>
         <h3 class="lp-benefit-title">AI draft, your words</h3>
-        <p>Generate a full post schedule in seconds, then edit, regenerate, or rewrite every post before anything goes live. You stay in control.</p>
+        <p>Activate a campaign once to generate a full post schedule in seconds. Edit, regenerate, or rewrite every post before anything goes live. You stay in control.</p>
       </article>
       <article class="lp-benefit-card">
-        <span class="lp-benefit-tag">Write Once, Publish Everywhere</span>
+        <span class="lp-benefit-tag">Write Once, Publish Everywhere · Premium</span>
         <h3 class="lp-benefit-title">Turn posts into more content</h3>
-        <p>Export any campaign as a newsletter digest or LinkedIn article — AI repurposes your posts into a new format, ready to copy and paste wherever you need it.</p>
+        <p>Export any activated campaign as a newsletter digest or LinkedIn article — AI repurposes your posts into a new format, ready to copy and paste wherever you need it.</p>
       </article>
       <article class="lp-benefit-card">
         <span class="lp-benefit-tag">Privacy First</span>
@@ -676,8 +676,8 @@ h2.lp-proof-title {
       </div>
       <div class="lp-wf-step">
         <div class="lp-wf-num">02</div>
-        <h4 class="lp-wf-label">Unlock Premium</h4>
-        <p>Pay once ({{ settings.campaign_price }} {{ settings.campaign_currency }}) to unlock AI generation, full metrics, and export. Publishing is always free.</p>
+        <h4 class="lp-wf-label">Add Posts</h4>
+        <p>Write and schedule posts manually — free, no limit. Or activate for AI-generated drafts.</p>
       </div>
       <div class="lp-wf-step">
         <div class="lp-wf-num">03</div>
@@ -686,8 +686,8 @@ h2.lp-proof-title {
       </div>
       <div class="lp-wf-step">
         <div class="lp-wf-num">04</div>
-        <h4 class="lp-wf-label">Publish</h4>
-        <p>TootFlow publishes on schedule automatically — free for all campaigns. Activate for per-post engagement metrics.</p>
+        <h4 class="lp-wf-label">Publish — free</h4>
+        <p>TootFlow publishes on schedule automatically. No payment needed. Activate for AI, metrics, and export.</p>
       </div>
     </div>
   </div>
@@ -701,20 +701,22 @@ h2.lp-proof-title {
       <ul class="lp-proof-list">
         <li>10 campaign templates — knowledge sharing, research insights, developer tips, community building, personal brand, project showcase, newsletter growth, product launch, open source release, event promotion</li>
         <li>Up to 500 characters per post, Mastodon-optimised writing</li>
-        <li>Add polls (up to 4 options) to any post — poll voter counts tracked automatically</li>
+        <li>Add polls (up to 4 options) to any post</li>
         <li>Manual scheduling controls and post-level editing at any time</li>
-        <li>Regenerate or refine individual posts with AI — up to {{ settings.openai_max_posts_per_campaign }} AI-generated posts per campaign</li>
-        <li>Automated publishing (free for every campaign)</li>
-        <li>Per-post engagement tracking (favourites, reblogs, replies, poll voters)</li>
-        <li>Export campaigns as newsletter digest or LinkedIn article</li>
+        <li>Automated publishing — free for every campaign</li>
+        <li>AI generation — up to {{ settings.openai_max_posts_per_campaign }} posts per campaign <em style="color:#d95f2a; font-style:normal;">(premium)</em></li>
+        <li>Per-post engagement tracking: favourites, reblogs, replies, poll voters <em style="color:#d95f2a; font-style:normal;">(premium)</em></li>
+        <li>Export as newsletter digest or LinkedIn article <em style="color:#d95f2a; font-style:normal;">(premium)</em></li>
       </ul>
     </div>
     <div class="lp-proof-right">
       <div class="lp-proof-price">{{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
-      <div class="lp-proof-price-sub">one-time &nbsp;·&nbsp; per campaign</div>
+      <div class="lp-proof-price-sub">one-time &nbsp;·&nbsp; per campaign &nbsp;·&nbsp; unlocks premium</div>
       <ul class="lp-proof-perks">
+        <li>AI generation</li>
+        <li>Full per-post metrics</li>
+        <li>Newsletter &amp; LinkedIn export</li>
         <li>No subscription</li>
-        <li>No seat pricing</li>
         <li>No email required</li>
         <li>No card data stored</li>
         <li>No tracking</li>
