@@ -86,6 +86,10 @@ def add_post(
     post = Post(campaign_id=campaign_id, content=content[:500], scheduled_time=sched,
                 poll_options=opts_json, poll_expires_in=expires_in)
     session.add(post)
+    # Advance campaign from draft → active when first post is added
+    if campaign.status == "draft":
+        campaign.status = "active"
+        session.add(campaign)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
 
@@ -168,6 +172,9 @@ async def generate_campaign_posts(
         for content, sched_time in schedule_posts(post_contents, start, campaign.posts_per_week):
             session.add(Post(campaign_id=campaign_id, content=content, scheduled_time=sched_time))
         campaign.ai_posts_generated += len(post_contents)
+        # Advance campaign from draft → active (posts now exist)
+        if campaign.status == "draft":
+            campaign.status = "active"
         session.add(campaign)
         session.commit()
     except Exception as e:
