@@ -393,84 +393,134 @@ h4.lp-wf-label {
   max-width: 1040px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: 1fr 1fr;
   border: 2px solid #0d1822;
   background: #0d1822;
   gap: 2px;
 }
 .lp-proof-left {
   background: #fff;
-  padding: 40px 36px;
+  padding: 44px 40px;
 }
 h2.lp-proof-title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 700;
   font-style: italic;
-  margin: 0 0 24px;
+  margin: 0 0 32px;
   color: #0d1822;
   border: 0;
   padding: 0;
+  line-height: 1.35;
 }
-.lp-proof-list { list-style: none; padding: 0; margin: 0; }
-.lp-proof-list li {
-  font-size: 13px;
-  color: #4a5868;
-  line-height: 1.6;
-  padding: 10px 0;
-  border-bottom: 1px solid #e8e0d4;
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
+.lp-feat-split {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 0 24px;
 }
-.lp-proof-list li:last-child { border-bottom: 0; }
-.lp-proof-list li::before {
-  content: '→';
-  color: #d95f2a;
+.lp-feat-divider { background: #e8e0d4; }
+.lp-feat-col-label {
   font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid currentColor;
+}
+.lp-feat-free-label  { color: #47b8b1; }
+.lp-feat-paid-label  { color: #d95f2a; }
+.lp-feat-list { list-style: none; padding: 0; margin: 0; }
+.lp-feat-list li {
   font-size: 12px;
-  flex-shrink: 0;
-}
-.lp-proof-right {
-  background: #0d1822;
-  padding: 40px 32px;
+  color: #4a5868;
+  line-height: 1.5;
+  padding: 7px 0;
+  border-bottom: 1px solid #f0e8dc;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
 }
-.lp-proof-price {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 72px;
-  font-weight: 900;
-  color: #fff;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.lp-proof-price-sub {
+.lp-feat-list li:last-child { border-bottom: 0; }
+.lp-feat-list li::before {
+  content: '✓';
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
+  color: #47b8b1;
+  flex-shrink: 0;
+}
+.lp-feat-list--paid li::before { color: #d95f2a; content: '✦'; }
+
+.lp-proof-right {
+  background: #0d1822;
+  padding: 44px 36px;
+  display: flex;
+  flex-direction: column;
+}
+.lp-proof-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #3a5268;
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #1e3048;
+  margin-bottom: 10px;
 }
-.lp-proof-perks { list-style: none; padding: 0; margin: 0 0 28px; }
-.lp-proof-perks li {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+.lp-proof-price {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 80px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #1e3048;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.lp-proof-currency {
+  font-size: 26px;
+  font-weight: 700;
+  color: #3a5268;
   letter-spacing: 1px;
-  color: #47b8b1;
+}
+.lp-proof-unlock-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  padding: 7px 0;
+  color: #47b8b1;
+  margin-bottom: 10px;
+}
+.lp-proof-perks { list-style: none; padding: 0; margin: 0 0 0; flex: 1; }
+.lp-proof-perks li {
+  font-size: 12px;
+  color: #8fa8c0;
+  padding: 9px 0;
   border-bottom: 1px solid #1a2e40;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .lp-proof-perks li:last-child { border-bottom: 0; }
-.lp-proof-perks li::before { content: '✓'; font-size: 11px; }
+.lp-proof-perks li::before {
+  content: '→';
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #47b8b1;
+  flex-shrink: 0;
+}
+.lp-proof-guarantees {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  color: #1e3048;
+  line-height: 2;
+  margin: 24px 0;
+  padding-top: 20px;
+  border-top: 1px solid #1a2e40;
+}
 .lp-cta-final {
   display: flex;
   align-items: center;
@@ -479,26 +529,16 @@ h2.lp-proof-title {
   background: #d95f2a;
   color: #fff;
   border: 2px solid #d95f2a;
-  padding: 14px 22px;
+  padding: 16px 22px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   text-decoration: none;
   transition: background 0.15s;
 }
 .lp-cta-final:hover { background: #bf4e1f; border-color: #bf4e1f; color: #fff; }
-.lp-community-note {
-  margin-top: 16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  line-height: 1.7;
-  color: #3a5268;
-  letter-spacing: 0.3px;
-}
-.lp-community-note a { color: #47b8b1; text-decoration: none; border-bottom: 1px solid #47b8b1; }
-.lp-community-note a:hover { color: #fff; border-bottom-color: #fff; }
 
 /* ─── Responsive ─── */
 @media (max-width: 860px) {
@@ -527,6 +567,9 @@ h2.lp-proof-title {
   .lp-wf-step { border-right: 0 !important; margin-right: 0; }
   .lp-hero-right { flex-direction: column; align-items: flex-start; }
   .lp-proof-price { font-size: 56px; }
+  .lp-feat-split { grid-template-columns: 1fr; }
+  .lp-feat-divider { display: none; }
+  .lp-feat-col:last-child { margin-top: 24px; }
 }
 </style>
 
@@ -696,37 +739,52 @@ h2.lp-proof-title {
 <!-- ═══ PROOF / CLOSING CTA ═══ -->
 <section class="lp-proof">
   <div class="lp-proof-inner">
+
     <div class="lp-proof-left">
-      <h2 class="lp-proof-title">Everything you need to run a focused campaign.</h2>
-      <ul class="lp-proof-list">
-        <li>10 campaign templates — knowledge sharing, research insights, developer tips, community building, personal brand, project showcase, newsletter growth, product launch, open source release, event promotion</li>
-        <li>Up to 500 characters per post, Mastodon-optimised writing</li>
-        <li>Add polls (up to 4 options) to any post</li>
-        <li>Manual scheduling controls and post-level editing at any time</li>
-        <li>Automated publishing — free for every campaign</li>
-        <li>AI generation — up to {{ settings.openai_max_posts_per_campaign }} posts per campaign <em style="color:#d95f2a; font-style:normal;">(premium)</em></li>
-        <li>Per-post engagement tracking: favourites, reblogs, replies, poll voters <em style="color:#d95f2a; font-style:normal;">(premium)</em></li>
-        <li>Export as newsletter digest or LinkedIn article <em style="color:#d95f2a; font-style:normal;">(premium)</em></li>
-      </ul>
+      <h2 class="lp-proof-title">Everything you need to run a focused Mastodon campaign.</h2>
+      <div class="lp-feat-split">
+        <div class="lp-feat-col">
+          <div class="lp-feat-col-label lp-feat-free-label">Free</div>
+          <ul class="lp-feat-list">
+            <li>Unlimited campaigns</li>
+            <li>10 templates &amp; 12 tones</li>
+            <li>Manual post scheduling</li>
+            <li>Polls on any post</li>
+            <li>Post editing at any time</li>
+            <li>Automated publishing</li>
+          </ul>
+        </div>
+        <div class="lp-feat-divider"></div>
+        <div class="lp-feat-col">
+          <div class="lp-feat-col-label lp-feat-paid-label">Premium · {{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
+          <ul class="lp-feat-list lp-feat-list--paid">
+            <li>AI post generation</li>
+            <li>Favourites &amp; reblogs</li>
+            <li>Reply tracking</li>
+            <li>Poll voter counts</li>
+            <li>Newsletter digest export</li>
+            <li>LinkedIn article export</li>
+          </ul>
+        </div>
+      </div>
     </div>
+
     <div class="lp-proof-right">
-      <div class="lp-proof-price">{{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
-      <div class="lp-proof-price-sub">one-time &nbsp;·&nbsp; per campaign &nbsp;·&nbsp; unlocks premium</div>
+      <div class="lp-proof-eyebrow">One-time &nbsp;·&nbsp; Per campaign</div>
+      <div class="lp-proof-price">{{ settings.campaign_price }}<span class="lp-proof-currency">{{ settings.campaign_currency }}</span></div>
+      <div class="lp-proof-unlock-label">Unlocks</div>
       <ul class="lp-proof-perks">
-        <li>AI generation</li>
-        <li>Full per-post metrics</li>
+        <li>AI post generation (up to {{ settings.openai_max_posts_per_campaign }} posts)</li>
+        <li>Full engagement metrics &amp; reply tracking</li>
         <li>Newsletter &amp; LinkedIn export</li>
-        <li>No subscription</li>
-        <li>No email required</li>
-        <li>No card data stored</li>
-        <li>No tracking</li>
       </ul>
-      <a href="/login" class="lp-cta-final">Start Your Campaign →</a>
-      <p class="lp-community-note">
-        Researcher, academic, artist, open source maintainer, or nonprofit?
-        <a href="mailto:hello@tootflow.com">Drop us a line</a> — we offer discounts for community use.
-      </p>
+      <div class="lp-proof-guarantees">
+        No subscription &nbsp;·&nbsp; No email required<br>
+        No card data stored &nbsp;·&nbsp; No tracking
+      </div>
+      <a href="/login" class="lp-cta-final">Start Free →</a>
     </div>
+
   </div>
 </section>
 
