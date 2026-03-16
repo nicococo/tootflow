@@ -231,7 +231,7 @@
             {% if eng is not none %}{{ "%.1f"|format(eng) }}{% else %}—{% endif %}
           </td>
           <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
-          <td class="actions">
+          <td class="actions" style="min-width:140px;">
             <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
             {% if c.payment_status == "paid" %}<a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>{% endif %}
           </td>
