@@ -45,9 +45,9 @@ The UI follows brutalist web design:
 
 ## Campaign States
 
-Campaign progression: `draft_unpaid` → `active` (after payment) → `running` → `completed`
+Campaign progression: `draft` (no posts) → `active` (posts added) → `running` → `completed`
 
-Only active/running campaigns can publish posts and trigger the scheduler.
+`status` and `payment_status` are independent. The scheduler only publishes posts for campaigns where `payment_status == "paid"` AND `status in ("active", "running")`.
 
 ## Key Workflows
 

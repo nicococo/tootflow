@@ -25,6 +25,7 @@ async def publish_due_posts():
                 Post.status == "pending",
                 Post.scheduled_time <= now,
                 Campaign.status.in_(["active", "running"]),
+                Campaign.payment_status == "paid",
                 Campaign.enabled == True,
             )
         ).all()
