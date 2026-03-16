@@ -79,16 +79,16 @@
           <span>Set topic, template, tone, and cadence.</span>
         </div>
         <div class="info-row">
-          <strong>2 · Activate</strong>
-          <span>Pay once ({{ settings.campaign_price }}€) to unlock AI generation.</span>
+          <strong>2 · Add Posts</strong>
+          <span>Add posts manually or use AI generation (paid).</span>
         </div>
         <div class="info-row">
-          <strong>3 · Generate</strong>
-          <span>AI drafts all posts. Edit and regenerate freely.</span>
+          <strong>3 · Publish</strong>
+          <span>Posts go live on schedule — free for all campaigns.</span>
         </div>
         <div class="info-row">
-          <strong>4 · Publish</strong>
-          <span>Posts go live on schedule automatically.</span>
+          <strong>✦ Activate</strong>
+          <span>Pay once ({{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI generation, full metrics, and export.</span>
         </div>
       </div>
     </div>
@@ -164,7 +164,7 @@
       <div class="stat-box">
         <div class="num">{{ active_count }}{% if paused_count %} <span style="font-size:16px; color:var(--muted);">/ {{ paused_count }}</span>{% endif %}</div>
         <div class="label">Running / Paused</div>
-        <div style="font-size:11px; color:var(--muted); margin-top:4px;">paid &amp; publishing</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">actively publishing</div>
       </div>
 
       <div class="stat-box" style="{% if next_post %}border-top-color:var(--teal);{% endif %}">
