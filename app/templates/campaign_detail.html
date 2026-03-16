@@ -177,34 +177,20 @@
         </div>
 
         <div class="progress-step">
-          <div class="step-icon {% if is_paid %}done{% elif not is_paid %}current{% endif %}">
-            {% if is_paid %}✓{% else %}2{% endif %}
+          <div class="step-icon {% if has_posts %}done{% else %}current{% endif %}">
+            {% if has_posts %}✓{% else %}2{% endif %}
           </div>
           <div>
-            <div class="step-label {% if not is_paid %}{% else %}{% endif %}">Activated</div>
-            {% if not is_paid %}
-            <div class="step-hint">Pay {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock AI generation, full metrics, and export.</div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="progress-step">
-          <div class="step-icon {% if has_posts and is_paid %}done{% elif is_paid and not has_posts %}current{% else %}{% endif %}">
-            {% if has_posts and is_paid %}✓{% elif is_paid and not has_posts %}3{% else %}3{% endif %}
-          </div>
-          <div>
-            <div class="step-label {% if not is_paid %}muted{% endif %}">Posts Ready</div>
-            {% if is_paid and not has_posts %}
-            <div class="step-hint">Generate or add posts manually.</div>
-            {% elif is_paid and pending_count > 0 and not is_running %}
-            <div class="step-hint">{{ pending_count }} post(s) pending review.</div>
+            <div class="step-label">Posts Added</div>
+            {% if not has_posts %}
+            <div class="step-hint">Add posts manually. <a href="/campaigns/{{ campaign.id }}/posts" style="color:var(--teal);">Go to posts →</a></div>
             {% endif %}
           </div>
         </div>
 
         <div class="progress-step">
           <div class="step-icon {% if campaign.status == 'completed' %}done{% elif is_running %}current{% endif %}">
-            {% if campaign.status == 'completed' %}✓{% elif is_running %}4{% else %}4{% endif %}
+            {% if campaign.status == 'completed' %}✓{% elif is_running %}3{% else %}3{% endif %}
           </div>
           <div>
             <div class="step-label {% if not is_running %}muted{% endif %}">Publishing</div>
@@ -212,6 +198,8 @@
             <div class="step-hint">{{ published_count }} of {{ posts | length }} published.</div>
             {% elif campaign.status == 'completed' %}
             <div class="step-hint">All posts published.</div>
+            {% elif has_posts %}
+            <div class="step-hint">{{ pending_count }} post{{ 's' if pending_count != 1 else '' }} pending.</div>
             {% endif %}
           </div>
         </div>
@@ -268,13 +256,13 @@
       </div>
     </div>
 
-    <!-- Engagement overview -->
-    {% if is_paid %}
+    <!-- Engagement overview (all campaigns) -->
     <div class="info-panel">
       <div class="info-panel-head">
         <div class="eyebrow">Engagement</div>
       </div>
       <div class="info-panel-body">
+        {% if published_count > 0 %}
         <div class="stat-row">
           <span>Favourites</span>
           <strong style="color:var(--orange);">{{ overview_favs }}</strong>
@@ -287,23 +275,22 @@
           <span>Replies</span>
           <strong style="color:var(--teal);">{{ overview_replies }}</strong>
         </div>
+        {% if is_paid %}
         <div class="stat-row">
           <a href="/campaigns/{{ campaign.id }}/metrics" style="font-size:11px; letter-spacing:0.5px;">View full metrics →</a>
         </div>
-      </div>
-    </div>
-    {% else %}
-    <div class="info-panel">
-      <div class="info-panel-head">
-        <div class="eyebrow">Engagement</div>
-      </div>
-      <div class="info-panel-body">
-        <div class="info-row" style="color:var(--muted); font-size:12px;">
-          Activate this campaign to publish posts and track engagement.
+        {% else %}
+        <div class="stat-row" style="font-size:11px; color:var(--muted);">
+          Activate for per-post metrics &amp; charts.
         </div>
+        {% endif %}
+        {% else %}
+        <div class="info-row" style="color:var(--muted); font-size:12px;">
+          No posts published yet.
+        </div>
+        {% endif %}
       </div>
     </div>
-    {% endif %}
 
   </aside>
 
@@ -391,7 +378,7 @@
     {% if metrics_locked %}
     <div class="notice" style="border-color:var(--orange); background:#fffaf3; margin-bottom:20px;">
       <strong>Full metrics require an activated campaign.</strong>
-      Activate this campaign for {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock per-post metrics, engagement charts, and reply tracking.
+      Activate this campaign for {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock per-post metrics, engagement charts, and reply tracking. Publishing is free.
     </div>
     {% endif %}
 
