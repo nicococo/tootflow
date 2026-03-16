@@ -101,7 +101,7 @@
 
     <div class="form-group">
       <label for="description">Description / Topic</label>
-      <textarea id="description" name="description" rows="4" required
+      <textarea id="description" name="description" rows="8" required
         placeholder="What is this campaign about? What do you want people to know?">{{ edit_campaign.description if edit_campaign else '' }}</textarea>
     </div>
 
@@ -189,25 +189,81 @@ function setSelect(id, value) {
 
 const TEMPLATE_SCAFFOLDS = {
   product_launch:
-    "Product name: \nWhat it does: \nTarget audience: \nKey benefit: \nLaunch date: ",
+    "Product name: \n" +
+    "One-line description: \n" +
+    "Problem it solves: \n" +
+    "Target audience (be specific): \n" +
+    "Key features or benefits: \n" +
+    "What makes it different from alternatives: \n" +
+    "Launch date: ",
+
   open_source_release:
-    "Project name: \nWhat it does: \nWhy I built it: \nTech stack: \nRepository: ",
+    "Project name: \n" +
+    "What it does: \n" +
+    "Problem it solves: \n" +
+    "Who should use it: \n" +
+    "Tech stack: \n" +
+    "What makes it interesting or unique: \n" +
+    "Repository URL: ",
+
   event_promotion:
-    "Event name: \nDate & location: \nWhat it's about: \nWho should attend: \nHow to register: ",
+    "Event name: \n" +
+    "Date and location: \n" +
+    "What it's about: \n" +
+    "Who should attend: \n" +
+    "What attendees will learn or get: \n" +
+    "How to register: ",
+
   knowledge_sharing:
-    "Topic: \nKey insight: \nWho it's for: \nMy background with this: ",
+    "Topic: \n" +
+    "The core insight or lesson: \n" +
+    "Why it matters: \n" +
+    "Who benefits from knowing this: \n" +
+    "Your experience or context with this topic: ",
+
   developer_tips:
-    "Topic / technology: \nTips to share: \nTarget skill level: \nContext or motivation: ",
+    "Topic or technology: \n" +
+    "Tips to share (list them): \n" +
+    "Target audience skill level: \n" +
+    "Why these tips are valuable: \n" +
+    "Real-world context or use case: ",
+
   research_insights:
-    "Research topic: \nKey finding: \nMethodology (brief): \nWhy it matters: ",
+    "Research topic: \n" +
+    "Key finding: \n" +
+    "Why it's surprising or important: \n" +
+    "Who should care about this: \n" +
+    "Methodology in brief: ",
+
   personal_brand:
-    "My role / expertise: \nWhat I stand for: \nWho I help: \nMy story in one line: ",
+    "Your name and role: \n" +
+    "Area of expertise: \n" +
+    "Who you help and how: \n" +
+    "What makes your perspective unique: \n" +
+    "Your mission or vision: ",
+
   community_building:
-    "Community / project name: \nWhat it's about: \nWho should join: \nHow to get involved: ",
+    "Community or project name: \n" +
+    "What it's about: \n" +
+    "Who should join: \n" +
+    "What members get or do: \n" +
+    "How to join or get involved: ",
+
   project_showcase:
-    "Project name: \nWhat it does: \nTech used: \nWhat I'm most proud of: ",
+    "Project name: \n" +
+    "What problem it solves: \n" +
+    "How it works (brief): \n" +
+    "Tech stack: \n" +
+    "Biggest challenge overcome: \n" +
+    "What you're most proud of: ",
+
   newsletter_growth:
-    "Newsletter name: \nTopic / niche: \nWhat subscribers get: \nPublishing cadence: ",
+    "Newsletter name: \n" +
+    "Topic or niche: \n" +
+    "Who it's for: \n" +
+    "What subscribers get each issue: \n" +
+    "Publishing frequency: \n" +
+    "Why subscribe (unique value): ",
 };
 
 const descEl = document.getElementById('description');
