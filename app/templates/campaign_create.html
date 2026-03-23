@@ -164,9 +164,54 @@
   gap: 16px;
 }
 
-/* ── Textarea scaffold fill hint ── */
-textarea#description { transition: background 0.25s; }
-textarea#description.scaffold-filled { background: #f5faf9; }
+/* ── Brief fields ── */
+.cc-brief-fields {
+  border: 1px solid #e0d8ce;
+  overflow: hidden;
+}
+.cc-brief-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  border-bottom: 1px solid #e0d8ce;
+  align-items: stretch;
+  min-height: 38px;
+}
+.cc-brief-row:last-child { border-bottom: 0; }
+.cc-brief-row-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-right: 1px solid #e0d8ce;
+  background: #f2ece0;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+}
+.cc-brief-input,
+.cc-brief-textarea {
+  border: 0;
+  background: #faf7f2;
+  padding: 9px 12px;
+  font-size: 13px;
+  width: 100%;
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+  transition: background 0.12s;
+}
+.cc-brief-input:focus,
+.cc-brief-textarea:focus { background: #f0faf9; }
+.cc-brief-textarea { min-height: 58px; }
+.cc-field-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 7px;
+  line-height: 1.55;
+}
 
 /* ── Submit bar ── */
 .cc-submit-bar {
@@ -271,10 +316,11 @@ textarea#description.scaffold-filled { background: #f5faf9; }
       <div class="cc-section">
         <div class="cc-step-label"><span>2</span> Brief</div>
         <div class="cc-field">
-          <label for="description">Campaign Brief</label>
-          <textarea id="description" name="description" rows="9" required
-            placeholder="Select a template above to get a structured brief…">{{ edit_campaign.description if edit_campaign else '' }}</textarea>
-          <div class="cc-field-hint">Fill in each field — the more detail you give, the more precise and on-brand the generated posts will be.</div>
+          <label>Campaign Brief</label>
+          <div class="cc-brief-fields" id="brief-fields"></div>
+          <input type="hidden" id="description" name="description"
+                 value="{{ edit_campaign.description | e if edit_campaign else '' }}">
+          <div class="cc-field-hint">Fill in each field — the more detail you give, the more precise the generated posts will be.</div>
         </div>
       </div>
 
@@ -329,18 +375,20 @@ textarea#description.scaffold-filled { background: #f5faf9; }
 </div>
 
 <script>
-// ── Data ────────────────────────────────────────────────────────────────────
+// ── Server-provided field definitions ───────────────────────────────────────
+const TEMPLATE_FIELDS = {{ template_fields | tojson }};
+
 const TEMPLATES = [
-  { id: 'product_launch',      label: 'Product Launch',  desc: 'Announce a release'      },
-  { id: 'open_source_release', label: 'Open Source',     desc: 'Share a project'         },
-  { id: 'event_promotion',     label: 'Event Promo',     desc: 'Drive attendance'        },
-  { id: 'knowledge_sharing',   label: 'Knowledge',       desc: 'Teach what you know'     },
-  { id: 'developer_tips',      label: 'Dev Tips',        desc: 'Practical how-tos'       },
-  { id: 'research_insights',   label: 'Research',        desc: 'Findings & data'         },
-  { id: 'personal_brand',      label: 'Personal Brand',  desc: 'Build your audience'     },
-  { id: 'community_building',  label: 'Community',       desc: 'Rally your people'       },
-  { id: 'project_showcase',    label: 'Project',         desc: 'Show your work'          },
-  { id: 'newsletter_growth',   label: 'Newsletter',      desc: 'Win subscribers'         },
+  { id: 'product_launch',      label: 'Product Launch',  desc: 'Announce a release'   },
+  { id: 'open_source_release', label: 'Open Source',     desc: 'Share a project'      },
+  { id: 'event_promotion',     label: 'Event Promo',     desc: 'Drive attendance'     },
+  { id: 'knowledge_sharing',   label: 'Knowledge',       desc: 'Teach what you know'  },
+  { id: 'developer_tips',      label: 'Dev Tips',        desc: 'Practical how-tos'    },
+  { id: 'research_insights',   label: 'Research',        desc: 'Findings & data'      },
+  { id: 'personal_brand',      label: 'Personal Brand',  desc: 'Build your audience'  },
+  { id: 'community_building',  label: 'Community',       desc: 'Rally your people'    },
+  { id: 'project_showcase',    label: 'Project',         desc: 'Show your work'       },
+  { id: 'newsletter_growth',   label: 'Newsletter',      desc: 'Win subscribers'      },
 ];
 
 const TONES = [
@@ -349,84 +397,15 @@ const TONES = [
   'behind the scenes','rant',
 ];
 
-const TEMPLATE_SCAFFOLDS = {
-  product_launch:
-    "Product name: \n" +
-    "One-line description: \n" +
-    "Problem it solves: \n" +
-    "Target audience (be specific): \n" +
-    "Key features or benefits: \n" +
-    "What makes it different from alternatives: \n" +
-    "Launch date: ",
-  open_source_release:
-    "Project name: \n" +
-    "What it does: \n" +
-    "Problem it solves: \n" +
-    "Who should use it: \n" +
-    "Tech stack: \n" +
-    "What makes it interesting or unique: \n" +
-    "Repository URL: ",
-  event_promotion:
-    "Event name: \n" +
-    "Date and location: \n" +
-    "What it's about: \n" +
-    "Who should attend: \n" +
-    "What attendees will learn or get: \n" +
-    "How to register: ",
-  knowledge_sharing:
-    "Topic: \n" +
-    "The core insight or lesson: \n" +
-    "Why it matters: \n" +
-    "Who benefits from knowing this: \n" +
-    "Your experience or context with this topic: ",
-  developer_tips:
-    "Topic or technology: \n" +
-    "Tips to share (list them): \n" +
-    "Target audience skill level: \n" +
-    "Why these tips are valuable: \n" +
-    "Real-world context or use case: ",
-  research_insights:
-    "Research topic: \n" +
-    "Key finding: \n" +
-    "Why it's surprising or important: \n" +
-    "Who should care about this: \n" +
-    "Methodology in brief: ",
-  personal_brand:
-    "Your name and role: \n" +
-    "Area of expertise: \n" +
-    "Who you help and how: \n" +
-    "What makes your perspective unique: \n" +
-    "Your mission or vision: ",
-  community_building:
-    "Community or project name: \n" +
-    "What it's about: \n" +
-    "Who should join: \n" +
-    "What members get or do: \n" +
-    "How to join or get involved: ",
-  project_showcase:
-    "Project name: \n" +
-    "What problem it solves: \n" +
-    "How it works (brief): \n" +
-    "Tech stack: \n" +
-    "Biggest challenge overcome: \n" +
-    "What you're most proud of: ",
-  newsletter_growth:
-    "Newsletter name: \n" +
-    "Topic or niche: \n" +
-    "Who it's for: \n" +
-    "What subscribers get each issue: \n" +
-    "Publishing frequency: \n" +
-    "Why subscribe (unique value): ",
-};
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const tmplInput  = document.getElementById('template_type');
+const toneInput  = document.getElementById('tone');
+const descInput  = document.getElementById('description');   // hidden, assembled on submit
+const briefEl    = document.getElementById('brief-fields');
+const tmplGrid   = document.getElementById('template-grid');
+const toneGrid   = document.getElementById('tone-grid');
 
-// ── DOM refs ────────────────────────────────────────────────────────────────
-const tmplInput = document.getElementById('template_type');
-const toneInput = document.getElementById('tone');
-const descEl    = document.getElementById('description');
-const tmplGrid  = document.getElementById('template-grid');
-const toneGrid  = document.getElementById('tone-grid');
-
-// ── Render cards & pills ────────────────────────────────────────────────────
+// ── Render template cards ─────────────────────────────────────────────────────
 TEMPLATES.forEach(t => {
   const card = document.createElement('div');
   card.className = 'cc-tmpl-card';
@@ -436,6 +415,7 @@ TEMPLATES.forEach(t => {
   tmplGrid.appendChild(card);
 });
 
+// ── Render tone pills ─────────────────────────────────────────────────────────
 TONES.forEach(tone => {
   const pill = document.createElement('div');
   pill.className = 'cc-tone-pill';
@@ -445,12 +425,82 @@ TONES.forEach(tone => {
   toneGrid.appendChild(pill);
 });
 
-// ── Selection ───────────────────────────────────────────────────────────────
-function selectTemplate(id) {
+// ── Brief field rendering ─────────────────────────────────────────────────────
+function renderBriefFields(templateId, existingValues) {
+  briefEl.innerHTML = '';
+  const fields = TEMPLATE_FIELDS[templateId] || [];
+  fields.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'cc-brief-row';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'cc-brief-row-label';
+    lbl.textContent = f.label;
+
+    const val = (existingValues && existingValues[f.label]) || '';
+
+    let input;
+    if (f.multiline) {
+      input = document.createElement('textarea');
+      input.className = 'cc-brief-textarea';
+      input.rows = 2;
+      input.value = val;
+      // Auto-grow
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+      });
+      if (val) { setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0); }
+    } else {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'cc-brief-input';
+      input.value = val;
+    }
+    input.placeholder = f.hint || '';
+    input.dataset.label = f.label;
+
+    row.appendChild(lbl);
+    row.appendChild(input);
+    briefEl.appendChild(row);
+  });
+}
+
+// ── Parse assembled description back into field values ────────────────────────
+function parseDescription(text, templateId) {
+  const values = {};
+  if (!text) return values;
+  const fields = TEMPLATE_FIELDS[templateId] || [];
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    const idx = line.indexOf(': ');
+    if (idx === -1) return;
+    const label = line.substring(0, idx);
+    const value = line.substring(idx + 2);
+    // Only accept labels that belong to this template
+    if (fields.some(f => f.label === label)) {
+      values[label] = value;
+    }
+  });
+  return values;
+}
+
+// ── Assemble description from individual fields ───────────────────────────────
+function assembleDescription() {
+  const inputs = briefEl.querySelectorAll('[data-label]');
+  const lines = [];
+  inputs.forEach(el => {
+    lines.push(`${el.dataset.label}: ${el.value.trim()}`);
+  });
+  descInput.value = lines.join('\n');
+}
+
+// ── Selection ─────────────────────────────────────────────────────────────────
+function selectTemplate(id, existingValues) {
   tmplInput.value = id;
   document.querySelectorAll('.cc-tmpl-card').forEach(c =>
     c.classList.toggle('selected', c.dataset.id === id));
-  applyScaffold(id);
+  renderBriefFields(id, existingValues || {});
 }
 
 function selectTone(tone) {
@@ -459,47 +509,47 @@ function selectTone(tone) {
     p.classList.toggle('selected', p.dataset.tone === tone));
 }
 
-// ── Scaffold ────────────────────────────────────────────────────────────────
-function applyScaffold(template) {
-  const scaffold = TEMPLATE_SCAFFOLDS[template];
-  if (!scaffold) return;
-  const currentIsScaffold = Object.values(TEMPLATE_SCAFFOLDS).some(s => descEl.value === s);
-  if (descEl.value.trim() === '' || currentIsScaffold) {
-    descEl.value = scaffold;
-    descEl.classList.add('scaffold-filled');
-  }
-}
-
-// Remove tint once user edits
-descEl.addEventListener('input', () => descEl.classList.remove('scaffold-filled'));
-
-// ── Copy from campaign ───────────────────────────────────────────────────────
+// ── Copy from existing campaign ───────────────────────────────────────────────
 function copyFromCampaign(select) {
   const opt = select.options[select.selectedIndex];
   if (!opt.value) return;
-  document.getElementById('name').value             = 'Copy of ' + opt.dataset.name;
-  descEl.value                                      = opt.dataset.description;
-  document.getElementById('duration_days').value    = opt.dataset.duration;
-  document.getElementById('posts_per_week').value   = opt.dataset.postsPerWeek;
-  selectTemplate(opt.dataset.template);
-  selectTone(opt.dataset.tone);
+  document.getElementById('name').value           = 'Copy of ' + opt.dataset.name;
+  document.getElementById('duration_days').value  = opt.dataset.duration;
+  document.getElementById('posts_per_week').value = opt.dataset.postsPerWeek;
   const langEl = document.getElementById('language');
   for (const o of langEl.options) {
     if (o.value === opt.dataset.language) { langEl.value = opt.dataset.language; break; }
   }
+  selectTone(opt.dataset.tone);
+  // Parse the existing assembled description back into fields
+  const parsed = parseDescription(opt.dataset.description, opt.dataset.template);
+  selectTemplate(opt.dataset.template, parsed);
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// ── Form submit — assemble description ────────────────────────────────────────
+document.querySelector('form').addEventListener('submit', function(e) {
+  assembleDescription();
+  if (!descInput.value.trim()) {
+    e.preventDefault();
+    briefEl.style.outline = '2px solid #d95f2a';
+    briefEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 (function init() {
-  // Pre-select from hidden inputs (handles both new + edit campaign)
   const tmpl = tmplInput.value || 'product_launch';
   const tone = toneInput.value || 'professional';
+
+  // Highlight correct card + pill
   document.querySelectorAll('.cc-tmpl-card').forEach(c =>
     c.classList.toggle('selected', c.dataset.id === tmpl));
   document.querySelectorAll('.cc-tone-pill').forEach(p =>
     p.classList.toggle('selected', p.dataset.tone === tone));
-  // Apply scaffold only for new campaigns with empty description
-  if (descEl.value.trim() === '') applyScaffold(tmpl);
+
+  // For edit campaigns: parse existing description into field values
+  const existing = parseDescription(descInput.value, tmpl);
+  renderBriefFields(tmpl, existing);
 })();
 </script>
 {% endblock %}

@@ -47,6 +47,86 @@ TONES = [
 ]
 LANGUAGES = ["English", "German", "French"]
 
+TEMPLATE_FIELDS = {
+    "product_launch": [
+        {"label": "Product name",              "hint": "e.g. MyApp v2.0"},
+        {"label": "One-line description",      "hint": "What it does in one sentence"},
+        {"label": "Problem it solves",         "hint": "What pain does it remove?",             "multiline": True},
+        {"label": "Target audience",           "hint": "Be specific — who exactly benefits?"},
+        {"label": "Key features or benefits",  "hint": "List the main ones",                    "multiline": True},
+        {"label": "What makes it different",   "hint": "Compared to existing alternatives"},
+        {"label": "Launch date",               "hint": "e.g. April 1st or 'available now'"},
+    ],
+    "open_source_release": [
+        {"label": "Project name",                    "hint": "e.g. fastparse"},
+        {"label": "What it does",                    "hint": "One clear sentence"},
+        {"label": "Problem it solves",               "hint": "Why does this need to exist?",         "multiline": True},
+        {"label": "Who should use it",               "hint": "Target users or use cases"},
+        {"label": "Tech stack",                      "hint": "e.g. Python, Rust, TypeScript"},
+        {"label": "What makes it interesting",       "hint": "The hook — what surprises people",     "multiline": True},
+        {"label": "Repository URL",                  "hint": "e.g. github.com/you/project"},
+    ],
+    "event_promotion": [
+        {"label": "Event name",                      "hint": "e.g. PyConf 2026"},
+        {"label": "Date and location",               "hint": "e.g. June 12, Berlin / online"},
+        {"label": "What it's about",                 "hint": "Topic and format",                     "multiline": True},
+        {"label": "Who should attend",               "hint": "Target audience"},
+        {"label": "What attendees will get",         "hint": "Key takeaways or value",               "multiline": True},
+        {"label": "How to register",                 "hint": "URL or instructions"},
+    ],
+    "knowledge_sharing": [
+        {"label": "Topic",                           "hint": "e.g. distributed systems, burnout, vim"},
+        {"label": "The core insight or lesson",      "hint": "The thing you wish you'd known earlier", "multiline": True},
+        {"label": "Why it matters",                  "hint": "Stakes or consequences"},
+        {"label": "Who benefits",                    "hint": "Target audience"},
+        {"label": "Your experience or context",      "hint": "Why you're the one sharing this",      "multiline": True},
+    ],
+    "developer_tips": [
+        {"label": "Topic or technology",             "hint": "e.g. Docker, async Python, Git"},
+        {"label": "Tips to share",                   "hint": "List them, one per line",              "multiline": True},
+        {"label": "Target skill level",              "hint": "Beginner / intermediate / advanced"},
+        {"label": "Why these tips are valuable",     "hint": "What problem do they solve?"},
+        {"label": "Real-world context",              "hint": "When does this actually come up?",     "multiline": True},
+    ],
+    "research_insights": [
+        {"label": "Research topic",                  "hint": "What you studied or investigated"},
+        {"label": "Key finding",                     "hint": "The headline result",                  "multiline": True},
+        {"label": "Why it's surprising or important","hint": "The 'so what'"},
+        {"label": "Who should care",                 "hint": "Who this is relevant for"},
+        {"label": "Methodology in brief",            "hint": "How you arrived at this finding"},
+    ],
+    "personal_brand": [
+        {"label": "Your name and role",              "hint": "e.g. Sara, senior ML engineer"},
+        {"label": "Area of expertise",               "hint": "Your main domain or skill"},
+        {"label": "Who you help and how",            "hint": "Be specific about the value you deliver", "multiline": True},
+        {"label": "What makes you unique",           "hint": "Your angle or contrarian take"},
+        {"label": "Your mission or vision",          "hint": "What you're working toward"},
+    ],
+    "community_building": [
+        {"label": "Community or project name",       "hint": "e.g. Rust Berlin, OpenData Collective"},
+        {"label": "What it's about",                 "hint": "Mission and focus",                    "multiline": True},
+        {"label": "Who should join",                 "hint": "Ideal members"},
+        {"label": "What members get or do",          "hint": "Value and activities",                 "multiline": True},
+        {"label": "How to join",                     "hint": "Link or first step"},
+    ],
+    "project_showcase": [
+        {"label": "Project name",                    "hint": "e.g. HomeMetrics"},
+        {"label": "What problem it solves",          "hint": "The need that drove you to build it"},
+        {"label": "How it works",                    "hint": "Brief technical overview",             "multiline": True},
+        {"label": "Tech stack",                      "hint": "Languages, frameworks, tools"},
+        {"label": "Biggest challenge overcome",      "hint": "What was hard?",                       "multiline": True},
+        {"label": "What you're most proud of",       "hint": "The part you'd show off first"},
+    ],
+    "newsletter_growth": [
+        {"label": "Newsletter name",                 "hint": "e.g. The Pragmatic Engineer"},
+        {"label": "Topic or niche",                  "hint": "What you cover"},
+        {"label": "Who it's for",                    "hint": "Ideal reader profile"},
+        {"label": "What subscribers get",            "hint": "Format and value per issue",           "multiline": True},
+        {"label": "Publishing frequency",            "hint": "e.g. weekly, every other Tuesday"},
+        {"label": "Why subscribe",                   "hint": "Unique value vs. other newsletters"},
+    ],
+}
+
 
 @router.get("", response_class=HTMLResponse)
 def list_campaigns(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
@@ -66,6 +146,7 @@ def new_campaign_page(request: Request, session: Session = Depends(get_session),
             "tones": TONES,
             "languages": LANGUAGES,
             "existing_campaigns": existing,
+            "template_fields": TEMPLATE_FIELDS,
         },
     )
 
@@ -158,7 +239,7 @@ def edit_campaign_page(
     return templates.TemplateResponse(
         "campaign_create.html",
         {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
-         "edit_campaign": campaign},
+         "template_fields": TEMPLATE_FIELDS, "edit_campaign": campaign},
     )
 
 
