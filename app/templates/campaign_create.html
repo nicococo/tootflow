@@ -189,10 +189,13 @@
   display: flex;
   align-items: flex-start;
 }
-.cc-brief-input,
+input.cc-brief-input,
 .cc-brief-textarea {
-  border: 0;
-  background: #faf7f2;
+  box-sizing: border-box;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-left: 3px solid transparent !important;
+  background: #ffffff;
   padding: 9px 12px;
   font-size: 13px;
   width: 100%;
@@ -201,11 +204,16 @@
   outline: none;
   resize: none;
   line-height: 1.5;
-  transition: background 0.12s;
+  transition: border-color 0.12s, background 0.12s;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
 }
-.cc-brief-input:focus,
-.cc-brief-textarea:focus { background: #f0faf9; }
-.cc-brief-textarea { min-height: 58px; }
+input.cc-brief-input:focus,
+.cc-brief-textarea:focus {
+  border-left-color: var(--teal) !important;
+  box-shadow: none !important;
+  background: #f6fffe;
+}
+.cc-brief-textarea { min-height: 68px; }
 .cc-field-hint {
   font-size: 11px;
   color: var(--muted);
@@ -271,7 +279,7 @@
       {% for c in existing_campaigns %}
       <option value="{{ c.id }}"
         data-name="{{ c.name }}"
-        data-description="{{ c.description | replace('"', '&quot;') }}"
+        data-description="{{ c.description }}"
         data-template="{{ c.template_type }}"
         data-tone="{{ c.tone }}"
         data-language="{{ c.language }}"
@@ -320,7 +328,7 @@
           <div class="cc-brief-fields" id="brief-fields"></div>
           <input type="hidden" id="description" name="description"
                  value="{{ edit_campaign.description | e if edit_campaign else '' }}">
-          <div class="cc-field-hint">Fill in each field — the more detail you give, the more precise the generated posts will be.</div>
+          <div class="cc-field-hint">A detailed brief sharpens your campaign — even before any AI is involved. The more context you provide, the better: links (e.g. a GitHub repo or product page) may be used to pull in live updates, and specific details help keep every post on-message.</div>
         </div>
       </div>
 
@@ -467,32 +475,21 @@ function renderBriefFields(templateId, existingValues) {
 }
 
 // ── Parse assembled description back into field values ────────────────────────
-function parseDescription(text, templateId) {
-  const values = {};
-  if (!text) return values;
-  const fields = TEMPLATE_FIELDS[templateId] || [];
-  const lines = text.split('\n');
-  lines.forEach(line => {
-    const idx = line.indexOf(': ');
-    if (idx === -1) return;
-    const label = line.substring(0, idx);
-    const value = line.substring(idx + 2);
-    // Only accept labels that belong to this template
-    if (fields.some(f => f.label === label)) {
-      values[label] = value;
-    }
-  });
-  return values;
+function parseDescription(text) {
+  if (!text) return {};
+  try {
+    const data = JSON.parse(text);
+    if (data && typeof data === 'object') return data;
+  } catch (e) {}
+  return {};
 }
 
 // ── Assemble description from individual fields ───────────────────────────────
 function assembleDescription() {
   const inputs = briefEl.querySelectorAll('[data-label]');
-  const lines = [];
-  inputs.forEach(el => {
-    lines.push(`${el.dataset.label}: ${el.value.trim()}`);
-  });
-  descInput.value = lines.join('\n');
+  const obj = {};
+  inputs.forEach(el => { obj[el.dataset.label] = el.value.trim(); });
+  descInput.value = JSON.stringify(obj);
 }
 
 // ── Selection ─────────────────────────────────────────────────────────────────
@@ -522,7 +519,7 @@ function copyFromCampaign(select) {
   }
   selectTone(opt.dataset.tone);
   // Parse the existing assembled description back into fields
-  const parsed = parseDescription(opt.dataset.description, opt.dataset.template);
+  const parsed = parseDescription(opt.dataset.description);
   selectTemplate(opt.dataset.template, parsed);
 }
 
@@ -548,7 +545,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
     p.classList.toggle('selected', p.dataset.tone === tone));
 
   // For edit campaigns: parse existing description into field values
-  const existing = parseDescription(descInput.value, tmpl);
+  const existing = parseDescription(descInput.value);
   renderBriefFields(tmpl, existing);
 })();
 </script>

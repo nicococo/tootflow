@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
@@ -18,6 +19,19 @@ router = APIRouter(prefix="/campaigns")
 settings = get_settings()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = settings
+
+
+def format_description_for_ai(description: str) -> str:
+    """Return description as 'Label: value\\n...' for AI prompts. Handles both JSON and legacy plain text."""
+    if not description:
+        return ""
+    try:
+        data = json.loads(description)
+        if isinstance(data, dict):
+            return "\n".join(f"{k}: {v}" for k, v in data.items() if v)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return description
 
 TEMPLATES = [
     "product_launch",
@@ -218,11 +232,22 @@ def campaign_detail(
             overview_favs    += m.favourites
             overview_reblogs += m.reblogs
             overview_replies += m.replies
+    # Parse description into labeled fields
+    description_fields = []
+    if campaign.description:
+        try:
+            data = json.loads(campaign.description)
+            if isinstance(data, dict):
+                description_fields = [{"label": k, "value": v} for k, v in data.items() if v]
+        except (json.JSONDecodeError, ValueError):
+            # Legacy plain text: wrap as single field
+            description_fields = [{"label": "Description", "value": campaign.description}]
     return templates.TemplateResponse(
         "campaign_detail.html",
         {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
          "ai_max": settings.openai_max_posts_per_campaign, "stale_pending_count": stale_pending_count,
-         "overview_favs": overview_favs, "overview_reblogs": overview_reblogs, "overview_replies": overview_replies},
+         "overview_favs": overview_favs, "overview_reblogs": overview_reblogs, "overview_replies": overview_replies,
+         "description_fields": description_fields},
     )
 
 
@@ -348,7 +373,7 @@ async def export_newsletter(
         raise HTTPException(status_code=400, detail="No posts to export")
     try:
         content = await generate_newsletter_digest(
-            campaign.name, campaign.description, campaign.tone, campaign.language,
+            campaign.name, format_description_for_ai(campaign.description), campaign.tone, campaign.language,
             [p.content for p in posts],
         )
     except Exception as e:
@@ -379,7 +404,7 @@ async def export_linkedin(
         raise HTTPException(status_code=400, detail="No posts to export")
     try:
         content = await generate_linkedin_summary(
-            campaign.name, campaign.description, campaign.tone, campaign.language,
+            campaign.name, format_description_for_ai(campaign.description), campaign.tone, campaign.language,
             [p.content for p in posts],
         )
     except Exception as e:

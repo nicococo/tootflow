@@ -13,6 +13,7 @@ from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
 from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, schedule_posts
+from app.routers.campaigns import format_description_for_ai
 
 settings = get_settings()
 
@@ -145,7 +146,7 @@ async def generate_campaign_posts(
     try:
         post_contents = await generate_posts(
             campaign_name=campaign.name,
-            description=campaign.description,
+            description=format_description_for_ai(campaign.description),
             template_type=campaign.template_type,
             tone=campaign.tone,
             language=campaign.language,
@@ -210,7 +211,7 @@ async def regenerate_post(
     try:
         post.content = await regenerate_single_post(
             campaign_name=campaign.name,
-            description=campaign.description,
+            description=format_description_for_ai(campaign.description),
             template_type=campaign.template_type,
             tone=campaign.tone,
             language=campaign.language,
@@ -260,7 +261,7 @@ async def refine_post(
             current_content=post.content,
             instructions=instructions,
             campaign_name=campaign.name,
-            description=campaign.description,
+            description=format_description_for_ai(campaign.description),
             template_type=campaign.template_type,
             tone=campaign.tone,
             language=campaign.language,
