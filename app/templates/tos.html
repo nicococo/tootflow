@@ -175,7 +175,7 @@ h1.legal-title {
     <div class="legal-hero-inner">
       <div class="legal-eyebrow">Legal Agreement</div>
       <h1 class="legal-title">Terms of Service</h1>
-      <p class="legal-subtitle">Last updated: 2026-03-04 &nbsp;·&nbsp; Operator: see <a href="/impressum" style="color:#47b8b1;">Impressum</a></p>
+      <p class="legal-subtitle">Last updated: 2026-04-15 &nbsp;·&nbsp; Operator: see <a href="/impressum" style="color:#47b8b1;">Impressum</a></p>
     </div>
   </div>
 
@@ -209,23 +209,29 @@ h1.legal-title {
 
       <details open>
         <summary>3. Campaigns and pricing</summary>
+        <h3>Free tier</h3>
         <p>
-          Each campaign requires a one-time activation payment of <strong>{{ settings.campaign_price }} {{ settings.campaign_currency }}</strong> (including applicable VAT).
+          Creating campaigns, writing and editing posts manually, and automated publishing via your Mastodon
+          account are available at no cost. No payment is required to schedule or publish posts.
+        </p>
+        <h3>Premium activation</h3>
+        <p>
+          Each campaign may optionally be activated for a one-time fee of
+          <strong>{{ settings.campaign_price }} {{ settings.campaign_currency }}</strong> (including applicable VAT).
           This is a single charge per campaign — there are no subscriptions, recurring fees, or hidden costs.
         </p>
         <p>
           Payment is processed by <strong>LemonSqueezy</strong>, acting as Merchant of Record. TootFlow never
-          receives or stores your payment card details. After payment is confirmed, the campaign is activated
-          and AI post generation becomes available.
+          receives or stores your payment card details.
         </p>
-        <p>A campaign activation entitles you to:</p>
+        <p>A premium activation entitles you to:</p>
         <ul>
-          <li>Unlimited manual post editing and scheduling for the campaign</li>
-          <li>Up to the configured number of AI-generated posts (subject to the AI call limit shown in the campaign)</li>
-          <li>Automated publishing via your Mastodon account for the campaign's configured duration</li>
-          <li>Engagement metrics collection after posts are published</li>
+          <li>AI-generated post schedules (up to the limit shown in the campaign)</li>
+          <li>Full per-post engagement metrics (favourites, reblogs, replies, poll votes)</li>
+          <li>Export Studio — repurpose your campaign as a Newsletter digest, LinkedIn article, or Reddit post,
+              subject to the per-campaign export generation limit</li>
         </ul>
-        <p class="legal-note">Pricing may change for future campaigns. Activated campaigns are not affected by price changes.</p>
+        <p class="legal-note">Pricing may change for future campaigns. Already-activated campaigns are not affected by price changes.</p>
       </details>
 
       <details open>
@@ -274,8 +280,9 @@ h1.legal-title {
           has commenced.
         </p>
         <p>
-          If you have not yet used any AI generation or publishing features, you retain the full 14-day right
-          of withdrawal. Contact <a href="mailto:hello@tootflow.com">hello@tootflow.com</a> to request a refund.
+          If you have not yet used any AI generation, Export Studio, or premium metrics features, you retain
+          the full 14-day right of withdrawal.
+          Contact <a href="mailto:hello@tootflow.com">hello@tootflow.com</a> to request a refund.
         </p>
       </details>
 
@@ -289,8 +296,9 @@ h1.legal-title {
           <li>Use the Service for bulk spamming or automated abuse</li>
         </ul>
         <p>
-          You are solely responsible for the content you publish through TootFlow. We act as a technical
-          intermediary and do not review post content before it is published.
+          You are solely responsible for all content you publish through TootFlow, whether created manually
+          or with AI assistance. We act as a technical intermediary and do not review post content before
+          it is published to your Mastodon account.
         </p>
       </details>
 

@@ -130,6 +130,18 @@
   }
   .paid-row-exports { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
 
+  .btn-teal {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+  }
+  .btn-teal:hover {
+    background: #339e97;
+    border-color: #339e97;
+    color: #fff;
+    text-decoration: none;
+  }
+
   @media (max-width: 760px) {
     .camp-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
     .camp-sidebar { position: static; margin-bottom: 24px; }
@@ -549,7 +561,7 @@
         <div class="paid-feature-list">
           <span class="paid-feature-item">⬡ AI Generation</span>
           <span class="paid-feature-item">⬡ Full Metrics</span>
-          <span class="paid-feature-item">⬡ Newsletter &amp; LinkedIn Export</span>
+          <span class="paid-feature-item">⬡ Export Studio (Newsletter · LinkedIn · Reddit)</span>
         </div>
         <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="margin:0; margin-left:auto;">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
@@ -562,8 +574,7 @@
         <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
         {% if has_posts %}
         <div class="paid-row-exports">
-          <button type="button" class="btn btn-outline" onclick="triggerExport('newsletter')">Export Newsletter</button>
-          <button type="button" class="btn btn-outline" onclick="triggerExport('linkedin')">Export LinkedIn</button>
+          <a href="/campaigns/{{ campaign.id }}/export" class="btn btn-teal">Open Export Studio &rarr;</a>
         </div>
         {% endif %}
       </div>
@@ -600,74 +611,7 @@
     </script>
     {% endif %}
 
-    <!-- Export modal -->
-    <div id="export-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px;">
-      <div style="background:var(--surface); border:var(--border); max-width:700px; width:100%; box-shadow:var(--shadow-md);">
-        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--ink); display:flex; justify-content:space-between; align-items:center;">
-          <div class="eyebrow" id="export-modal-title" style="color:#47b8b1;">Export</div>
-          <button type="button" class="btn btn-outline btn-sm" onclick="closeExportModal()">Close</button>
-        </div>
-        <div style="padding:16px;">
-          <div id="export-loading" style="display:none; color:var(--muted); font-size:13px; text-align:center; padding:28px 0;">Generating — this may take a few seconds…</div>
-          <div id="export-error" style="display:none;" class="error"></div>
-          <textarea id="export-content" style="display:none; width:100%; height:340px; font-size:13px; line-height:1.6; resize:vertical;" readonly></textarea>
-        </div>
-        <div style="padding:10px 16px; border-top:var(--border-soft); display:flex; justify-content:flex-end;">
-          <button type="button" id="export-copy-btn" class="btn btn-primary btn-sm" onclick="copyExport()" style="display:none;">Copy to Clipboard</button>
-        </div>
-      </div>
-    </div>
-
     <script>
-    const exportCsrf = document.querySelector('input[name=csrf_token]').value;
-
-    async function triggerExport(type) {
-      const modal   = document.getElementById('export-modal');
-      const title   = document.getElementById('export-modal-title');
-      const loading = document.getElementById('export-loading');
-      const error   = document.getElementById('export-error');
-      const content = document.getElementById('export-content');
-      const copyBtn = document.getElementById('export-copy-btn');
-
-      title.textContent  = type === 'newsletter' ? 'Newsletter Digest' : 'LinkedIn Article';
-      loading.style.display = 'block';
-      error.style.display   = 'none';
-      content.style.display = 'none';
-      copyBtn.style.display = 'none';
-      modal.style.display   = 'flex';
-
-      try {
-        const fd = new FormData();
-        fd.append('csrf_token', exportCsrf);
-        const resp = await fetch('/campaigns/{{ campaign.id }}/export/' + type, { method: 'POST', body: fd });
-        const data = await resp.json();
-        if (!resp.ok) {
-          error.textContent     = data.detail || 'Generation failed. Please try again.';
-          error.style.display   = 'block';
-        } else {
-          content.value         = data.content;
-          content.style.display = 'block';
-          copyBtn.style.display = 'inline-flex';
-        }
-      } catch (e) {
-        error.textContent   = 'Request failed. Check your connection and try again.';
-        error.style.display = 'block';
-      } finally {
-        loading.style.display = 'none';
-      }
-    }
-
-    function closeExportModal() {
-      document.getElementById('export-modal').style.display = 'none';
-    }
-
-    async function copyExport() {
-      const text = document.getElementById('export-content').value;
-      await navigator.clipboard.writeText(text);
-      const btn = document.getElementById('export-copy-btn');
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy to Clipboard'; }, 2000);
-    }
     </script>
 
     <h2>

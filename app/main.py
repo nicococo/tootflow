@@ -113,6 +113,11 @@ templates.env.globals["now"] = datetime.utcnow
 templates.env.globals["settings"] = settings
 
 
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+
 @app.get("/robots.txt", response_class=PlainTextResponse)
 def robots_txt(request: Request):
     base = str(request.base_url).rstrip("/")

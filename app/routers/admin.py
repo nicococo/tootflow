@@ -221,6 +221,7 @@ def update_settings(
     openai_max_posts_per_campaign: int = Form(...),
     openai_max_tokens: int = Form(...),
     max_posts_per_campaign: int = Form(...),
+    export_max_per_campaign: int = Form(...),
     _csrf: None = Depends(verify_csrf),
 ):
     if not _is_authenticated(request):
@@ -231,6 +232,7 @@ def update_settings(
     settings.openai_max_posts_per_campaign = openai_max_posts_per_campaign
     settings.openai_max_tokens = openai_max_tokens
     settings.max_posts_per_campaign = max_posts_per_campaign
+    settings.export_max_per_campaign = export_max_per_campaign
     logger.info(
         f"Admin updated in-memory settings: price={settings.campaign_price} "
         f"currency={settings.campaign_currency} model={settings.openai_model} "
@@ -252,6 +254,7 @@ def reset_ai_counter(
     if not campaign:
         return RedirectResponse("/admin", status_code=302)
     campaign.ai_posts_generated = 0
+    campaign.export_generations = 0
     session.add(campaign)
     session.commit()
     logger.info(f"Admin reset AI counter for campaign {campaign_id}")

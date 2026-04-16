@@ -1,0 +1,1129 @@
+{% extends "base.html" %}
+{% block title %}Export Studio — {{ campaign.name }} – TootFlow{% endblock %}
+{% block content %}
+
+<style>
+  /* ── 3-column layout ── */
+  .exp-wrap {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+    display: grid;
+    grid-template-columns: 240px 1fr 230px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* ── Shared panel shell ── */
+  .exp-panel, .exp-posts-panel {
+    border: 2px solid var(--ink);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .exp-panel { position: sticky; top: 20px; }
+  .exp-posts-panel { position: sticky; top: 20px; }
+
+  .exp-panel-head {
+    background: var(--ink);
+    padding: 12px 14px 10px;
+  }
+  .exp-panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .exp-panel-campaign {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: #4a6a80;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+  }
+  .exp-back-link {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 0.5px;
+    color: var(--teal);
+    text-decoration: none;
+    border: 1px solid rgba(71,184,177,0.35);
+    padding: 3px 7px;
+    opacity: 0.75;
+    transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .exp-back-link:hover {
+    opacity: 1;
+    border-color: var(--teal);
+    background: rgba(71,184,177,0.08);
+    text-decoration: none;
+    color: var(--teal);
+  }
+
+  .exp-panel-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid #e8e0d6;
+  }
+  .exp-panel-section:last-of-type { border-bottom: 0; }
+
+  .exp-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── Platform cards ── */
+  .exp-target-grid { display: flex; flex-direction: column; gap: 5px; }
+  .exp-target-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: 1.5px solid #ddd5c8;
+    background: var(--surface-soft);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.12s, background 0.12s;
+    width: 100%;
+  }
+  .exp-target-btn:hover:not(.active) { border-color: var(--ink); background: #fff; }
+  .exp-target-btn.active { border-color: var(--ink); background: var(--ink); }
+  .exp-target-icon {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 1.5px solid #c8bfb4;
+    color: var(--muted);
+    background: #fff;
+  }
+  .exp-target-btn.active .exp-target-icon { border-color: var(--teal); background: transparent; color: var(--teal); }
+  .exp-target-info { flex: 1; min-width: 0; }
+  .exp-target-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.2px;
+  }
+  .exp-target-btn.active .exp-target-name { color: #fff; }
+  .exp-target-desc { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+  .exp-target-btn.active .exp-target-desc { color: #4a6a80; }
+
+  /* ── Length ── */
+  .exp-length-row {
+    display: flex;
+    border: 1.5px solid #ddd5c8;
+    overflow: hidden;
+  }
+  .exp-length-btn {
+    flex: 1;
+    padding: 7px 4px;
+    text-align: center;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--surface-soft);
+    border: none;
+    border-right: 1px solid #ddd5c8;
+    transition: background 0.1s, color 0.1s;
+  }
+  .exp-length-btn:last-child { border-right: 0; }
+  .exp-length-btn.active { background: var(--teal); color: #fff; font-weight: 700; }
+  .exp-length-btn:hover:not(.active) { background: #ece6de; color: var(--ink); }
+  .exp-length-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--teal);
+    margin-top: 4px;
+    letter-spacing: 0.2px;
+  }
+
+  /* ── Tone ── */
+  .exp-tone-grid { display: flex; flex-direction: column; gap: 3px; }
+  .exp-tone-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--ink);
+    padding: 5px 8px;
+    border: 1.5px solid transparent;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .exp-tone-option:hover { background: var(--surface-soft); }
+  .exp-tone-option.active { border-color: var(--teal); background: #f0faf9; }
+  .exp-tone-option input[type="radio"] { accent-color: var(--teal); flex-shrink: 0; }
+  .exp-tone-sublabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* ── Toggles ── */
+  .exp-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--ink);
+  }
+  .exp-toggle { position: relative; width: 34px; height: 18px; flex-shrink: 0; }
+  .exp-toggle input { opacity: 0; width: 0; height: 0; }
+  .exp-slider {
+    position: absolute; inset: 0;
+    background: #d0c4b6;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .exp-slider::before {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    left: 3px; top: 3px;
+    background: white;
+    transition: transform 0.2s;
+  }
+  .exp-toggle input:checked + .exp-slider { background: var(--teal); }
+  .exp-toggle input:checked + .exp-slider::before { transform: translateX(16px); }
+
+  /* ── Generate section ── */
+  .exp-generate-wrap {
+    padding: 12px 14px 10px;
+    border-top: 2px solid var(--ink);
+    background: var(--surface);
+  }
+  .exp-generate-btn {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--ink);
+    color: var(--teal);
+    border: 2px solid var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .exp-generate-btn:hover:not(:disabled) { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .exp-generate-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .exp-remaining {
+    text-align: center;
+    padding: 5px 0 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--muted);
+  }
+  .exp-remaining.low { color: var(--orange); font-weight: 600; }
+
+  /* ── Right: Post selection panel ── */
+  .exp-posts-head {
+    background: var(--ink);
+    padding: 12px 14px 10px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .exp-posts-head-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 700;
+  }
+  .exp-posts-head-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #4a6a80;
+  }
+  .exp-posts-controls {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #ddd5c8;
+  }
+  .exp-posts-ctrl-btn {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--surface-soft);
+    border: none;
+    border-right: 1px solid #ddd5c8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.1s, background 0.1s;
+  }
+  .exp-posts-ctrl-btn:last-child { border-right: 0; }
+  .exp-posts-ctrl-btn:hover { color: var(--teal); background: #fff; }
+
+  .exp-post-list {
+    max-height: calc(100vh - 280px);
+    min-height: 200px;
+    overflow-y: auto;
+  }
+  .exp-post-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #ece6de;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .exp-post-item:last-child { border-bottom: 0; }
+  .exp-post-item:hover { background: #faf7f2; }
+  .exp-post-item input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: var(--teal);
+    width: 12px;
+    height: 12px;
+  }
+  .exp-post-item-body {
+    flex: 1;
+    min-width: 0;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  .exp-post-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+  }
+  .exp-post-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 0.2px;
+  }
+  .exp-post-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 1px 4px;
+    background: #ece6de;
+    color: var(--muted);
+  }
+  .exp-post-badge.published { background: #e0f5f4; color: #2a8a84; }
+  .exp-post-badge.pending   { background: #fef3e2; color: #b06010; }
+  .exp-post-text {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #4a5a68;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* ── Center: output panel ── */
+  .exp-output-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 580px;
+    border: 2px solid var(--ink);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  /* Output header */
+  .exp-out-header {
+    background: var(--ink);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 2px solid var(--teal);
+    flex-wrap: wrap;
+  }
+  .exp-breadcrumb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: #4a6a80;
+    margin-bottom: 2px;
+  }
+  .exp-breadcrumb a {
+    color: var(--teal);
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    transition: color 0.1s, opacity 0.1s;
+    opacity: 0.85;
+  }
+  .exp-breadcrumb a:hover { opacity: 1; color: #fff; }
+  .exp-out-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 17px;
+    color: #fff;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+  }
+  /* .btn-copy kept for legacy; copy button now lives in save bar */
+
+  /* Status bar */
+  .exp-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 18px;
+    background: var(--surface-soft);
+    border-bottom: 1px solid #e0d8ce;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    min-height: 30px;
+  }
+  .exp-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #c8bfb4;
+    flex-shrink: 0;
+  }
+  .exp-status-dot.active { background: var(--teal); }
+
+  /* Output body states */
+  .exp-out-body { flex: 1; display: flex; flex-direction: column; }
+
+  .exp-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    text-align: center;
+    background: #faf7f2;
+  }
+  .exp-placeholder-glyph {
+    font-size: 44px;
+    line-height: 1;
+    margin-bottom: 18px;
+    opacity: 0.18;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .exp-placeholder-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 16px;
+    color: var(--ink);
+    opacity: 0.45;
+    margin-bottom: 8px;
+  }
+  .exp-placeholder-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .exp-loading {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: #faf7f2;
+  }
+  .exp-spinner {
+    width: 22px; height: 22px;
+    border: 2px solid #ddd5c8;
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .exp-loading-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .exp-result { display: none; flex: 1; flex-direction: column; }
+  .exp-result-meta {
+    padding: 6px 18px;
+    background: var(--surface-soft);
+    border-bottom: 1px solid #e0d8ce;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #exp-content-textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 24px 24px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    font-family: "Avenir Next", "Segoe UI", Helvetica, sans-serif;
+    color: var(--ink);
+    resize: none;
+    min-height: 400px;
+    background: #faf7f2;
+    letter-spacing: 0.1px;
+  }
+
+  /* ── Save bar — below textarea, above refine ── */
+  .exp-save-bar {
+    display: none;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    background: var(--surface);
+    border-top: 1px solid #e0d8ce;
+  }
+  .exp-save-bar.visible { display: flex; }
+
+  /* button group on the left */
+  .exp-save-actions {
+    display: flex;
+    align-items: stretch;
+    border-right: 1px solid #e0d8ce;
+    flex-shrink: 0;
+  }
+  .exp-save-btn,
+  .exp-copy-btn {
+    padding: 9px 16px;
+    background: transparent;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    border: none;
+    border-right: 1px solid #e0d8ce;
+    transition: background 0.12s, color 0.12s;
+  }
+  .exp-save-btn:last-child,
+  .exp-copy-btn:last-child { border-right: none; }
+
+  /* Save — subdued secondary */
+  .exp-save-btn { color: var(--muted); }
+  .exp-save-btn:hover:not(:disabled) { background: var(--surface-soft); color: var(--ink); }
+  .exp-save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Copy — teal delivery action */
+  .exp-copy-btn { color: var(--teal); }
+  .exp-copy-btn:hover { background: rgba(71,184,177,0.07); }
+  .exp-copy-btn.copied { background: var(--teal); color: #fff; }
+
+  /* status + hint on the right */
+  .exp-save-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    flex: 1;
+    min-width: 0;
+  }
+  .exp-save-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--teal);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .exp-save-hint {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: #c8bfb4;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  /* ── Refine bar ── */
+  .exp-refine-bar {
+    display: none;
+    align-items: stretch;
+    border-top: 2px solid var(--ink);
+    background: var(--surface);
+  }
+  .exp-refine-bar.visible { display: flex; }
+  .exp-refine-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: "Avenir Next", "Segoe UI", Helvetica, sans-serif;
+    color: var(--ink);
+    background: var(--surface-soft);
+    resize: none;
+    line-height: 1.5;
+    min-height: 40px;
+    max-height: 90px;
+  }
+  .exp-refine-input::placeholder { color: var(--muted); }
+  .exp-refine-input:focus { background: #fff; outline: none; }
+  .exp-refine-btn {
+    flex-shrink: 0;
+    padding: 0 18px;
+    background: var(--ink);
+    color: var(--teal);
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .exp-refine-btn:hover:not(:disabled) { background: var(--teal); color: #fff; }
+  .exp-refine-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .exp-error {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background: #faf7f2;
+  }
+  .exp-error-inner {
+    border: 2px solid var(--orange);
+    background: #fff8f0;
+    padding: 18px 24px;
+    font-size: 12px;
+    color: var(--ink);
+    max-width: 380px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 900px) {
+    .exp-wrap { grid-template-columns: 220px 1fr; }
+    .exp-posts-panel { display: none; }
+  }
+  @media (max-width: 680px) {
+    .exp-wrap { grid-template-columns: 1fr; padding: 14px 12px 40px; }
+    .exp-panel { position: static; }
+  }
+</style>
+
+<div class="exp-wrap">
+
+  <!-- ── Col 1: Controls ── -->
+  <aside>
+    <div class="exp-panel">
+      <div class="exp-panel-head">
+        <div class="exp-panel-title">Export Studio</div>
+        <div class="exp-panel-campaign">{{ campaign.name }}</div>
+        <a href="/campaigns/{{ campaign.id }}" class="exp-back-link">← back to campaign</a>
+      </div>
+
+      <!-- Target platform -->
+      <div class="exp-panel-section">
+        <div class="exp-section-label">Target platform</div>
+        <div class="exp-target-grid">
+          <button class="exp-target-btn active" data-target="newsletter" onclick="setTarget(this)">
+            <div class="exp-target-icon">✉</div>
+            <div class="exp-target-info">
+              <div class="exp-target-name">Newsletter</div>
+              <div class="exp-target-desc">Digest + subject line</div>
+            </div>
+          </button>
+          <button class="exp-target-btn" data-target="linkedin" onclick="setTarget(this)">
+            <div class="exp-target-icon" style="font-size:11px;">in</div>
+            <div class="exp-target-info">
+              <div class="exp-target-name">LinkedIn</div>
+              <div class="exp-target-desc">Article + headline</div>
+            </div>
+          </button>
+          <button class="exp-target-btn" data-target="reddit" onclick="setTarget(this)">
+            <div class="exp-target-icon">↑</div>
+            <div class="exp-target-info">
+              <div class="exp-target-name">Reddit</div>
+              <div class="exp-target-desc">Community post + title</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Length -->
+      <div class="exp-panel-section">
+        <div class="exp-section-label">Length</div>
+        <div class="exp-length-row">
+          <button class="exp-length-btn" data-length="short" onclick="setLength(this)">Short</button>
+          <button class="exp-length-btn active" data-length="medium" onclick="setLength(this)">Medium</button>
+          <button class="exp-length-btn" data-length="long" onclick="setLength(this)">Long</button>
+        </div>
+        <div class="exp-length-hint" id="exp-length-hint">350–550 words</div>
+      </div>
+
+      <!-- Tone -->
+      <div class="exp-panel-section">
+        <div class="exp-section-label">Tone shift</div>
+        <div class="exp-tone-grid">
+          <label class="exp-tone-option active">
+            <input type="radio" name="tone_shift" value="keep" checked onchange="updateTone(this.closest('label'))">
+            Keep campaign tone
+            <span class="exp-tone-sublabel">{{ campaign.tone }}</span>
+          </label>
+          <label class="exp-tone-option">
+            <input type="radio" name="tone_shift" value="formal" onchange="updateTone(this.closest('label'))">
+            Formal
+            <span class="exp-tone-sublabel">professional</span>
+          </label>
+          <label class="exp-tone-option">
+            <input type="radio" name="tone_shift" value="casual" onchange="updateTone(this.closest('label'))">
+            Casual
+            <span class="exp-tone-sublabel">conversational</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- CTA + Emoji toggles -->
+      <div class="exp-panel-section">
+        <div class="exp-toggle-row" style="margin-bottom:9px;">
+          <span>Include call-to-action</span>
+          <label class="exp-toggle">
+            <input type="checkbox" id="include_cta" checked>
+            <span class="exp-slider"></span>
+          </label>
+        </div>
+        <div class="exp-toggle-row">
+          <span>Include emoji
+            <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); margin-left:3px;"
+                  id="emoji-platform-hint"></span>
+          </span>
+          <label class="exp-toggle">
+            <input type="checkbox" id="include_emoji">
+            <span class="exp-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Generate -->
+      <div class="exp-generate-wrap">
+        <button class="exp-generate-btn" id="exp-gen-btn"
+                {% if export_remaining == 0 %}disabled{% endif %}
+                onclick="generate()">
+          <span id="exp-gen-label">↳ Generate</span>
+        </button>
+        <div class="exp-remaining {% if export_remaining <= 1 %}low{% endif %}" id="exp-remaining-bar">
+          {{ export_remaining }} of {{ export_max }} generation{{ 's' if export_max != 1 else '' }} remaining
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ── Col 2: Output ── -->
+  <div>
+    <div class="exp-output-panel">
+
+      <div class="exp-out-header">
+        <div>
+          <div class="exp-breadcrumb">
+            <a href="/campaigns/{{ campaign.id }}">← {{ campaign.name }}</a>
+          </div>
+          <h1 class="exp-out-title" id="exp-out-title">Export Studio</h1>
+        </div>
+      </div>
+
+      <div class="exp-status-bar" id="exp-status-bar">
+        <span class="exp-status-dot" id="exp-status-dot"></span>
+        <span id="exp-status-text">Configure your export and hit Generate</span>
+      </div>
+
+      <div class="exp-out-body">
+
+        <div class="exp-placeholder" id="exp-placeholder">
+          <div class="exp-placeholder-glyph">✦</div>
+          <div class="exp-placeholder-title">Ready to export</div>
+          <div class="exp-placeholder-sub">
+            Choose a platform, tune the settings,<br>select your posts, then hit Generate.
+          </div>
+        </div>
+
+        <div class="exp-loading" id="exp-loading">
+          <div class="exp-spinner"></div>
+          <div class="exp-loading-text">Generating content…</div>
+        </div>
+
+        <div class="exp-result" id="exp-result">
+          <div class="exp-result-meta">
+            <span id="exp-result-meta-label"></span>
+            <span id="exp-result-word-count"></span>
+          </div>
+          <textarea id="exp-content-textarea" spellcheck="false"></textarea>
+        </div>
+
+        <div class="exp-error" id="exp-error">
+          <div class="exp-error-inner" id="exp-error-msg"></div>
+        </div>
+
+      </div>
+
+      <!-- Save bar — sits between textarea and refine, appears after generation -->
+      <div class="exp-save-bar" id="exp-save-bar">
+        <div class="exp-save-actions">
+          <button class="exp-save-btn" id="exp-save-btn" onclick="saveDraft()" disabled>
+            Save draft
+          </button>
+          <button class="exp-copy-btn" id="exp-copy-btn" onclick="copyContent()">
+            Copy ↑
+          </button>
+        </div>
+        <div class="exp-save-meta">
+          <span class="exp-save-status" id="exp-save-status"></span>
+          <span class="exp-save-hint">Edits not auto-saved</span>
+        </div>
+      </div>
+
+      <!-- Refine bar -->
+      <div class="exp-refine-bar" id="exp-refine-bar">
+        <textarea class="exp-refine-input" id="exp-refine-input"
+          placeholder="Refine — e.g. 'make the intro punchier', 'shorter CTA', 'remove pricing section'…"
+          rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();refineContent();}"
+        ></textarea>
+        <button class="exp-refine-btn" id="exp-refine-btn"
+                {% if export_remaining == 0 %}disabled{% endif %}
+                onclick="refineContent()">
+          Refine →
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Col 3: Posts ── -->
+  <aside>
+    <div class="exp-posts-panel">
+      <div class="exp-posts-head">
+        <span class="exp-posts-head-title">Posts</span>
+        <span class="exp-posts-head-count" id="exp-sel-count">{{ posts | length }} / {{ posts | length }}</span>
+      </div>
+      <div class="exp-posts-controls">
+        <button class="exp-posts-ctrl-btn" onclick="selectAllPosts(true)">Select all</button>
+        <button class="exp-posts-ctrl-btn" onclick="selectAllPosts(false)">None</button>
+      </div>
+      <div class="exp-post-list" id="exp-post-list">
+        {% for p in posts %}
+        <label class="exp-post-item">
+          <input type="checkbox" class="exp-post-cb" data-id="{{ p.id }}" checked>
+          <div class="exp-post-item-body">
+            <div class="exp-post-meta">
+              <span class="exp-post-date">{{ p.scheduled_time.strftime("%b %d") if p.scheduled_time else "—" }}</span>
+              <span class="exp-post-badge {{ p.status }}">{{ p.status }}</span>
+            </div>
+            <div class="exp-post-text">{{ p.content[:140] }}{% if p.content | length > 140 %}…{% endif %}</div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<form id="exp-form" method="post" action="/campaigns/{{ campaign.id }}/export/generate" style="display:none;">
+  <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+  <input type="hidden" name="target" id="f-target" value="newsletter">
+  <input type="hidden" name="length" id="f-length" value="medium">
+  <input type="hidden" name="tone_shift" id="f-tone_shift" value="keep">
+  <input type="hidden" name="include_cta" id="f-include_cta" value="true">
+  <input type="hidden" name="include_emoji" id="f-include_emoji" value="">
+  <input type="hidden" name="selected_posts" id="f-selected_posts" value="">
+</form>
+
+<script>
+const DRAFTS = {{ export_drafts | tojson }};
+
+const LENGTH_HINTS = {
+  short:  { newsletter: '150–250 words', linkedin: '100–180 words', reddit: '100–200 words' },
+  medium: { newsletter: '350–550 words', linkedin: '200–350 words', reddit: '200–350 words' },
+  long:   { newsletter: '600–900 words', linkedin: '400–600 words', reddit: '350–500 words' },
+};
+const TARGET_LABELS = {
+  newsletter: 'Newsletter Digest',
+  linkedin:   'LinkedIn Article',
+  reddit:     'Reddit Post',
+};
+const EMOJI_DEFAULTS = { newsletter: false, linkedin: true, reddit: false };
+
+let currentTarget = 'newsletter';
+let currentLength = 'medium';
+
+function setTarget(btn) {
+  document.querySelectorAll('.exp-target-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTarget = btn.dataset.target;
+  document.getElementById('f-target').value = currentTarget;
+  updateLengthHint();
+  const emojiCb = document.getElementById('include_emoji');
+  emojiCb.checked = EMOJI_DEFAULTS[currentTarget] ?? false;
+  document.getElementById('emoji-platform-hint').textContent =
+    EMOJI_DEFAULTS[currentTarget] ? '(on by default)' : '';
+  const draft = DRAFTS[currentTarget];
+  if (draft) {
+    showResult(draft);
+  } else {
+    document.getElementById('exp-refine-bar').classList.remove('visible');
+    document.getElementById('exp-save-bar').classList.remove('visible');
+    document.getElementById('exp-out-title').textContent = 'Export Studio';
+    document.getElementById('exp-save-btn').disabled = true;
+    document.getElementById('exp-save-status').textContent = '';
+    setStatus('Configure your export and hit Generate', false);
+    show('exp-placeholder');
+  }
+}
+
+function setLength(btn) {
+  document.querySelectorAll('.exp-length-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentLength = btn.dataset.length;
+  document.getElementById('f-length').value = currentLength;
+  updateLengthHint();
+}
+
+function updateLengthHint() {
+  document.getElementById('exp-length-hint').textContent =
+    LENGTH_HINTS[currentLength]?.[currentTarget] || '';
+}
+
+function updateTone(label) {
+  document.querySelectorAll('.exp-tone-option').forEach(l => l.classList.remove('active'));
+  label.classList.add('active');
+  document.getElementById('f-tone_shift').value = label.querySelector('input').value;
+}
+
+function selectAllPosts(state) {
+  document.querySelectorAll('.exp-post-cb').forEach(cb => cb.checked = state);
+  updateSelCount();
+}
+
+function updateSelCount() {
+  const total = document.querySelectorAll('.exp-post-cb').length;
+  const sel   = document.querySelectorAll('.exp-post-cb:checked').length;
+  document.getElementById('exp-sel-count').textContent = sel + ' / ' + total;
+}
+document.querySelectorAll('.exp-post-cb').forEach(cb => cb.addEventListener('change', updateSelCount));
+
+function setStatus(text, active) {
+  document.getElementById('exp-status-text').textContent = text;
+  document.getElementById('exp-status-dot').className = 'exp-status-dot' + (active ? ' active' : '');
+}
+
+function show(id) {
+  ['exp-placeholder','exp-loading','exp-result','exp-error'].forEach(el => {
+    const e = document.getElementById(el);
+    e.style.display = el === id ? 'flex' : 'none';
+  });
+}
+
+function syncFormFields() {
+  const selectedIds = [...document.querySelectorAll('.exp-post-cb:checked')].map(cb => cb.dataset.id);
+  document.getElementById('f-selected_posts').value = selectedIds.join(',');
+  document.getElementById('f-include_cta').value = document.getElementById('include_cta').checked ? 'true' : '';
+  document.getElementById('f-include_emoji').value = document.getElementById('include_emoji').checked ? 'true' : '';
+}
+
+function updateCounters(remaining) {
+  const bar = document.getElementById('exp-remaining-bar');
+  bar.textContent = remaining + ' of {{ export_max }} generation' + ({{ export_max }} !== 1 ? 's' : '') + ' remaining';
+  bar.className = 'exp-remaining' + (remaining <= 1 ? ' low' : '');
+  const noLeft = remaining === 0;
+  document.getElementById('exp-gen-btn').disabled = noLeft;
+  document.getElementById('exp-refine-btn').disabled = noLeft;
+}
+
+function updateWordCount(text) {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const chars = text.length;
+  document.getElementById('exp-result-word-count').textContent = words + ' words · ' + chars + ' chars';
+}
+
+document.getElementById('exp-content-textarea').addEventListener('input', function () {
+  updateWordCount(this.value);
+  if (this.value.trim()) document.getElementById('exp-save-btn').disabled = false;
+});
+
+function showResult(content) {
+  const textarea = document.getElementById('exp-content-textarea');
+  textarea.value = content;
+  updateWordCount(content);
+  const label = TARGET_LABELS[currentTarget];
+  document.getElementById('exp-result-meta-label').textContent = label + ' · ' + currentLength;
+  document.getElementById('exp-out-title').textContent = label;
+  document.getElementById('exp-refine-bar').classList.add('visible');
+  document.getElementById('exp-save-bar').classList.add('visible');
+  document.getElementById('exp-save-btn').disabled = false;
+  const wc = content.trim() ? content.trim().split(/\s+/).length : 0;
+  setStatus(label + ' · ' + currentLength + ' · ~' + wc + ' words', true);
+  show('exp-result');
+}
+
+async function saveDraft() {
+  const content = document.getElementById('exp-content-textarea').value;
+  const saveBtn = document.getElementById('exp-save-btn');
+  const saveStatus = document.getElementById('exp-save-status');
+  saveBtn.disabled = true;
+  saveStatus.textContent = '…';
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', document.querySelector('#exp-form [name="csrf_token"]').value);
+    fd.append('target', currentTarget);
+    fd.append('content', content);
+    const result = await fetchJSON('/campaigns/{{ campaign.id }}/export/save-draft', fd);
+    if (result && result.ok) {
+      DRAFTS[currentTarget] = content;
+      saveStatus.textContent = 'Saved ✓';
+      setTimeout(() => { saveStatus.textContent = ''; }, 2500);
+    } else {
+      saveStatus.textContent = 'Failed';
+    }
+  } catch (e) {
+    saveStatus.textContent = 'Error';
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+(function initDrafts() {
+  const draft = DRAFTS['newsletter'];
+  if (draft) showResult(draft);
+})();
+
+async function fetchJSON(url, formData) {
+  const resp = await fetch(url, { method: 'POST', body: formData });
+  if (resp.redirected || resp.url.includes('/login')) {
+    window.location.href = '/login';
+    return null;
+  }
+  let data;
+  try { data = await resp.json(); } catch {
+    throw new Error('Unexpected server response. The server may be restarting — try again in a moment.');
+  }
+  return { ok: resp.ok, data };
+}
+
+function showFetchError(msg) {
+  document.getElementById('exp-error-msg').textContent = msg;
+  setStatus('Error', false);
+  show('exp-error');
+}
+
+async function generate() {
+  const selectedIds = [...document.querySelectorAll('.exp-post-cb:checked')].map(cb => cb.dataset.id);
+  if (!selectedIds.length) { alert('Select at least one post.'); return; }
+  syncFormFields();
+  const btn = document.getElementById('exp-gen-btn');
+  btn.disabled = true;
+  document.getElementById('exp-gen-label').textContent = 'Generating…';
+  setStatus('Generating ' + TARGET_LABELS[currentTarget] + '…', true);
+  show('exp-loading');
+  try {
+    const fd = new FormData(document.getElementById('exp-form'));
+    const result = await fetchJSON('/campaigns/{{ campaign.id }}/export/generate', fd);
+    if (!result) return;
+    if (!result.ok) {
+      const msg = typeof result.data.detail === 'string' ? result.data.detail : 'Generation failed. Please try again.';
+      showFetchError(msg);
+    } else {
+      showResult(result.data.content);
+      updateCounters(result.data.remaining);
+    }
+  } catch (e) {
+    showFetchError(e.message || 'Request failed. Check your connection and try again.');
+  } finally {
+    document.getElementById('exp-gen-label').textContent = '↳ Generate';
+    const rem = parseInt(document.getElementById('exp-remaining-bar').textContent);
+    if (!isNaN(rem) && rem > 0) btn.disabled = false;
+  }
+}
+
+async function refineContent() {
+  const instructions = document.getElementById('exp-refine-input').value.trim();
+  if (!instructions) { document.getElementById('exp-refine-input').focus(); return; }
+  const currentContent = document.getElementById('exp-content-textarea').value;
+  syncFormFields();
+  const refineBtn = document.getElementById('exp-refine-btn');
+  refineBtn.disabled = true;
+  refineBtn.textContent = '…';
+  setStatus('Refining ' + TARGET_LABELS[currentTarget] + '…', true);
+  show('exp-loading');
+  try {
+    const fd = new FormData(document.getElementById('exp-form'));
+    fd.append('current_content', currentContent);
+    fd.append('instructions', instructions);
+    const result = await fetchJSON('/campaigns/{{ campaign.id }}/export/refine', fd);
+    if (!result) return;
+    if (!result.ok) {
+      const msg = typeof result.data.detail === 'string' ? result.data.detail : 'Refinement failed. Please try again.';
+      showFetchError(msg);
+    } else {
+      showResult(result.data.content);
+      updateCounters(result.data.remaining);
+      document.getElementById('exp-refine-input').value = '';
+    }
+  } catch (e) {
+    showFetchError(e.message || 'Request failed. Check your connection and try again.');
+  } finally {
+    refineBtn.textContent = 'Refine →';
+    const rem = parseInt(document.getElementById('exp-remaining-bar').textContent);
+    if (!isNaN(rem) && rem > 0) refineBtn.disabled = false;
+  }
+}
+
+async function copyContent() {
+  const text = document.getElementById('exp-content-textarea').value;
+  if (!text.trim()) return;
+  await navigator.clipboard.writeText(text);
+  const btn = document.getElementById('exp-copy-btn');
+  const status = document.getElementById('exp-save-status');
+  btn.classList.add('copied');
+  status.textContent = 'Copied ✓';
+  setTimeout(() => {
+    btn.classList.remove('copied');
+    if (status.textContent === 'Copied ✓') status.textContent = '';
+  }, 2000);
+}
+</script>
+
+{% endblock %}

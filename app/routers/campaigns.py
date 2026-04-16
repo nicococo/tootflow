@@ -12,7 +12,7 @@ from app.models import Campaign, Metrics, Post, User, MastodonAccount
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
-from app.services.ai_service import generate_newsletter_digest, generate_linkedin_summary
+from app.services.ai_service import generate_export, refine_export
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campaigns")
@@ -354,66 +354,179 @@ def reset_start_date(
     return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
 
 
-@router.post("/{campaign_id}/export/newsletter")
-async def export_newsletter(
+@router.get("/{campaign_id}/export", response_class=HTMLResponse)
+def export_page(
     campaign_id: int,
+    request: Request,
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
-    _csrf: None = Depends(verify_csrf),
 ):
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
     if campaign.payment_status != "paid":
         raise HTTPException(status_code=403, detail="Campaign not activated")
-    if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
-        raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
-    if not posts:
-        raise HTTPException(status_code=400, detail="No posts to export")
+    export_remaining = max(0, settings.export_max_per_campaign - campaign.export_generations)
     try:
-        content = await generate_newsletter_digest(
-            campaign.name, format_description_for_ai(campaign.description), campaign.tone, campaign.language,
-            [p.content for p in posts],
-        )
-    except Exception as e:
-        logger.error(f"Newsletter generation failed for campaign {campaign_id}: {e}")
-        raise HTTPException(status_code=500, detail="Generation failed")
-    campaign.ai_posts_generated += 1
+        export_drafts = json.loads(campaign.export_drafts or "{}")
+    except (json.JSONDecodeError, ValueError):
+        export_drafts = {}
+    return templates.TemplateResponse("export.html", {
+        "request": request, "user": user,
+        "campaign": campaign, "posts": posts,
+        "export_remaining": export_remaining,
+        "export_max": settings.export_max_per_campaign,
+        "export_drafts": export_drafts,
+    })
+
+
+def _save_export_draft(campaign: Campaign, target: str, content: str, session: Session) -> None:
+    """Persist content into the campaign's export_drafts JSON blob for the given target."""
+    try:
+        drafts = json.loads(campaign.export_drafts or "{}")
+    except (json.JSONDecodeError, ValueError):
+        drafts = {}
+    drafts[target] = content
+    campaign.export_drafts = json.dumps(drafts)
     session.add(campaign)
     session.commit()
-    return JSONResponse({"content": content})
 
 
-@router.post("/{campaign_id}/export/linkedin")
-async def export_linkedin(
+def _resolve_post_contents(all_posts, selected_posts: str) -> list[str]:
+    """Return post contents filtered by selected_posts CSV of IDs (empty = all)."""
+    if selected_posts.strip():
+        ids = {int(x) for x in selected_posts.split(",") if x.strip().isdigit()}
+        return [p.content for p in all_posts if p.id in ids]
+    return [p.content for p in all_posts]
+
+
+@router.post("/{campaign_id}/export/generate")
+async def export_generate(
     campaign_id: int,
+    request: Request,
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
+    target: str = Form("newsletter"),
+    length: str = Form("medium"),
+    tone_shift: str = Form("keep"),
+    include_cta: bool = Form(False),
+    include_emoji: bool = Form(False),
+    selected_posts: str = Form(""),
 ):
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
     if campaign.payment_status != "paid":
         raise HTTPException(status_code=403, detail="Campaign not activated")
-    if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
-        raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
-    posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
-    if not posts:
+    if campaign.export_generations >= settings.export_max_per_campaign:
+        raise HTTPException(status_code=403, detail="Export generation limit reached for this campaign")
+
+    all_posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
+    if not all_posts:
         raise HTTPException(status_code=400, detail="No posts to export")
+
+    contents = _resolve_post_contents(all_posts, selected_posts)
+    if not contents:
+        raise HTTPException(status_code=400, detail="No posts selected")
+
     try:
-        content = await generate_linkedin_summary(
-            campaign.name, format_description_for_ai(campaign.description), campaign.tone, campaign.language,
-            [p.content for p in posts],
+        content = await generate_export(
+            campaign_name=campaign.name,
+            description=format_description_for_ai(campaign.description),
+            tone=campaign.tone,
+            language=campaign.language,
+            post_contents=contents,
+            target=target,
+            length=length,
+            tone_shift=tone_shift,
+            include_cta=include_cta,
+            include_emoji=include_emoji,
         )
     except Exception as e:
-        logger.error(f"LinkedIn generation failed for campaign {campaign_id}: {e}")
+        logger.error(f"Export generation failed for campaign {campaign_id}: {e}")
         raise HTTPException(status_code=500, detail="Generation failed")
-    campaign.ai_posts_generated += 1
-    session.add(campaign)
-    session.commit()
-    return JSONResponse({"content": content})
+
+    campaign.export_generations += 1
+    _save_export_draft(campaign, target, content, session)
+    return JSONResponse({
+        "content": content,
+        "remaining": max(0, settings.export_max_per_campaign - campaign.export_generations),
+    })
+
+
+@router.post("/{campaign_id}/export/refine")
+async def export_refine(
+    campaign_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+    current_content: str = Form(...),
+    instructions: str = Form(...),
+    target: str = Form("newsletter"),
+    length: str = Form("medium"),
+    tone_shift: str = Form("keep"),
+    include_cta: bool = Form(False),
+    include_emoji: bool = Form(False),
+    selected_posts: str = Form(""),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.payment_status != "paid":
+        raise HTTPException(status_code=403, detail="Campaign not activated")
+    if campaign.export_generations >= settings.export_max_per_campaign:
+        raise HTTPException(status_code=403, detail="Export generation limit reached for this campaign")
+
+    all_posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
+    contents = _resolve_post_contents(all_posts, selected_posts)
+
+    try:
+        content = await refine_export(
+            current_content=current_content,
+            instructions=instructions,
+            campaign_name=campaign.name,
+            description=format_description_for_ai(campaign.description),
+            tone=campaign.tone,
+            language=campaign.language,
+            post_contents=contents,
+            target=target,
+            length=length,
+            tone_shift=tone_shift,
+            include_cta=include_cta,
+            include_emoji=include_emoji,
+        )
+    except Exception as e:
+        logger.error(f"Export refinement failed for campaign {campaign_id}: {e}")
+        raise HTTPException(status_code=500, detail="Refinement failed")
+
+    campaign.export_generations += 1
+    _save_export_draft(campaign, target, content, session)
+    return JSONResponse({
+        "content": content,
+        "remaining": max(0, settings.export_max_per_campaign - campaign.export_generations),
+    })
+
+
+@router.post("/{campaign_id}/export/save-draft")
+async def export_save_draft(
+    campaign_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+    target: str = Form(...),
+    content: str = Form(...),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.payment_status != "paid":
+        raise HTTPException(status_code=403, detail="Campaign not activated")
+    _save_export_draft(campaign, target, content, session)
+    return JSONResponse({"ok": True})
 
 
 @router.post("/{campaign_id}/delete")

@@ -113,9 +113,19 @@ def export_data(
                 } if m else None,
             })
 
+        try:
+            description_parsed = json.loads(c.description) if c.description else None
+        except (json.JSONDecodeError, ValueError):
+            description_parsed = c.description or None
+
+        try:
+            export_drafts = json.loads(c.export_drafts) if c.export_drafts else {}
+        except (json.JSONDecodeError, ValueError):
+            export_drafts = {}
+
         export["campaigns"].append({
             "name": c.name,
-            "description": c.description,
+            "description": description_parsed,
             "template_type": c.template_type,
             "tone": c.tone,
             "language": c.language,
@@ -125,6 +135,8 @@ def export_data(
             "enabled": c.enabled,
             "payment_status": c.payment_status,
             "ai_posts_generated": c.ai_posts_generated,
+            "export_generations": c.export_generations,
+            "export_drafts": export_drafts,
             "created_at": c.created_at.isoformat() + "Z",
             "start_date": c.start_date.isoformat() + "Z" if c.start_date else None,
             "end_date": c.end_date.isoformat() + "Z" if c.end_date else None,
@@ -172,6 +184,11 @@ def delete_account(
     ).first()
     if mastodon:
         session.delete(mastodon)
+
+    for snapshot in session.exec(
+        select(FollowerSnapshot).where(FollowerSnapshot.user_id == user.id)
+    ).all():
+        session.delete(snapshot)
 
     session.delete(user)
     session.commit()

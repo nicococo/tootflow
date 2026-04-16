@@ -30,6 +30,12 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=tootflow_proxy"

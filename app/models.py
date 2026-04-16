@@ -38,6 +38,8 @@ class Campaign(SQLModel, table=True):
     payment_status: str = "unpaid"
     enabled: bool = True
     ai_posts_generated: int = 0
+    export_generations: int = 0
+    export_drafts: str = Field(default="{}")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: Optional[User] = Relationship(back_populates="campaigns")

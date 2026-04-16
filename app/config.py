@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_max_posts_per_campaign: int = 30   # cap on posts generated per AI request
+    export_max_per_campaign: int = 5          # cap on export generations per campaign
     openai_max_tokens: int = 4096             # max tokens per OpenAI response
 
     lemonsqueezy_api_key: str = ""

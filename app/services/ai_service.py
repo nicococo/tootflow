@@ -285,6 +285,187 @@ async def generate_linkedin_summary(
     return response.choices[0].message.content.strip()
 
 
+def _build_export_prompts(
+    safe_name: str,
+    safe_desc: str,
+    safe_lang: str,
+    safe_posts: str,
+    target: str,
+    length: str,
+    tone_shift: str,
+    base_tone: str,
+    include_cta: bool,
+    include_emoji: bool,
+) -> tuple[str, str]:
+    """Build system + user prompts for export generation/refinement."""
+    length_map = {
+        "short":  {"newsletter": "150–250 words", "linkedin": "100–180 words", "reddit": "100–200 words"},
+        "medium": {"newsletter": "350–550 words", "linkedin": "200–350 words", "reddit": "200–350 words"},
+        "long":   {"newsletter": "600–900 words", "linkedin": "400–600 words", "reddit": "350–500 words"},
+    }
+    word_target = length_map.get(length, length_map["medium"]).get(target, "300–500 words")
+
+    tone_instruction = {
+        "keep":   f"Use the campaign's original tone: {base_tone}.",
+        "formal": "Shift the tone to be formal and professional.",
+        "casual": "Shift the tone to be casual and conversational.",
+    }.get(tone_shift, f"Tone: {base_tone}.")
+
+    cta_instruction = (
+        "End with a brief, concrete call-to-action." if include_cta
+        else "Do not include a call-to-action at the end."
+    )
+
+    emoji_instruction = (
+        "Use relevant emoji to improve scannability and visual flow "
+        "(e.g. 🔹 for bullet points, 💡 for key insights, 🚀 for calls-to-action)."
+        if include_emoji
+        else "Do not use emoji — keep the text clean and plain."
+    )
+
+    if target == "newsletter":
+        system_prompt = (
+            f"You are a newsletter writer. Write a cohesive newsletter digest based on the provided Mastodon campaign posts. "
+            f"Start with a suggested subject line prefixed 'Subject: '. "
+            f"Then write the newsletter body: an engaging intro, key insights woven into flowing prose. "
+            f"{cta_instruction} {emoji_instruction} "
+            f"Target length: {word_target}. {tone_instruction} Language: {safe_lang}. "
+            f"Output only the subject line and newsletter body — no meta-commentary."
+        )
+        user_prompt = f"Campaign: {safe_name}\nTopic: {safe_desc}\n\nPosts:\n{safe_posts}"
+
+    elif target == "linkedin":
+        system_prompt = (
+            f"You are an expert LinkedIn content writer. "
+            f"Write a compelling standalone LinkedIn article based on the provided campaign. "
+            f"Start with a suggested headline prefixed 'Headline: '. "
+            f"Write the body as focused paragraphs — punchy, self-contained, and immediately useful. "
+            f"{cta_instruction} {emoji_instruction} "
+            f"Target length: {word_target}. {tone_instruction} Language: {safe_lang}. "
+            f"Never mention that this was derived from social media posts. "
+            f"Output only the headline line and article body — no meta-commentary."
+        )
+        user_prompt = f"Topic: {safe_name} — {safe_desc}\n\nKey insights:\n{safe_posts}"
+
+    else:  # reddit
+        system_prompt = (
+            f"You are a skilled Reddit writer. Write a genuine, community-oriented Reddit post "
+            f"based on the provided campaign material. "
+            f"Start with a suggested post title prefixed 'Title: '. "
+            f"Write the body in a direct, authentic Reddit voice — share insights honestly, "
+            f"invite discussion, avoid marketing language. "
+            f"{cta_instruction} {emoji_instruction} "
+            f"Target length: {word_target}. {tone_instruction} Language: {safe_lang}. "
+            f"Output only the title line and post body — no meta-commentary."
+        )
+        user_prompt = f"Topic: {safe_name} — {safe_desc}\n\nKey points:\n{safe_posts}"
+
+    return system_prompt, user_prompt
+
+
+async def generate_export(
+    campaign_name: str,
+    description: str,
+    tone: str,
+    language: str,
+    post_contents: List[str],
+    target: str = "newsletter",
+    length: str = "medium",
+    tone_shift: str = "keep",
+    include_cta: bool = True,
+    include_emoji: bool = False,
+) -> str:
+    """Unified export generator supporting newsletter, LinkedIn, and Reddit targets."""
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    safe_name = _sanitize(campaign_name, 200)
+    safe_desc = _sanitize(description, 2000)
+    safe_lang = _sanitize(language, 50)
+    base_tone = TONE_DESCRIPTIONS.get(tone, tone)
+    safe_posts = "\n\n".join(_sanitize(p, 500) for p in post_contents[:40])
+
+    system_prompt, user_prompt = _build_export_prompts(
+        safe_name, safe_desc, safe_lang, safe_posts,
+        target, length, tone_shift, base_tone, include_cta, include_emoji,
+    )
+
+    token_map = {"short": 500, "medium": 900, "long": 1400}
+    max_tokens = token_map.get(length, 900)
+
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_prompt},
+        ],
+        temperature=0.7,
+        max_completion_tokens=max_tokens,
+    )
+    return response.choices[0].message.content.strip()
+
+
+async def refine_export(
+    current_content: str,
+    instructions: str,
+    campaign_name: str,
+    description: str,
+    tone: str,
+    language: str,
+    post_contents: List[str],
+    target: str = "newsletter",
+    length: str = "medium",
+    tone_shift: str = "keep",
+    include_cta: bool = True,
+    include_emoji: bool = False,
+) -> str:
+    """Refine an existing export based on user instructions, keeping all original context."""
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    safe_name = _sanitize(campaign_name, 200)
+    safe_desc = _sanitize(description, 2000)
+    safe_lang = _sanitize(language, 50)
+    safe_content = _sanitize(current_content, 6000)
+    safe_instructions = _sanitize(instructions, 500)
+    base_tone = TONE_DESCRIPTIONS.get(tone, tone)
+    safe_posts = "\n\n".join(_sanitize(p, 500) for p in post_contents[:40])
+
+    _, context_prompt = _build_export_prompts(
+        safe_name, safe_desc, safe_lang, safe_posts,
+        target, length, tone_shift, base_tone, include_cta, include_emoji,
+    )
+
+    target_labels = {"newsletter": "newsletter digest", "linkedin": "LinkedIn article", "reddit": "Reddit post"}
+    target_label = target_labels.get(target, "content")
+
+    system_prompt = (
+        f"You are an expert editor refining a {target_label}. "
+        f"The user has edited the current version and has specific instructions for changes. "
+        f"Rewrite the content incorporating those instructions while preserving the overall structure, "
+        f"target length, tone, and format (subject/headline/title prefix must be kept if present). "
+        f"Output only the refined content — no commentary, no explanation."
+    )
+
+    user_prompt = (
+        f"Original context:\n{context_prompt}\n\n"
+        f"Current content:\n{safe_content}\n\n"
+        f"Refinement instructions: {safe_instructions}"
+    )
+
+    token_map = {"short": 500, "medium": 900, "long": 1400}
+    max_tokens = token_map.get(length, 900)
+
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_prompt},
+        ],
+        temperature=0.6,
+        max_completion_tokens=max_tokens,
+    )
+    return response.choices[0].message.content.strip()
+
+
 def schedule_posts(posts: List[str], start_date: datetime, posts_per_week: int) -> List[tuple]:
     """Return list of (content, scheduled_time) tuples spread across the campaign."""
     scheduled = []
