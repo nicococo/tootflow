@@ -13,7 +13,8 @@ services:
       - --log.level=WARN
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --providers.docker.constraints=Label(`traefik.instance`,`tootflow`)
+      # constraint re-added once routing is confirmed working
+      # - "--providers.docker.constraints=Label(`traefik.instance`,`tootflow`)"
       # HTTP → HTTPS redirect
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
