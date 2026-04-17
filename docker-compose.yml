@@ -13,6 +13,7 @@ services:
       - --log.level=WARN
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.docker.constraints=Label(`traefik.instance`,`tootflow`)
       # HTTP → HTTPS redirect
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
@@ -38,6 +39,7 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
+      - "traefik.instance=tootflow"
       - "traefik.docker.network=tootflow_proxy"
 
       # — Apex domain (tootflow.com) —
