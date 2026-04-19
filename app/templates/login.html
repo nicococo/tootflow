@@ -214,8 +214,15 @@
     </div>
 
     <div class="auth-foot">
+      {% if registration_closed_attempt %}
+      <span style="color:var(--orange);">New accounts are not open yet — but we're launching soon.</span><br>
+      If you already have an account, sign in above.
+      {% elif not registration_open %}
+      Existing users can sign in above. New account registration is not yet open.
+      {% else %}
       You'll be redirected to your Mastodon instance to authorise TootFlow.
       An account is created automatically on first sign-in.
+      {% endif %}
     </div>
 
   </div>

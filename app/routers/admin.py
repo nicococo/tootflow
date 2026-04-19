@@ -13,7 +13,7 @@ from app.csrf import verify_csrf
 from app.database import get_session
 from app.models import Campaign, MastodonAccount, PageView, Payment, Post, SiteConfig, User
 from app.scheduler import update_metrics
-from app.site_config import get_banner, set_banner
+from app.site_config import get_banner, set_banner, get_registration_open, set_registration_open
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin")
@@ -151,6 +151,7 @@ def admin_page(
             "request": request, "auth": True, "now": datetime.utcnow,
             "campaigns_list": campaigns_list, "account_by_user": account_by_user,
             "banner_text": get_banner(),
+            "registration_open": get_registration_open(),
             **stats,
         }
     )
@@ -187,6 +188,28 @@ def update_banner(
     session.commit()
     set_banner(text)
     logger.info(f"Admin updated banner: {text!r}")
+    return RedirectResponse("/admin", status_code=302)
+
+
+@router.post("/registration")
+def update_registration(
+    request: Request,
+    registration_open: str = Form("false"),
+    session: Session = Depends(get_session),
+    _csrf: None = Depends(verify_csrf),
+):
+    if not _is_authenticated(request):
+        return RedirectResponse("/admin", status_code=302)
+    value = registration_open == "true"
+    cfg = session.exec(select(SiteConfig).where(SiteConfig.key == "registration_open")).first()
+    if cfg:
+        cfg.value = str(value).lower()
+    else:
+        cfg = SiteConfig(key="registration_open", value=str(value).lower())
+    session.add(cfg)
+    session.commit()
+    set_registration_open(value)
+    logger.info(f"Admin set registration_open={value}")
     return RedirectResponse("/admin", status_code=302)
 
 

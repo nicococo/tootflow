@@ -16,6 +16,7 @@ from app.database import get_session
 from app.limiter import limiter
 from app.models import MastodonAccount, User
 from app.services import mastodon_service
+from app.site_config import get_registration_open
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,7 +55,10 @@ def login_page(request: Request, session: Session = Depends(get_session)):
     user = optional_current_user(request, session)
     if user:
         return RedirectResponse("/dashboard", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "registration_open": get_registration_open(),
+    })
 
 
 @router.post("/login")
@@ -130,7 +134,18 @@ async def mastodon_callback(
         session.commit()
         user_id = existing_account.user_id
     else:
-        # New user — create User + MastodonAccount
+        # New user — check if registration is open
+        if not get_registration_open():
+            return templates.TemplateResponse(
+                "login.html",
+                {
+                    "request": request,
+                    "registration_open": False,
+                    "registration_closed_attempt": True,
+                },
+                status_code=403,
+            )
+        # Create User + MastodonAccount
         user = User()
         session.add(user)
         session.commit()

@@ -128,6 +128,28 @@
     </form>
   </div>
 
+  <!-- Registration -->
+  <h2>Registration</h2>
+  <div style="margin-bottom:32px; max-width:640px;">
+    <form method="post" action="/admin/registration">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <input type="hidden" name="registration_open" value="{% if registration_open %}false{% else %}true{% endif %}">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <button type="submit" class="btn {% if registration_open %}btn-outline{% else %}btn-primary{% endif %} btn-sm">
+          {% if registration_open %}Close Registration{% else %}Open Registration{% endif %}
+        </button>
+        {% if registration_open %}
+        <span style="font-size:12px; color:var(--green);">● Open — new users can sign up</span>
+        {% else %}
+        <span style="font-size:12px; color:var(--orange);">● Closed — only existing users can log in</span>
+        {% endif %}
+      </div>
+      <p class="muted text-sm" style="margin-top:8px;">
+        When closed, new Mastodon accounts are blocked at the OAuth callback. Existing users are unaffected.
+      </p>
+    </form>
+  </div>
+
   <!-- Runtime Settings -->
   <h2>Runtime Settings</h2>
   <div style="margin-bottom:32px; max-width:640px;">
