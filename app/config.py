@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     operator_street: str = ""
     operator_city: str = ""          # e.g. "12345 Berlin"
     operator_phone: str = ""
-    operator_vat_id: str = ""        # e.g. "DE123456789" or "Kleinunternehmer per §19 UStG"
+    operator_vat_id: str = ""        # Umsatzsteuer-ID, e.g. "DE123456789"
     operator_email: str = "hello@tootflow.com"
 
     campaign_price: str = "5"         # digits only, no currency symbol
