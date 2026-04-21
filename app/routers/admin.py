@@ -245,6 +245,8 @@ def update_settings(
     openai_max_tokens: int = Form(...),
     max_posts_per_campaign: int = Form(...),
     export_max_per_campaign: int = Form(...),
+    metrics_max_days: int = Form(...),
+    metrics_max_posts_per_user: int = Form(...),
     _csrf: None = Depends(verify_csrf),
 ):
     if not _is_authenticated(request):
@@ -256,6 +258,8 @@ def update_settings(
     settings.openai_max_tokens = openai_max_tokens
     settings.max_posts_per_campaign = max_posts_per_campaign
     settings.export_max_per_campaign = export_max_per_campaign
+    settings.metrics_max_days = metrics_max_days
+    settings.metrics_max_posts_per_user = metrics_max_posts_per_user
     logger.info(
         f"Admin updated in-memory settings: price={settings.campaign_price} "
         f"currency={settings.campaign_currency} model={settings.openai_model} "

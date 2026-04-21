@@ -8,6 +8,9 @@ class Settings(BaseSettings):
 
     max_posts_per_campaign: int = 32          # hard cap on total posts per campaign
 
+    metrics_max_days: int = 30               # only fetch metrics for posts published within this many days
+    metrics_max_posts_per_user: int = 100    # max posts to fetch metrics for per user per run
+
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_max_posts_per_campaign: int = 30   # cap on posts generated per AI request

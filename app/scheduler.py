@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.database import engine
 from app.models import Campaign, Post, Metrics, MastodonAccount, FollowerSnapshot
 from app.services import mastodon_service
@@ -86,14 +87,32 @@ async def publish_due_posts():
 
 
 async def update_metrics():
-    """Fetch engagement metrics for all published posts and record daily follower snapshots."""
+    """Fetch engagement metrics for published posts (paid campaigns, recent, capped per user)."""
+    settings = get_settings()
+    cutoff = datetime.utcnow() - timedelta(days=settings.metrics_max_days)
+
     with Session(engine) as session:
         published_posts = session.exec(
-            select(Post).where(
+            select(Post)
+            .join(Campaign, Post.campaign_id == Campaign.id)
+            .where(
                 Post.status == "published",
                 Post.mastodon_status_id.isnot(None),
+                Post.published_at >= cutoff,
+                Campaign.payment_status == "paid",
             )
+            .order_by(Post.published_at.desc())
         ).all()
+
+        # Enforce per-user cap
+        posts_by_user: dict[int, list] = {}
+        for post in published_posts:
+            campaign = session.get(Campaign, post.campaign_id)
+            uid = campaign.user_id
+            posts_by_user.setdefault(uid, [])
+            if len(posts_by_user[uid]) < settings.metrics_max_posts_per_user:
+                posts_by_user[uid].append(post)
+        published_posts = [p for posts in posts_by_user.values() for p in posts]
 
         # Cache decrypted tokens per user to avoid double-decrypting
         decrypted: dict[int, str] = {}
