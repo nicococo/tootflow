@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import Campaign, Metrics, Post, User, MastodonAccount
+from app.models import Campaign, Metrics, Payment, Post, User, MastodonAccount
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
@@ -541,7 +541,13 @@ def delete_campaign(
         raise HTTPException(status_code=404)
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id)).all()
     for p in posts:
+        metrics = session.exec(select(Metrics).where(Metrics.post_id == p.id)).all()
+        for m in metrics:
+            session.delete(m)
         session.delete(p)
+    payments = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).all()
+    for pay in payments:
+        session.delete(pay)
     session.delete(campaign)
     session.commit()
     return RedirectResponse("/dashboard", status_code=302)

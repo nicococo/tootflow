@@ -30,8 +30,8 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup security checks
-    if not settings.lemonsqueezy_webhook_secret:
-        logger.critical("LEMONSQUEEZY_WEBHOOK_SECRET is not set — webhook endpoint is insecure")
+    if not settings.polar_webhook_secret:
+        logger.critical("POLAR_WEBHOOK_SECRET is not set — webhook endpoint is insecure")
     if settings.secret_key in ("changeme", "changeme-generate-a-long-random-string"):
         logger.critical("SECRET_KEY is set to the default placeholder — JWTs are forgeable")
 

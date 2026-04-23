@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     export_max_per_campaign: int = 5          # cap on export generations per campaign
     openai_max_tokens: int = 4096             # max tokens per OpenAI response
 
-    lemonsqueezy_api_key: str = ""
-    lemonsqueezy_store_id: str = ""
-    lemonsqueezy_product_variant_id: str = ""
-    lemonsqueezy_webhook_secret: str = ""
+    polar_access_token: str = ""
+    polar_product_id: str = ""
+    polar_webhook_secret: str = ""
+    polar_server: str = "sandbox"   # "sandbox" or "production"
 
     app_base_url: str = "http://localhost:8000"
     app_env: str = "development"  # set to "production" in prod

@@ -1,9 +1,9 @@
-import json
 import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlmodel import Session, select
+from polar_sdk.models import WebhookOrderPaidPayload, WebhookRefundCreatedPayload
 
 from app.database import get_session
 from app.models import Campaign, Payment, Post, User
@@ -37,93 +37,90 @@ async def activate_campaign(
     return RedirectResponse(checkout_url, status_code=302)
 
 
-@router.post("/webhooks/lemonsqueezy")
-async def lemonsqueezy_webhook(request: Request, session: Session = Depends(get_session)):
+@router.post("/webhooks/polar")
+async def polar_webhook(request: Request, session: Session = Depends(get_session)):
     body = await request.body()
-    signature = request.headers.get("X-Signature", "")
-    logger.debug(f"Webhook received — event signature present: {bool(signature)}, body length: {len(body)}")
-
-    if not verify_webhook_signature(body, signature):
-        logger.warning("Webhook signature mismatch")
-        raise HTTPException(status_code=400, detail="Invalid signature")
+    logger.debug(f"Polar webhook received, body length: {len(body)}")
 
     try:
-        payload = json.loads(body)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        event = verify_webhook_signature(body, dict(request.headers))
+    except ValueError as e:
+        logger.warning(f"Polar webhook verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
 
-    logger.info(f"Webhook event: {payload.get('meta', {}).get('event_name', 'unknown')}")
+    logger.info(f"Polar webhook event: {type(event).__name__}")
 
-    event_name = payload.get("meta", {}).get("event_name", "")
-    if event_name not in ("order_created", "order_refunded"):
-        return JSONResponse({"status": "ignored"})
+    if isinstance(event, WebhookOrderPaidPayload):
+        data = event.data
+        metadata = getattr(data, "metadata", {}) or {}
+        campaign_id = metadata.get("campaign_id")
+        user_id = metadata.get("user_id")
 
-    data = payload.get("data", {})
-    attributes = data.get("attributes", {})
-    custom_data = payload.get("meta", {}).get("custom_data", {})
+        if not campaign_id or not user_id:
+            logger.warning("Polar webhook missing campaign_id/user_id in metadata")
+            raise HTTPException(status_code=400, detail="Missing metadata")
 
-    campaign_id = custom_data.get("campaign_id")
-    user_id = custom_data.get("user_id")
+        campaign_id = int(campaign_id)
+        user_id = int(user_id)
 
-    if not campaign_id or not user_id:
-        raise HTTPException(status_code=400, detail="Missing custom data")
+        campaign = session.get(Campaign, campaign_id)
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        if campaign.user_id != user_id:
+            logger.warning(f"Polar webhook user_id mismatch for campaign {campaign_id}")
+            raise HTTPException(status_code=400, detail="Invalid webhook data")
 
-    campaign_id = int(campaign_id)
-    user_id = int(user_id)
-
-    campaign = session.get(Campaign, campaign_id)
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-
-    # Verify campaign belongs to the claimed user
-    if campaign.user_id != user_id:
-        logger.warning(f"Webhook user_id mismatch for campaign {campaign_id}")
-        raise HTTPException(status_code=400, detail="Invalid webhook data")
-
-    if event_name == "order_refunded":
-        # Revoke access and stop publishing
-        campaign.payment_status = "unpaid"
-        campaign.status = "draft"
-        campaign.enabled = False
-        session.add(campaign)
         payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
+        order_id = str(getattr(data, "id", ""))
+        amount = float(getattr(data, "total_amount", 0)) / 100
+        currency = (getattr(data, "currency", "EUR") or "EUR").upper()
+
+        if not payment:
+            payment = Payment(
+                user_id=user_id,
+                campaign_id=campaign_id,
+                lemonsqueezy_order_id=order_id,
+                amount=amount,
+                currency=currency,
+                status="paid",
+            )
+            session.add(payment)
+        else:
+            payment.status = "paid"
+            payment.lemonsqueezy_order_id = order_id
+            session.add(payment)
+
+        campaign.payment_status = "paid"
+        if campaign.status == "draft":
+            has_posts = session.exec(
+                select(Post).where(Post.campaign_id == campaign_id)
+            ).first()
+            if has_posts:
+                campaign.status = "active"
+        campaign.start_date = datetime.utcnow()
+        campaign.end_date = datetime.utcnow() + timedelta(days=campaign.duration_days)
+        session.add(campaign)
+        session.commit()
+        logger.info(f"Campaign {campaign_id} activated via Polar order {order_id}")
+
+    elif isinstance(event, WebhookRefundCreatedPayload):
+        data = event.data
+        order_id = str(getattr(data, "order_id", ""))
+        payment = session.exec(
+            select(Payment).where(Payment.lemonsqueezy_order_id == order_id)
+        ).first()
         if payment:
+            campaign = session.get(Campaign, payment.campaign_id)
+            if campaign:
+                campaign.payment_status = "unpaid"
+                campaign.status = "draft"
+                campaign.enabled = False
+                session.add(campaign)
             payment.status = "refunded"
             session.add(payment)
-        session.commit()
-        logger.info(f"Campaign {campaign_id} revoked due to refund")
-        return JSONResponse({"status": "ok"})
-
-    # order_created — record payment and activate campaign
-    payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
-    if not payment:
-        payment = Payment(
-            user_id=user_id,
-            campaign_id=campaign_id,
-            lemonsqueezy_order_id=str(data.get("id", "")),
-            amount=float(attributes.get("total", 0)) / 100,
-            currency=attributes.get("currency", "EUR").upper(),
-            status="paid",
-        )
-        session.add(payment)
+            session.commit()
+            logger.info(f"Campaign {payment.campaign_id} revoked due to Polar refund")
     else:
-        payment.status = "paid"
-        payment.lemonsqueezy_order_id = str(data.get("id", ""))
-        session.add(payment)
-
-    campaign.payment_status = "paid"
-    # Status is driven by post lifecycle, not payment.
-    # Only advance to "active" if the campaign already has posts; otherwise
-    # it stays "draft" until the user adds posts.
-    if campaign.status == "draft":
-        has_posts = session.exec(
-            select(Post).where(Post.campaign_id == campaign_id)
-        ).first()
-        if has_posts:
-            campaign.status = "active"
-    campaign.start_date = datetime.utcnow()
-    campaign.end_date = datetime.utcnow() + timedelta(days=campaign.duration_days)
-    session.add(campaign)
-    session.commit()
+        return JSONResponse({"status": "ignored"})
 
     return JSONResponse({"status": "ok"})
