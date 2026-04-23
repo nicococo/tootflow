@@ -209,6 +209,47 @@ async def create_campaign(
     return RedirectResponse(f"/campaigns/{campaign.id}/posts", status_code=302)
 
 
+def _polar_activate_campaign(campaign_id: int, user_id: int, session: Session) -> bool:
+    """Query Polar for a paid order matching this campaign and activate it if found. Returns True if activated."""
+    try:
+        from polar_sdk import Polar
+        client = Polar(access_token=settings.polar_access_token, server=settings.polar_server)
+        result = client.orders.list(metadata={"campaign_id": str(campaign_id)}, limit=5)
+        orders = result.result.items if result and hasattr(result, "result") and result.result else []
+        for order in orders:
+            if getattr(order, "status", None) == "paid" or getattr(order, "paid", False):
+                order_id = str(order.id)
+                amount = float(getattr(order, "total_amount", 0)) / 100
+                currency = (getattr(order, "currency", "EUR") or "EUR").upper()
+                payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
+                if not payment:
+                    payment = Payment(
+                        user_id=user_id, campaign_id=campaign_id,
+                        lemonsqueezy_order_id=order_id, amount=amount, currency=currency, status="paid",
+                    )
+                    session.add(payment)
+                else:
+                    payment.status = "paid"
+                    payment.lemonsqueezy_order_id = order_id
+                    session.add(payment)
+                campaign = session.get(Campaign, campaign_id)
+                campaign.payment_status = "paid"
+                if campaign.status == "draft":
+                    has_posts = session.exec(select(Post).where(Post.campaign_id == campaign_id)).first()
+                    if has_posts:
+                        campaign.status = "active"
+                if not campaign.start_date:
+                    campaign.start_date = datetime.utcnow()
+                    campaign.end_date = datetime.utcnow() + timedelta(days=campaign.duration_days)
+                session.add(campaign)
+                session.commit()
+                logger.info(f"Campaign {campaign_id} activated via Polar fallback check (order {order_id})")
+                return True
+    except Exception as e:
+        logger.warning(f"Polar fallback check failed for campaign {campaign_id}: {e}")
+    return False
+
+
 @router.get("/{campaign_id}", response_class=HTMLResponse)
 def campaign_detail(
     campaign_id: int,
@@ -219,6 +260,11 @@ def campaign_detail(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+
+    # Fallback: if returning from Polar checkout but campaign not yet activated, query Polar API
+    if campaign.payment_status != "paid" and request.query_params.get("customer_session_token"):
+        _polar_activate_campaign(campaign_id, user.id, session)
+        session.refresh(campaign)
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
     now = datetime.utcnow()

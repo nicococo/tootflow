@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}TootFlow – Mastodon Campaign Planner{% endblock %}
-{% block meta_description %}Plan and publish Mastodon campaigns for free. AI drafting, full metrics, and export available for a one-time {{ settings.campaign_price }} {{ settings.campaign_currency }} per campaign. No email, no subscription, no tracking.{% endblock %}
+{% block meta_description %}Plan and publish Mastodon campaigns for free. AI drafting, full metrics, and export available for a pay-what-you-want one-time activation (from {{ settings.campaign_price }} {{ settings.campaign_currency }}) per campaign. No email, no subscription, no tracking.{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {
@@ -14,7 +14,7 @@
     "@type": "Offer",
     "price": "{{ settings.campaign_price }}.00",
     "priceCurrency": "{{ settings.campaign_currency }}",
-    "description": "One-time per campaign, no subscription"
+    "description": "Pay-what-you-want, one-time per campaign, no subscription"
   },
   "url": "{{ request.url.scheme }}://{{ request.url.netloc }}/"
 }
@@ -661,7 +661,7 @@ h2.lp-proof-title {
           <li>Automated publishing</li>
         </ul>
         <div class="lp-price-badge-upgrade">
-          <strong>+ {{ settings.campaign_price }} {{ settings.campaign_currency }}</strong> unlocks AI generation,<br>metrics &amp; Export Studio — no subscription
+          <strong>+ from {{ settings.campaign_price }} {{ settings.campaign_currency }}</strong> unlocks AI generation,<br>metrics &amp; Export Studio — pay what it's worth, no subscription
         </div>
       </div>
     </div>
@@ -670,7 +670,7 @@ h2.lp-proof-title {
 
 <!-- ═══ BAND ═══ -->
 <div class="lp-band">
-  <p>Free to publish &nbsp;·&nbsp; {{ settings.campaign_price }} {{ settings.campaign_currency }} for AI + metrics + export &nbsp;·&nbsp; No subscription</p>
+  <p>Free to publish &nbsp;·&nbsp; Pay what it's worth (from {{ settings.campaign_price }} {{ settings.campaign_currency }}) for AI + metrics + export &nbsp;·&nbsp; No subscription</p>
 </div>
 
 <!-- ═══ HOW IT WORKS ═══ -->
@@ -705,7 +705,7 @@ h2.lp-proof-title {
       </div>
       <div class="lp-how-step">
         <h3 class="lp-step-title">Unlock premium (optional)</h3>
-        <p>One-time {{ settings.campaign_price }} {{ settings.campaign_currency }} adds AI generation, full per-post metrics, and the Export Studio (newsletter, LinkedIn, Reddit).</p>
+        <p>Pay what it's worth — from {{ settings.campaign_price }} {{ settings.campaign_currency }}, suggested {{ settings.campaign_price_suggested }} {{ settings.campaign_currency }} — to add AI generation, full per-post metrics, and the Export Studio (newsletter, LinkedIn, Reddit). One-time, per campaign.</p>
         <span class="lp-step-num">✦</span>
       </div>
     </div>
@@ -791,7 +791,7 @@ h2.lp-proof-title {
         </div>
         <div class="lp-feat-divider"></div>
         <div class="lp-feat-col">
-          <div class="lp-feat-col-label lp-feat-paid-label">Premium · {{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
+          <div class="lp-feat-col-label lp-feat-paid-label">Premium · from {{ settings.campaign_price }} {{ settings.campaign_currency }}</div>
           <ul class="lp-feat-list lp-feat-list--paid">
             <li>10 templates &amp; 12 tones</li>
             <li>AI post generation</li>
@@ -805,8 +805,9 @@ h2.lp-proof-title {
     </div>
 
     <div class="lp-proof-right">
-      <div class="lp-proof-eyebrow">One-time &nbsp;·&nbsp; Per campaign</div>
-      <div class="lp-proof-price">{{ settings.campaign_price }}<span class="lp-proof-currency">{{ settings.campaign_currency }}</span></div>
+      <div class="lp-proof-eyebrow">Pay what it's worth &nbsp;·&nbsp; One-time &nbsp;·&nbsp; Per campaign</div>
+      <div class="lp-proof-price" style="font-size:clamp(28px,5vw,42px); line-height:1.1;">from {{ settings.campaign_price }}<span class="lp-proof-currency">{{ settings.campaign_currency }}</span></div>
+      <div style="font-size:12px; color:var(--muted,#888); margin: -4px 0 12px; font-family:'JetBrains Mono',monospace; letter-spacing:0.5px;">suggested {{ settings.campaign_price_suggested }} {{ settings.campaign_currency }} &nbsp;·&nbsp; you choose at checkout</div>
       <div class="lp-proof-unlock-label">Unlocks</div>
       <ul class="lp-proof-perks">
         <li>AI post generation (up to {{ settings.openai_max_posts_per_campaign }} posts)</li>

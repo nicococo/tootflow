@@ -503,7 +503,7 @@
           {% if ai_limit_reached %}
             Generation limit of {{ ai_max }} posts reached for this campaign.
           {% elif not paid %}
-            Activate this campaign to unlock AI-drafted post generation.
+            Activate this campaign (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI-drafted post generation.
           {% elif pending_count > 0 %}
             Replaces {{ pending_count }} pending post(s) with a fresh AI-drafted schedule.
           {% else %}
@@ -560,7 +560,7 @@
         Click <strong>✦ Generate Campaign</strong> above for AI-drafted posts, or add manually.
       {% else %}
         No posts yet. Add posts manually above,<br>
-        or <a href="/campaigns/{{ campaign.id }}">activate the campaign</a> to unlock AI generation.
+        or <a href="/campaigns/{{ campaign.id }}">activate the campaign</a> (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI generation.
       {% endif %}
     </div>
     {% else %}

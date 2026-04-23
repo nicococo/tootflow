@@ -463,7 +463,7 @@
         <th>AI Calls</th>
         <td>
           {% if campaign.payment_status != "paid" %}
-            <span style="color:var(--muted); font-size:13px;">Activate campaign to unlock AI generation.</span>
+            <span style="color:var(--muted); font-size:13px;">Activate this campaign to unlock AI generation.</span>
           {% elif campaign.ai_posts_generated >= ai_max %}
             <span style="color:var(--red, #c0392b); font-weight:bold;">{{ campaign.ai_posts_generated }} / {{ ai_max }}</span>
             <span style="color:var(--muted); font-size:12px; margin-left:6px;">— limit reached</span>
@@ -522,7 +522,7 @@
     {% if metrics_locked %}
     <div class="notice" style="border-color:var(--orange); background:#fffaf3; margin-bottom:20px;">
       <strong>Full metrics require an activated campaign.</strong>
-      Activate this campaign for {{ settings.campaign_price }} {{ settings.campaign_currency }} to unlock per-post metrics, engagement charts, and reply tracking. Publishing is free.
+      Activate this campaign (from {{ settings.campaign_price }} {{ settings.campaign_currency }}, pay what it's worth) to unlock per-post metrics, engagement charts, and reply tracking. Publishing is always free.
     </div>
     {% endif %}
 
@@ -565,7 +565,7 @@
         </div>
         <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="margin:0; margin-left:auto;">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-          <button type="submit" class="btn btn-primary">Activate — {{ settings.campaign_price }} {{ settings.campaign_currency }} →</button>
+          <button type="submit" class="btn btn-primary">Activate — from {{ settings.campaign_price }} {{ settings.campaign_currency }} →</button>
         </form>
       </div>
       {% else %}

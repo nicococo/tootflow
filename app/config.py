@@ -35,8 +35,9 @@ class Settings(BaseSettings):
     operator_vat_id: str = ""        # Umsatzsteuer-ID, e.g. "DE123456789"
     operator_email: str = "hello@tootflow.com"
 
-    campaign_price: str = "5"         # digits only, no currency symbol
-    campaign_currency: str = "EUR"    # ISO code; used in JSON-LD + ToS formal text
+    campaign_price: str = "5"           # minimum price, digits only, no currency symbol
+    campaign_price_suggested: str = "8" # suggested price shown at checkout
+    campaign_currency: str = "EUR"      # ISO code; used in JSON-LD + ToS formal text
 
     class Config:
         env_file = ".env"
