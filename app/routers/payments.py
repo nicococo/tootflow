@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlmodel import Session, select
-from polar_sdk.models import WebhookOrderPaidPayload, WebhookRefundCreatedPayload
 
 from app.database import get_session
 from app.models import Campaign, Payment, Post, User
@@ -48,9 +47,10 @@ async def polar_webhook(request: Request, session: Session = Depends(get_session
         logger.warning(f"Polar webhook verification failed: {e}")
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    logger.info(f"Polar webhook event: {type(event).__name__}")
+    event_class = type(event).__name__
+    logger.info(f"Polar webhook event: {event_class}")
 
-    if isinstance(event, WebhookOrderPaidPayload):
+    if event_class == "WebhookOrderPaidPayload":
         data = event.data
         metadata = getattr(data, "metadata", {}) or {}
         campaign_id = metadata.get("campaign_id")
@@ -103,7 +103,7 @@ async def polar_webhook(request: Request, session: Session = Depends(get_session
         session.commit()
         logger.info(f"Campaign {campaign_id} activated via Polar order {order_id}")
 
-    elif isinstance(event, WebhookRefundCreatedPayload):
+    elif event_class == "WebhookRefundCreatedPayload":
         data = event.data
         order_id = str(getattr(data, "order_id", ""))
         payment = session.exec(
