@@ -30,35 +30,6 @@ from app.models import Campaign, Metrics, MastodonAccount, Payment, Post, User
 from app.routers.campaigns import format_description_for_ai
 
 
-# ── DB + app fixtures (module-scoped: lifespan starts once) ───────────────────
-
-@pytest.fixture(name="engine", scope="module")
-def engine_fixture():
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    return engine
-
-
-@pytest.fixture(name="client", scope="module")
-def client_fixture(engine):
-    """Single TestClient for the whole module — avoids re-starting the scheduler."""
-    def override_session():
-        with Session(engine) as session:
-            yield session
-
-    # auth override is set per-test via _set_user(); start with a sentinel
-    app.dependency_overrides[get_session] = override_session
-    app.dependency_overrides[verify_csrf] = lambda: None
-
-    with TestClient(app, follow_redirects=False) as client:
-        yield client
-
-    app.dependency_overrides.clear()
-
 
 def _set_user(user: User):
     """Swap the auth override to return a specific user."""
@@ -66,12 +37,6 @@ def _set_user(user: User):
 
 
 # ── Per-test session + user helpers ───────────────────────────────────────────
-
-@pytest.fixture(name="db")
-def db_fixture(engine):
-    """Fresh session for each test; rolls back after."""
-    with Session(engine) as session:
-        yield session
 
 
 def _create_user(session: Session) -> User:

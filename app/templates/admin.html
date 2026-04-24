@@ -278,9 +278,9 @@
         <tr><th>Paid / activated</th><td>{{ campaigns_paid }}{% if campaigns_total > 0 %} <span class="muted text-sm">({{ "%.0f"|format(campaigns_paid / campaigns_total * 100) }}%)</span>{% endif %}</td></tr>
         <tr style="border-top:2px solid var(--bg-rim);"><th style="color:var(--muted);">Draft</th><td>{{ campaigns_draft }}</td></tr>
         <tr><th style="color:var(--muted);">Active</th><td>{{ campaigns_active }}</td></tr>
-        <tr><th style="color:var(--muted);">Running</th><td>{{ campaigns_running }}</td></tr>
+        <tr><th style="color:var(--muted);">Running</th><td>{{ campaigns_running }}</td></tr>\n        <tr><th style="color:var(--muted);">Completed</th><td>{{ campaigns_completed }}</td></tr>
         <tr><th style="color:var(--muted);">Paused</th><td>{{ campaigns_paused }}</td></tr>
-        <tr><th style="color:var(--muted);">Completed</th><td>{{ campaigns_completed }}</td></tr>
+        <tr><th style="color:var(--muted);">Archived</th><td>{{ campaigns_archived }}</td></tr>
       </table>
     </div>
 

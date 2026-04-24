@@ -77,6 +77,8 @@ def add_post(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
     current_count = session.exec(select(Post).where(Post.campaign_id == campaign_id)).all()
     if len(current_count) >= settings.max_posts_per_campaign:
         raise HTTPException(status_code=400, detail=f"Campaign has reached the maximum of {settings.max_posts_per_campaign} posts")
@@ -87,9 +89,12 @@ def add_post(
     post = Post(campaign_id=campaign_id, content=content[:500], scheduled_time=sched,
                 poll_options=opts_json, poll_expires_in=expires_in)
     session.add(post)
-    # Advance campaign from draft → active when first post is added
+    # Advance campaign status on post add
     if campaign.status == "draft":
         campaign.status = "active"
+        session.add(campaign)
+    elif campaign.status == "completed":
+        campaign.status = "running"
         session.add(campaign)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
@@ -110,6 +115,8 @@ def edit_post(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
     post = session.get(Post, post_id)
     if not post or post.campaign_id != campaign_id:
         raise HTTPException(status_code=404)
@@ -138,6 +145,8 @@ async def generate_campaign_posts(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
     if campaign.payment_status != "paid":
         raise HTTPException(status_code=403, detail="Campaign must be activated before generating posts")
     if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
@@ -173,9 +182,11 @@ async def generate_campaign_posts(
         for content, sched_time in schedule_posts(post_contents, start, campaign.posts_per_week):
             session.add(Post(campaign_id=campaign_id, content=content, scheduled_time=sched_time))
         campaign.ai_posts_generated += len(post_contents)
-        # Advance campaign from draft → active (posts now exist)
+        # Advance campaign status on post add
         if campaign.status == "draft":
             campaign.status = "active"
+        elif campaign.status == "completed":
+            campaign.status = "running"
         session.add(campaign)
         session.commit()
     except Exception as e:
@@ -199,6 +210,8 @@ async def regenerate_post(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
     if campaign.payment_status != "paid":
         raise HTTPException(status_code=403, detail="Campaign must be activated before regenerating posts")
     if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
@@ -242,6 +255,8 @@ async def refine_post(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
     if campaign.payment_status != "paid":
         raise HTTPException(status_code=403, detail="Campaign must be activated before refining posts")
     if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
@@ -289,6 +304,8 @@ def delete_post(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
     post = session.get(Post, post_id)
     if not post or post.campaign_id != campaign_id:
         raise HTTPException(status_code=404)

@@ -152,6 +152,10 @@ def list_campaigns(request: Request, session: Session = Depends(get_session), us
 @router.get("/new", response_class=HTMLResponse)
 def new_campaign_page(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     existing = session.exec(select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())).all()
+    error = None
+    if request.query_params.get("error") == "limit":
+        count = request.query_params.get("count", settings.max_free_campaigns)
+        error = f"You have reached the limit of {count} unpaid campaigns. Archive or delete an existing campaign, or activate one to create more."
     return templates.TemplateResponse(
         "campaign_create.html",
         {
@@ -162,6 +166,7 @@ def new_campaign_page(request: Request, session: Session = Depends(get_session),
             "languages": LANGUAGES,
             "existing_campaigns": existing,
             "template_fields": TEMPLATE_FIELDS,
+            "error": error,
         },
     )
 
@@ -192,6 +197,20 @@ async def create_campaign(
     # Clamp numeric inputs
     duration_days = max(1, min(365, duration_days))
     posts_per_week = max(1, min(14, posts_per_week))
+
+    # Cap unpaid non-archived campaigns (paid campaigns are unlimited and don't count)
+    free_count = len(session.exec(
+        select(Campaign).where(
+            Campaign.user_id == user.id,
+            Campaign.payment_status != "paid",
+            Campaign.status != "archived",
+        )
+    ).all())
+    if free_count >= settings.max_free_campaigns:
+        return RedirectResponse(
+            f"/campaigns/new?error=limit&count={settings.max_free_campaigns}",
+            status_code=302,
+        )
 
     campaign = Campaign(
         user_id=user.id,
@@ -298,6 +317,34 @@ def campaign_detail(
     )
 
 
+@router.post("/{campaign_id}/complete")
+def complete_campaign(
+    campaign_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    campaign = session.get(Campaign, campaign_id)
+    if not campaign or campaign.user_id != user.id:
+        raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=400, detail="Campaign is already archived")
+    pending_posts = session.exec(
+        select(Post).where(Post.campaign_id == campaign_id, Post.status == "pending")
+    ).all()
+    for post in pending_posts:
+        post.status = "cancelled"
+        session.add(post)
+    campaign.status = "archived"
+    session.add(campaign)
+    session.commit()
+    logger.info(
+        f"Campaign {campaign_id} manually archived by user {user.id}; "
+        f"{len(pending_posts)} pending post(s) cancelled"
+    )
+    return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
+
+
 @router.get("/{campaign_id}/edit", response_class=HTMLResponse)
 def edit_campaign_page(
     campaign_id: int,
@@ -308,6 +355,8 @@ def edit_campaign_page(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be edited")
     return templates.TemplateResponse(
         "campaign_create.html",
         {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
@@ -332,6 +381,8 @@ def update_campaign(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be edited")
     if template_type not in TEMPLATES:
         raise HTTPException(status_code=400, detail="Invalid template type")
     if tone not in TONES:
@@ -361,6 +412,8 @@ def rename_campaign(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be edited")
     campaign.name = name.strip()[:200]
     session.add(campaign)
     session.commit()
@@ -377,6 +430,8 @@ def toggle_campaign(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    if campaign.status == "archived":
+        raise HTTPException(status_code=403, detail="Archived campaigns cannot be paused or resumed")
     resuming = not campaign.enabled  # True when we're about to enable
     campaign.enabled = not campaign.enabled
     session.add(campaign)

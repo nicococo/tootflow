@@ -101,7 +101,8 @@ def _build_stats(session: Session) -> dict:
         "campaigns_active":    count(Campaign, Campaign.status == "active"),
         "campaigns_running":   count(Campaign, Campaign.status == "running"),
         "campaigns_completed": count(Campaign, Campaign.status == "completed"),
-        "campaigns_paused":    count(Campaign, Campaign.status.in_(["active", "running"]) & (Campaign.enabled == False)),
+        "campaigns_archived":  count(Campaign, Campaign.status == "archived"),
+        "campaigns_paused":    count(Campaign, Campaign.status.in_(["active", "running", "completed"]) & (Campaign.enabled == False)),
         # Revenue
         "revenue_total": round(revenue, 2),
         # Posts

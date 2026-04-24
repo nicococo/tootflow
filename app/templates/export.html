@@ -738,6 +738,7 @@
       </div>
 
       <!-- Generate -->
+      {% if campaign.status != "archived" %}
       <div class="exp-generate-wrap">
         <button class="exp-generate-btn" id="exp-gen-btn"
                 {% if export_remaining == 0 %}disabled{% endif %}
@@ -748,6 +749,7 @@
           {{ export_remaining }} of {{ export_max }} generation{{ 's' if export_max != 1 else '' }} remaining
         </div>
       </div>
+      {% endif %}
 
     </div>
   </aside>
@@ -822,11 +824,13 @@
           rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();refineContent();}"
         ></textarea>
+        {% if campaign.status != "archived" %}
         <button class="exp-refine-btn" id="exp-refine-btn"
                 {% if export_remaining == 0 %}disabled{% endif %}
                 onclick="refineContent()">
           Refine →
         </button>
+        {% endif %}
       </div>
 
     </div>

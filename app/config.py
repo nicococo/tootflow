@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./tootflow.db"
 
     max_posts_per_campaign: int = 32          # hard cap on total posts per campaign
+    max_free_campaigns: int = 5               # max unpaid non-archived campaigns per user
 
     metrics_max_days: int = 30               # only fetch metrics for posts published within this many days
     metrics_max_posts_per_user: int = 100    # max posts to fetch metrics for per user per run

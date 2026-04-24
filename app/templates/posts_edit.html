@@ -177,6 +177,7 @@
     overflow: hidden;
     background: var(--surface);
   }
+  .post-card.cancelled { opacity: 0.45; border-color: #c8bfb4; }
 
   /* Card header */
   .pc-head {
@@ -210,6 +211,7 @@
   .pc-badge-pending   { background: rgba(217,95,42,0.18); color: var(--orange); }
   .pc-badge-published { background: rgba(39,174,96,0.18); color: #27ae60; }
   .pc-badge-failed    { background: rgba(192,57,43,0.18); color: #c0392b; }
+  .pc-badge-cancelled { background: rgba(0,0,0,0.06); color: var(--muted); }
 
   /* Card edit zone */
   .pc-edit-zone { padding: 18px 20px 0; }
@@ -486,6 +488,7 @@
       <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
     </div>
 
+    {% if campaign.status != "archived" %}
     <!-- AI Generation banner -->
     {% set paid = campaign.payment_status == "paid" %}
     {% set pending_count = posts | selectattr("status", "equalto", "pending") | list | length %}
@@ -552,6 +555,8 @@
       </div>
     </details>
 
+{% endif %}{# /campaign.status != "archived" #}
+
     <!-- Post list -->
     {% if not posts %}
     <div class="empty-state">
@@ -566,7 +571,7 @@
     {% else %}
 
     {% for post in posts %}
-    <div class="post-card" id="post-{{ post.id }}">
+    <div class="post-card{% if post.status == 'cancelled' %} cancelled{% endif %}" id="post-{{ post.id }}">
 
       <!-- Card header: identity only, no actions -->
       <div class="pc-head">

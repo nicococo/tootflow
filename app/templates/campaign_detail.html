@@ -81,6 +81,69 @@
   /* ── Action bar ── */
   .action-bar { margin-bottom: 36px; }
 
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: var(--border-soft);
+    margin-bottom: 12px;
+  }
+  .action-sep {
+    width: 1px;
+    height: 18px;
+    background: #d5cdc4;
+    flex-shrink: 0;
+  }
+  .action-spacer { flex: 1; }
+
+  /* Complete button — muted outline, severity communicated via sidebar */
+  .btn-complete {
+    font-size: 13px;
+    padding: 6px 14px;
+    border: 2px solid #c8bfb4;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .btn-complete:hover {
+    border-color: #b8742a;
+    color: #b8742a;
+  }
+
+  /* Sidebar danger-zone panel */
+  .danger-panel {
+    border: var(--border);
+    background: var(--surface);
+    margin-bottom: 16px;
+  }
+  .danger-panel-head {
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+  }
+  .danger-panel-head .eyebrow { color: #c8bfb4; }
+  .danger-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid #ece6de;
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .danger-item:last-child { border-bottom: 0; }
+  .danger-item-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .danger-item-title.amber { color: #b8742a; }
+  .danger-item-title.red   { color: #c0392b; }
+
   .mgmt-row {
     display: flex;
     align-items: center;
@@ -249,7 +312,7 @@
 {% set failed_count    = posts | selectattr("status", "equalto", "failed")    | list | length %}
 {% set is_paid         = campaign.payment_status == "paid" %}
 {% set metrics_locked = request.query_params.get("metrics_locked") == "1" %}
-{% set is_running      = campaign.status in ("running", "completed") %}
+{% set is_running      = campaign.status in ("running", "completed", "archived") %}
 {% set has_posts       = posts | length > 0 %}
 
 <div class="camp-wrap">
@@ -296,17 +359,29 @@
         </div>
 
         <div class="progress-step">
-          <div class="step-icon {% if campaign.status == 'completed' %}done{% elif is_running %}current{% endif %}">
-            {% if campaign.status == 'completed' %}✓{% elif is_running %}3{% else %}3{% endif %}
+          <div class="step-icon {% if campaign.status in ('running','completed','archived') %}{% if campaign.status == 'running' %}current{% else %}done{% endif %}{% endif %}">
+            {% if campaign.status in ('completed','archived') %}✓{% else %}3{% endif %}
           </div>
           <div>
-            <div class="step-label {% if not is_running %}muted{% endif %}">Publishing</div>
+            <div class="step-label {% if campaign.status not in ('running','completed','archived') %}muted{% endif %}">Publishing</div>
             {% if campaign.status == 'running' %}
             <div class="step-hint">{{ published_count }} of {{ posts | length }} published.</div>
-            {% elif campaign.status == 'completed' %}
-            <div class="step-hint">All posts published.</div>
+            {% elif campaign.status in ('completed','archived') %}
+            <div class="step-hint">{{ published_count }} post{{ 's' if published_count != 1 else '' }} published.</div>
             {% elif has_posts %}
             <div class="step-hint">{{ pending_count }} post{{ 's' if pending_count != 1 else '' }} pending.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if campaign.status == 'archived' %}current{% endif %}">4</div>
+          <div>
+            <div class="step-label {% if campaign.status != 'archived' %}muted{% endif %}">Archived</div>
+            {% if campaign.status == 'archived' %}
+            <div class="step-hint">Campaign is frozen. No further changes.</div>
+            {% else %}
+            <div class="step-hint">Archive campaign when done, or it auto-completes when the post limit is reached.</div>
             {% endif %}
           </div>
         </div>
@@ -398,6 +473,25 @@
         {% endif %}
       </div>
     </div>
+
+    {% if campaign.status != "archived" %}
+    <!-- Danger zone explanation -->
+    <div class="danger-panel">
+      <div class="danger-panel-head">
+        <div class="eyebrow">Before you act</div>
+      </div>
+      <div class="danger-item">
+        <div class="danger-item-title amber">✓ Archive Campaign</div>
+        Permanently freezes this campaign. All pending posts will be cancelled.
+        {% if pending_count > 0 %}<strong>{{ pending_count }} pending post{{ 's' if pending_count != 1 else '' }} will be cancelled.</strong>{% endif %}
+        No edits, posts, or publishing after this point. Contact support to unlock.
+      </div>
+      <div class="danger-item">
+        <div class="danger-item-title red">✕ Delete Campaign</div>
+        Permanently removes this campaign, all posts, metrics, and payment records. Cannot be undone.
+      </div>
+    </div>
+    {% endif %}
 
   </aside>
 
@@ -528,34 +622,56 @@
 
     <div class="action-bar">
 
-      <!-- Row 1: Campaign management -->
-      <div class="mgmt-row">
-        <div class="mgmt-row-left">
-          <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts <span style="color:var(--teal);">({{ posts | length }})</span></a>
-          <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
-          {% if has_posts %}
-          <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="margin:0;" id="toggle-form">
-            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
-            {% if not campaign.enabled and stale_pending_count > 0 %}
-            <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
-            {% else %}
-            <button type="submit" class="btn btn-outline">
-              {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
-            </button>
-            {% endif %}
-          </form>
+      {% if campaign.status != "archived" %}
+      <div class="action-row">
+        <!-- Workflow -->
+        <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts <span style="color:var(--teal); margin-left:4px;">({{ posts | length }})</span></a>
+        <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
+        {% if has_posts %}
+        <div class="action-sep"></div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="margin:0;" id="toggle-form">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          {% if not campaign.enabled and stale_pending_count > 0 %}
+          <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
+          {% else %}
+          <button type="submit" class="btn btn-outline">
+            {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
+          </button>
           {% endif %}
-        </div>
+        </form>
+        {% endif %}
+        <!-- Destructive — pushed right -->
+        <div class="action-spacer"></div>
+        <div class="action-sep"></div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/complete"
+              onsubmit="return confirm('{% if pending_count > 0 %}{{ pending_count }} pending post{{ 's' if pending_count != 1 else '' }} will be cancelled.\n\n{% endif %}Archive this campaign?\n\nThis cannot be undone — the campaign will be frozen.');"
+              style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn-complete">Archive Campaign</button>
+        </form>
         <form method="post" action="/campaigns/{{ campaign.id }}/delete"
-              onsubmit="return confirm('Delete this campaign and all its posts?');"
+              onsubmit="return confirm('Delete this campaign and all its posts? This cannot be undone.');"
               style="margin:0;">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
           <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
       </div>
 
-      <!-- Row 2: Paid features -->
-      {% if not is_paid %}
+      {% else %}
+      <div class="action-row">
+        <a href="/campaigns/{{ campaign.id }}/posts" class="btn btn-outline">View Posts <span style="color:var(--teal); margin-left:4px;">({{ posts | length }})</span></a>
+        <div class="action-spacer"></div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/delete"
+              onsubmit="return confirm('Delete this campaign and all its posts? This cannot be undone.');"
+              style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Paid features -->
+      {% if not is_paid and campaign.status != "archived" %}
       <div class="paid-row paid-row-locked">
         <div class="paid-row-tag" style="background:var(--orange);">Paid Features</div>
         <div class="paid-feature-list">
@@ -568,7 +684,7 @@
           <button type="submit" class="btn btn-primary">Activate — from {{ settings.campaign_price }} {{ settings.campaign_currency }} →</button>
         </form>
       </div>
-      {% else %}
+      {% elif is_paid %}
       <div class="paid-row paid-row-active">
         <div class="paid-row-tag" style="background:var(--teal);">Activated ✓</div>
         <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>

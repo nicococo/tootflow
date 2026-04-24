@@ -18,6 +18,7 @@ scheduler = AsyncIOScheduler()
 
 async def publish_due_posts():
     """Publish posts that are due for active/running campaigns."""
+    settings = get_settings()
     now = datetime.utcnow()
     with Session(engine) as session:
         due_posts = session.exec(
@@ -78,21 +79,27 @@ async def publish_due_posts():
 
         session.commit()
 
-        # Mark completed campaigns
-        running = session.exec(
-            select(Campaign).where(Campaign.status == "running")
+        # Status transitions after publishing
+        active_campaigns = session.exec(
+            select(Campaign).where(Campaign.status.in_(["running", "completed"]))
         ).all()
-        for campaign in running:
-            if campaign.end_date and now >= campaign.end_date:
-                pending = session.exec(
-                    select(Post).where(
-                        Post.campaign_id == campaign.id,
-                        Post.status == "pending",
-                    )
-                ).all()
-                if not pending:
+        for campaign in active_campaigns:
+            total_posts = session.exec(
+                select(Post).where(Post.campaign_id == campaign.id)
+            ).all()
+            if not total_posts:
+                continue
+            has_pending = any(p.status == "pending" for p in total_posts)
+            at_limit = len(total_posts) >= settings.max_posts_per_campaign
+            if not has_pending:
+                if at_limit:
+                    campaign.status = "archived"
+                    session.add(campaign)
+                    logger.info(f"Campaign {campaign.id} auto-archived (post limit reached, none pending)")
+                elif campaign.status == "running":
                     campaign.status = "completed"
                     session.add(campaign)
+                    logger.info(f"Campaign {campaign.id} marked completed (no pending posts)")
         session.commit()
 
 
@@ -110,6 +117,7 @@ async def update_metrics():
                 Post.mastodon_status_id.isnot(None),
                 Post.published_at >= cutoff,
                 Campaign.payment_status == "paid",
+                Campaign.status.in_(["active", "running", "completed"]),
             )
             .order_by(Post.published_at.desc())
         ).all()
