@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
+import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlmodel import Session, select
 
@@ -28,6 +29,7 @@ async def publish_due_posts():
                 Campaign.status.in_(["active", "running"]),
                 Campaign.enabled == True,
             )
+            .order_by(Post.scheduled_time.asc())
         ).all()
 
         for post in due_posts:
@@ -61,10 +63,18 @@ async def publish_due_posts():
                     session.add(campaign)
 
                 logger.info(f"Published post {post.id} for campaign {campaign.id}")
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code < 500:
+                    # 4xx — content/auth problem, won't fix itself
+                    post.status = "failed"
+                    session.add(post)
+                    logger.error(f"Post {post.id} permanently failed (HTTP {e.response.status_code}): {e}")
+                else:
+                    # 5xx — server-side or rate limit, leave pending for next run
+                    logger.warning(f"Post {post.id} transient error (HTTP {e.response.status_code}), will retry: {e}")
             except Exception as e:
-                post.status = "failed"
-                session.add(post)
-                logger.error(f"Failed to publish post {post.id}: {e}")
+                # Network error, timeout, etc. — leave pending for next run
+                logger.warning(f"Post {post.id} transient error, will retry: {e}")
 
         session.commit()
 
@@ -200,7 +210,7 @@ async def update_metrics():
 
 
 def start_scheduler():
-    scheduler.add_job(publish_due_posts, "interval", minutes=1, id="publish_posts")
+    scheduler.add_job(publish_due_posts, "interval", minutes=1, id="publish_posts", max_instances=1)
     scheduler.add_job(update_metrics, "interval", hours=24, id="update_metrics")
     scheduler.start()
     logger.info("Scheduler started")

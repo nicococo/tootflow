@@ -592,16 +592,17 @@
         <div style="padding:20px 16px; font-size:13px; line-height:1.6;">
           <p style="margin:0 0 10px;">
             <strong>{{ stale_pending_count }} pending post{{ 's' if stale_pending_count != 1 else '' }}</strong>
-            {{ 'have' if stale_pending_count != 1 else 'has' }} a scheduled time in the past.
-            The scheduler will publish {{ 'them' if stale_pending_count != 1 else 'it' }} on its next run.
+            {{ 'are' if stale_pending_count != 1 else 'is' }} overdue.
+            On resume, {{ 'they' if stale_pending_count != 1 else 'it' }} will be automatically rescheduled
+            by the number of days the campaign was paused, keeping the original posting times.
           </p>
           <p style="color:var(--muted); margin:0;">
-            You may want to edit the post dates or reset the campaign start date before resuming.
+            No posts will be published in bulk — everything shifts forward cleanly.
           </p>
         </div>
         <div style="padding:10px 16px; border-top:var(--border-soft); display:flex; gap:8px; justify-content:flex-end;">
           <button type="button" class="btn btn-outline" onclick="closeResumeModal()">Keep paused</button>
-          <button type="button" class="btn btn-primary" onclick="document.getElementById('toggle-form').submit()">Resume anyway</button>
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('toggle-form').submit()">Resume &amp; Reschedule</button>
         </div>
       </div>
     </div>

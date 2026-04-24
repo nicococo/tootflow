@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -376,8 +377,31 @@ def toggle_campaign(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
+    resuming = not campaign.enabled  # True when we're about to enable
     campaign.enabled = not campaign.enabled
     session.add(campaign)
+
+    if resuming:
+        now = datetime.utcnow()
+        stale = session.exec(
+            select(Post).where(
+                Post.campaign_id == campaign_id,
+                Post.status == "pending",
+                Post.scheduled_time < now,
+            ).order_by(Post.scheduled_time.asc())
+        ).all()
+        if stale:
+            delta_days = math.ceil(
+                (now - stale[0].scheduled_time).total_seconds() / 86400
+            )
+            for post in stale:
+                post.scheduled_time = post.scheduled_time + timedelta(days=delta_days)
+                session.add(post)
+            logger.info(
+                f"Rescheduled {len(stale)} stale posts for campaign {campaign_id} "
+                f"by +{delta_days} day(s)"
+            )
+
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
 

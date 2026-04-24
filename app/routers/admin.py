@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import Campaign, MastodonAccount, PageView, Payment, Post, SiteConfig, User
+from app.models import Campaign, LoginEvent, MastodonAccount, PageView, Payment, Post, SiteConfig, User
 from app.scheduler import update_metrics
 from app.site_config import get_banner, set_banner, get_registration_open, set_registration_open
 
@@ -67,6 +67,20 @@ def _build_stats(session: Session) -> dict:
     for d in chart:
         d["pct"] = round(d["count"] / max_count * 100)
 
+    # 30-day daily login chart
+    login_chart = []
+    for i in range(29, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        n = session.exec(
+            select(func.count()).select_from(LoginEvent)
+            .where(LoginEvent.created_at >= day_start, LoginEvent.created_at < day_end)
+        ).one() or 0
+        login_chart.append({"date": day_start.strftime("%b %d"), "count": n})
+    max_logins = max((d["count"] for d in login_chart), default=1) or 1
+    for d in login_chart:
+        d["pct"] = round(d["count"] / max_logins * 100)
+
     revenue = session.exec(
         select(func.sum(Payment.amount)).where(Payment.status == "paid")
     ).one() or 0.0
@@ -81,12 +95,17 @@ def _build_stats(session: Session) -> dict:
         "users_7d":     count(User, User.created_at >= week_ago),
         "users_30d":    count(User, User.created_at >= month_ago),
         # Campaigns
-        "campaigns_total":  count(Campaign),
-        "campaigns_paid":   count(Campaign, Campaign.payment_status == "paid"),
-        "campaigns_active": count(Campaign, Campaign.status.in_(["active", "running"]) & (Campaign.enabled == True)),
+        "campaigns_total":     count(Campaign),
+        "campaigns_paid":      count(Campaign, Campaign.payment_status == "paid"),
+        "campaigns_draft":     count(Campaign, Campaign.status == "draft"),
+        "campaigns_active":    count(Campaign, Campaign.status == "active"),
+        "campaigns_running":   count(Campaign, Campaign.status == "running"),
+        "campaigns_completed": count(Campaign, Campaign.status == "completed"),
+        "campaigns_paused":    count(Campaign, Campaign.status.in_(["active", "running"]) & (Campaign.enabled == False)),
         # Revenue
         "revenue_total": round(revenue, 2),
         # Posts
+        "posts_total":     count(Post),
         "posts_published": count(Post, Post.status == "published"),
         "posts_failed":    count(Post, Post.status == "failed"),
         "posts_pending_running": session.exec(
@@ -109,8 +128,9 @@ def _build_stats(session: Session) -> dict:
             .where(Post.status == "pending",
                    Campaign.payment_status != "paid")
         ).one() or 0,
-        # Chart
+        # Charts
         "chart": chart,
+        "login_chart": login_chart,
     }
 
 
@@ -239,6 +259,7 @@ def mark_campaign_paid(
 def update_settings(
     request: Request,
     campaign_price: str = Form(...),
+    campaign_price_suggested: str = Form(...),
     campaign_currency: str = Form(...),
     openai_model: str = Form(...),
     openai_max_posts_per_campaign: int = Form(...),
@@ -252,6 +273,7 @@ def update_settings(
     if not _is_authenticated(request):
         return RedirectResponse("/admin", status_code=302)
     settings.campaign_price = campaign_price.strip()
+    settings.campaign_price_suggested = campaign_price_suggested.strip()
     settings.campaign_currency = campaign_currency.strip().upper()
     settings.openai_model = openai_model.strip()
     settings.openai_max_posts_per_campaign = openai_max_posts_per_campaign

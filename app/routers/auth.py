@@ -14,7 +14,7 @@ from app.crypto import encrypt_token
 from app.csrf import verify_csrf
 from app.database import get_session
 from app.limiter import limiter
-from app.models import MastodonAccount, User
+from app.models import LoginEvent, MastodonAccount, User
 from app.services import mastodon_service
 from app.site_config import get_registration_open
 
@@ -160,6 +160,9 @@ async def mastodon_callback(
         session.add(account)
         session.commit()
         user_id = user.id
+
+    session.add(LoginEvent(user_id=user_id))
+    session.commit()
 
     jwt_token = create_access_token(user_id)
     response = RedirectResponse("/dashboard", status_code=302)
