@@ -310,5 +310,18 @@ def delete_post(
     if not post or post.campaign_id != campaign_id:
         raise HTTPException(status_code=404)
     session.delete(post)
+    session.flush()
+
+    # Re-check completion: running → completed if no pending posts remain and below max
+    if campaign.status == "running":
+        remaining = session.exec(
+            select(Post).where(Post.campaign_id == campaign_id)
+        ).all()
+        has_pending = any(p.status == "pending" for p in remaining)
+        at_limit = len(remaining) >= settings.max_posts_per_campaign
+        if remaining and not has_pending and not at_limit:
+            campaign.status = "completed"
+            session.add(campaign)
+
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
