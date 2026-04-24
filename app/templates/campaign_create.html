@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_campaign %}Edit Campaign – {{ edit_campaign.name }}{% else %}New Campaign{% endif %} – TootFlow{% endblock %}
+{% block content %}
+
+<style>
+.cc-wrap {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ── Copy-from bar ── */
+.cc-copy-row {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  padding: 11px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+}
+.cc-copy-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Card shell ── */
+.cc-card {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.cc-head {
+  background: var(--ink);
+  padding: 26px 32px 22px;
+  border-bottom: 3px solid #47b8b1;
+}
+.cc-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #47b8b1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cc-eyebrow::before { content:''; width:20px; height:2px; background:#47b8b1; flex-shrink:0; }
+.cc-head h1 { border:0; padding:0; margin:0; color:#f2ece0; font-size:26px; }
+
+/* ── Sections ── */
+.cc-section {
+  padding: 26px 32px;
+  border-bottom: 1px solid #e8e0d4;
+}
+
+.cc-step-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.cc-step-label span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #47b8b1;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Fields ── */
+.cc-field { margin-bottom: 20px; }
+.cc-field:last-child { margin-bottom: 0; }
+.cc-field > label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: block;
+  margin-bottom: 9px;
+}
+.cc-field-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 7px;
+  line-height: 1.55;
+}
+
+/* ── Template grid ── */
+.cc-template-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+.cc-tmpl-card {
+  border: 2px solid #e0d8ce;
+  background: #faf7f2;
+  padding: 10px 11px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  user-select: none;
+}
+.cc-tmpl-card:hover { border-color: #9ab8be; background: #f0ece6; }
+.cc-tmpl-card.selected { border-color: #47b8b1; background: #eef8f7; }
+.cc-tmpl-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--ink);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.cc-tmpl-card.selected .cc-tmpl-name { color: #47b8b1; }
+.cc-tmpl-desc { font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+
+/* ── Tone pills ── */
+.cc-tone-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.cc-tone-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1.5px solid #e0d8ce;
+  background: #faf7f2;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  user-select: none;
+}
+.cc-tone-pill:hover { border-color: #9ab8be; color: var(--ink); }
+.cc-tone-pill.selected {
+  border-color: #47b8b1;
+  background: #eef8f7;
+  color: #2d8f96;
+  font-weight: 700;
+}
+
+/* ── Cadence row ── */
+.cc-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Brief fields ── */
+.cc-brief-fields {
+  border: 1px solid #e0d8ce;
+  overflow: hidden;
+}
+.cc-brief-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  border-bottom: 1px solid #e0d8ce;
+  align-items: stretch;
+  min-height: 38px;
+}
+.cc-brief-row:last-child { border-bottom: 0; }
+.cc-brief-row-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-right: 1px solid #e0d8ce;
+  background: #f2ece0;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+}
+input.cc-brief-input,
+.cc-brief-textarea {
+  box-sizing: border-box;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-left: 3px solid transparent !important;
+  background: #ffffff;
+  padding: 9px 12px;
+  font-size: 13px;
+  width: 100%;
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+  transition: border-color 0.12s, background 0.12s;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+}
+input.cc-brief-input:focus,
+.cc-brief-textarea:focus {
+  border-left-color: var(--teal) !important;
+  box-shadow: none !important;
+  background: #f6fffe;
+}
+.cc-brief-textarea { min-height: 68px; }
+.cc-field-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 7px;
+  line-height: 1.55;
+}
+
+/* ── Submit bar ── */
+.cc-submit-bar {
+  background: var(--ink);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cc-submit-btn {
+  flex: 1;
+  background: #d95f2a;
+  color: #fff;
+  border: 2px solid #d95f2a;
+  padding: 14px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cc-submit-btn:hover { background: #bf4e1f; border-color: #bf4e1f; }
+.cc-cancel-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #3a5268;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cc-cancel-link:hover { color: #8fa8c0; }
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .cc-section { padding: 20px; }
+  .cc-submit-bar { padding: 16px 20px; }
+  .cc-template-grid { grid-template-columns: repeat(2, 1fr); }
+  .cc-row-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 400px) {
+  .cc-template-grid { grid-template-columns: 1fr; }
+  .cc-row-3 { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="cc-wrap">
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  {% if existing_campaigns and not edit_campaign %}
+  <div class="cc-copy-row">
+    <span class="cc-copy-label">Copy from</span>
+    <select id="copy_from" onchange="copyFromCampaign(this)" style="flex:1; min-width:200px;">
+      <option value="">— select an existing campaign —</option>
+      {% for c in existing_campaigns %}
+      <option value="{{ c.id }}"
+        data-name="{{ c.name }}"
+        data-description="{{ c.description }}"
+        data-template="{{ c.template_type }}"
+        data-tone="{{ c.tone }}"
+        data-language="{{ c.language }}"
+        data-duration="{{ c.duration_days }}"
+        data-posts-per-week="{{ c.posts_per_week }}">
+        {{ c.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
+  <div class="cc-card">
+
+    <div class="cc-head">
+      <div class="cc-eyebrow">{% if edit_campaign %}Edit Campaign{% else %}New Campaign{% endif %}</div>
+      <h1>{% if edit_campaign %}{{ edit_campaign.name }}{% else %}Create a Campaign{% endif %}</h1>
+    </div>
+
+    <form method="post" action="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}/edit{% else %}/campaigns/new{% endif %}">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+
+      <!-- ── 1 · Concept ─────────────────────────────────────────────── -->
+      <div class="cc-section">
+        <div class="cc-step-label"><span>1</span> Concept</div>
+
+        <div class="cc-field">
+          <label for="name">Campaign Name</label>
+          <input type="text" id="name" name="name" required placeholder="e.g. MyApp v2.0 Launch"
+                 value="{{ edit_campaign.name if edit_campaign else '' }}">
+        </div>
+
+        <div class="cc-field">
+          <label>Template</label>
+          <div class="cc-template-grid" id="template-grid"></div>
+          <input type="hidden" id="template_type" name="template_type"
+                 value="{{ edit_campaign.template_type if edit_campaign else 'product_launch' }}">
+        </div>
+      </div>
+
+      <!-- ── 2 · Brief ───────────────────────────────────────────────── -->
+      <div class="cc-section">
+        <div class="cc-step-label"><span>2</span> Brief</div>
+        <div class="cc-field">
+          <label>Campaign Brief</label>
+          <div class="cc-brief-fields" id="brief-fields"></div>
+          <input type="hidden" id="description" name="description"
+                 value="{{ edit_campaign.description | e if edit_campaign else '' }}">
+          <div class="cc-field-hint">A detailed brief sharpens your campaign — even before any AI is involved. The more context you provide, the better: links (e.g. a GitHub repo or product page) may be used to pull in live updates, and specific details help keep every post on-message.</div>
+        </div>
+      </div>
+
+      <!-- ── 3 · Style & Cadence ─────────────────────────────────────── -->
+      <div class="cc-section">
+        <div class="cc-step-label"><span>3</span> Style &amp; Cadence</div>
+
+        <div class="cc-field">
+          <label>Tone of Voice</label>
+          <div class="cc-tone-grid" id="tone-grid"></div>
+          <input type="hidden" id="tone" name="tone"
+                 value="{{ edit_campaign.tone if edit_campaign else 'professional' }}">
+        </div>
+
+        <div class="cc-row-3" style="margin-top:20px;">
+          <div class="cc-field" style="margin-bottom:0;">
+            <label for="language">Language</label>
+            <select id="language" name="language" required>
+              {% for l in languages %}
+              <option value="{{ l }}"
+                {% if edit_campaign and edit_campaign.language == l %}selected
+                {% elif l == 'English' and not edit_campaign %}selected{% endif %}>
+                {{ l }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cc-field" style="margin-bottom:0;">
+            <label for="duration_days">Duration (days)</label>
+            <input type="number" id="duration_days" name="duration_days" min="1" max="365" required
+                   value="{{ edit_campaign.duration_days if edit_campaign else 30 }}">
+          </div>
+          <div class="cc-field" style="margin-bottom:0;">
+            <label for="posts_per_week">Posts / Week</label>
+            <input type="number" id="posts_per_week" name="posts_per_week" min="1" max="14" required
+                   value="{{ edit_campaign.posts_per_week if edit_campaign else 3 }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Submit ──────────────────────────────────────────────────── -->
+      <div class="cc-submit-bar">
+        <button type="submit" class="cc-submit-btn">
+          {% if edit_campaign %}Save Changes →{% else %}Create Campaign →{% endif %}
+        </button>
+        <a href="{% if edit_campaign %}/campaigns/{{ edit_campaign.id }}{% else %}/dashboard{% endif %}"
+           class="cc-cancel-link">← Cancel</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+// ── Server-provided field definitions ───────────────────────────────────────
+const TEMPLATE_FIELDS = {{ template_fields | tojson }};
+
+const TEMPLATES = [
+  { id: 'product_launch',      label: 'Product Launch',  desc: 'Announce a release'   },
+  { id: 'open_source_release', label: 'Open Source',     desc: 'Share a project'      },
+  { id: 'event_promotion',     label: 'Event Promo',     desc: 'Drive attendance'     },
+  { id: 'knowledge_sharing',   label: 'Knowledge',       desc: 'Teach what you know'  },
+  { id: 'developer_tips',      label: 'Dev Tips',        desc: 'Practical how-tos'    },
+  { id: 'research_insights',   label: 'Research',        desc: 'Findings & data'      },
+  { id: 'personal_brand',      label: 'Personal Brand',  desc: 'Build your audience'  },
+  { id: 'community_building',  label: 'Community',       desc: 'Rally your people'    },
+  { id: 'project_showcase',    label: 'Project',         desc: 'Show your work'       },
+  { id: 'newsletter_growth',   label: 'Newsletter',      desc: 'Win subscribers'      },
+];
+
+const TONES = [
+  'professional','casual','technical','inspiring','humorous',
+  'riddles','storytelling','hot take','minimalist','socratic',
+  'behind the scenes','rant',
+];
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const tmplInput  = document.getElementById('template_type');
+const toneInput  = document.getElementById('tone');
+const descInput  = document.getElementById('description');   // hidden, assembled on submit
+const briefEl    = document.getElementById('brief-fields');
+const tmplGrid   = document.getElementById('template-grid');
+const toneGrid   = document.getElementById('tone-grid');
+
+// ── Render template cards ─────────────────────────────────────────────────────
+TEMPLATES.forEach(t => {
+  const card = document.createElement('div');
+  card.className = 'cc-tmpl-card';
+  card.dataset.id = t.id;
+  card.innerHTML = `<div class="cc-tmpl-name">${t.label}</div><div class="cc-tmpl-desc">${t.desc}</div>`;
+  card.addEventListener('click', () => selectTemplate(t.id));
+  tmplGrid.appendChild(card);
+});
+
+// ── Render tone pills ─────────────────────────────────────────────────────────
+TONES.forEach(tone => {
+  const pill = document.createElement('div');
+  pill.className = 'cc-tone-pill';
+  pill.dataset.tone = tone;
+  pill.textContent = tone;
+  pill.addEventListener('click', () => selectTone(tone));
+  toneGrid.appendChild(pill);
+});
+
+// ── Brief field rendering ─────────────────────────────────────────────────────
+function renderBriefFields(templateId, existingValues) {
+  briefEl.innerHTML = '';
+  const fields = TEMPLATE_FIELDS[templateId] || [];
+  fields.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'cc-brief-row';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'cc-brief-row-label';
+    lbl.textContent = f.label;
+
+    const val = (existingValues && existingValues[f.label]) || '';
+
+    let input;
+    if (f.multiline) {
+      input = document.createElement('textarea');
+      input.className = 'cc-brief-textarea';
+      input.rows = 2;
+      input.value = val;
+      // Auto-grow
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+      });
+      if (val) { setTimeout(() => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }, 0); }
+    } else {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'cc-brief-input';
+      input.value = val;
+    }
+    input.placeholder = f.hint || '';
+    input.dataset.label = f.label;
+
+    row.appendChild(lbl);
+    row.appendChild(input);
+    briefEl.appendChild(row);
+  });
+}
+
+// ── Parse assembled description back into field values ────────────────────────
+function parseDescription(text) {
+  if (!text) return {};
+  try {
+    const data = JSON.parse(text);
+    if (data && typeof data === 'object') return data;
+  } catch (e) {}
+  return {};
+}
+
+// ── Assemble description from individual fields ───────────────────────────────
+function assembleDescription() {
+  const inputs = briefEl.querySelectorAll('[data-label]');
+  const obj = {};
+  inputs.forEach(el => { obj[el.dataset.label] = el.value.trim(); });
+  descInput.value = JSON.stringify(obj);
+}
+
+// ── Selection ─────────────────────────────────────────────────────────────────
+function selectTemplate(id, existingValues) {
+  tmplInput.value = id;
+  document.querySelectorAll('.cc-tmpl-card').forEach(c =>
+    c.classList.toggle('selected', c.dataset.id === id));
+  renderBriefFields(id, existingValues || {});
+}
+
+function selectTone(tone) {
+  toneInput.value = tone;
+  document.querySelectorAll('.cc-tone-pill').forEach(p =>
+    p.classList.toggle('selected', p.dataset.tone === tone));
+}
+
+// ── Copy from existing campaign ───────────────────────────────────────────────
+function copyFromCampaign(select) {
+  const opt = select.options[select.selectedIndex];
+  if (!opt.value) return;
+  document.getElementById('name').value           = 'Copy of ' + opt.dataset.name;
+  document.getElementById('duration_days').value  = opt.dataset.duration;
+  document.getElementById('posts_per_week').value = opt.dataset.postsPerWeek;
+  const langEl = document.getElementById('language');
+  for (const o of langEl.options) {
+    if (o.value === opt.dataset.language) { langEl.value = opt.dataset.language; break; }
+  }
+  selectTone(opt.dataset.tone);
+  // Parse the existing assembled description back into fields
+  const parsed = parseDescription(opt.dataset.description);
+  selectTemplate(opt.dataset.template, parsed);
+}
+
+// ── Form submit — assemble description ────────────────────────────────────────
+document.querySelector('form').addEventListener('submit', function(e) {
+  assembleDescription();
+  if (!descInput.value.trim()) {
+    e.preventDefault();
+    briefEl.style.outline = '2px solid #d95f2a';
+    briefEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init() {
+  const tmpl = tmplInput.value || 'product_launch';
+  const tone = toneInput.value || 'professional';
+
+  // Highlight correct card + pill
+  document.querySelectorAll('.cc-tmpl-card').forEach(c =>
+    c.classList.toggle('selected', c.dataset.id === tmpl));
+  document.querySelectorAll('.cc-tone-pill').forEach(p =>
+    p.classList.toggle('selected', p.dataset.tone === tone));
+
+  // For edit campaigns: parse existing description into field values
+  const existing = parseDescription(descInput.value);
+  renderBriefFields(tmpl, existing);
+})();
+</script>
+{% endblock %}

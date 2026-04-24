@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+.env
+tootflow.db
+generate_assets.py

@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+{% block title %}Admin – TootFlow{% endblock %}
+{% block content %}
+<div class="container">
+
+{% if not auth %}
+  <h1>Admin</h1>
+  {% if error %}<div class="error">Invalid token.</div>{% endif %}
+  <div class="container-tight" style="padding:0;">
+    <p class="muted text-sm" style="margin-bottom:16px;">
+      Append <code>?token=YOUR_ADMIN_SECRET</code> to the URL to authenticate.
+      Your session will be saved in a cookie for this browser.
+    </p>
+  </div>
+
+{% else %}
+
+<style>
+/* ── Admin tabs ── */
+.admin-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-header h1 { margin: 0; }
+.admin-clock {
+  color: var(--muted);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 32px;
+}
+.admin-tab {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-bottom: none;
+  margin-bottom: -2px;
+  background: transparent;
+  color: var(--muted);
+  transition: color 0.1s;
+  user-select: none;
+}
+.admin-tab:hover { color: var(--ink); }
+.admin-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--ink);
+  border-bottom-color: var(--surface);
+}
+
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+
+/* ── KPI strip ── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: var(--border);
+  padding: 16px 18px;
+  text-align: center;
+}
+.kpi-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.kpi-num.green { color: var(--green); }
+.kpi-num.teal  { color: #47b8b1; }
+.kpi-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Visitor chart ── */
+.chart-wrap {
+  background: var(--surface);
+  border: var(--border);
+  padding: 16px 16px 8px;
+  margin-bottom: 32px;
+}
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 80px;
+}
+.chart-bar {
+  flex: 1;
+  background: #47b8b1;
+  cursor: default;
+  min-height: 2px;
+}
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Section headings ── */
+.admin-section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bg-rim);
+}
+
+/* ── Control cards ── */
+.control-card {
+  background: var(--surface);
+  border: var(--border);
+  padding: 20px 22px;
+  margin-bottom: 20px;
+  max-width: 640px;
+}
+.control-card-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.status-dot-green { font-size: 12px; color: var(--green); }
+.status-dot-orange { font-size: 12px; color: var(--orange); }
+.status-dot-muted  { font-size: 12px; color: var(--muted); }
+</style>
+
+  <div class="admin-header">
+    <h1>Admin</h1>
+    <span class="admin-clock">{{ now().strftime("%Y-%m-%d %H:%M") }} UTC</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <div class="admin-tab active" data-tab="overview">Overview</div>
+    <div class="admin-tab" data-tab="business">Business</div>
+    <div class="admin-tab" data-tab="controls">Controls</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB 1 · OVERVIEW
+  ══════════════════════════════════════════ -->
+  <div class="admin-panel active" id="tab-overview">
+
+    <div class="admin-section-label">Unique Visitors</div>
+    <div class="kpi-strip" style="margin-bottom:32px;">
+      <div class="kpi-card">
+        <div class="kpi-num teal">{{ visitors_1d }}</div>
+        <div class="kpi-label">Last 24 h</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">{{ visitors_7d }}</div>
+        <div class="kpi-label">Last 7 days</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">{{ visitors_30d }}</div>
+        <div class="kpi-label">Last 30 days</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">{{ users_total }}</div>
+        <div class="kpi-label">Total users</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">{{ users_7d }}</div>
+        <div class="kpi-label">New (7 days)</div>
+      </div>
+    </div>
+
+    <div class="admin-section-label">30-Day Visitor Trend</div>
+    <div class="chart-wrap">
+      <div class="chart-bars">
+        {% for day in chart %}
+        <div class="chart-bar" style="height:{{ [day.pct, 2] | max }}%;" title="{{ day.date }}: {{ day.count }}"></div>
+        {% endfor %}
+      </div>
+      <div class="chart-labels">
+        <span>{{ chart[0].date }}</span>
+        <span>{{ chart[14].date }}</span>
+        <span>{{ chart[-1].date }}</span>
+      </div>
+    </div>
+
+    <div class="admin-section-label">30-Day Login Trend</div>
+    <div class="chart-wrap">
+      <div class="chart-bars">
+        {% for day in login_chart %}
+        <div class="chart-bar" style="height:{{ [day.pct, 2] | max }}%; background:#d95f2a;" title="{{ day.date }}: {{ day.count }}"></div>
+        {% endfor %}
+      </div>
+      <div class="chart-labels">
+        <span>{{ login_chart[0].date }}</span>
+        <span>{{ login_chart[14].date }}</span>
+        <span>{{ login_chart[-1].date }}</span>
+      </div>
+    </div>
+
+    <div class="admin-section-label">User Signups</div>
+    <div class="table-wrap" style="margin-bottom:32px; max-width:400px;">
+      <table>
+        <tr><th style="width:200px;">Total accounts</th><td>{{ users_total }}</td></tr>
+        <tr><th>New last 7 days</th><td>{{ users_7d }}</td></tr>
+        <tr><th>New last 30 days</th><td>{{ users_30d }}</td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB 2 · BUSINESS
+  ══════════════════════════════════════════ -->
+  <div class="admin-panel" id="tab-business">
+
+    <div class="kpi-strip" style="margin-bottom:32px;">
+      <div class="kpi-card">
+        <div class="kpi-num">{{ campaigns_total }}</div>
+        <div class="kpi-label">Total</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num teal">{{ campaigns_paid }}</div>
+        <div class="kpi-label">Paid</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">
+          {% if campaigns_total > 0 %}{{ "%.0f"|format(campaigns_paid / campaigns_total * 100) }}%{% else %}—{% endif %}
+        </div>
+        <div class="kpi-label">Conversion</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num green">€{{ "%.0f"|format(revenue_total) }}</div>
+        <div class="kpi-label">Revenue</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">{{ posts_published }}</div>
+        <div class="kpi-label">Posts live</div>
+      </div>
+    </div>
+
+    <div class="admin-section-label">Campaigns</div>
+    <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+      <table>
+        <tr><th style="width:220px;">Total</th><td><strong>{{ campaigns_total }}</strong></td></tr>
+        <tr><th>Paid / activated</th><td>{{ campaigns_paid }}{% if campaigns_total > 0 %} <span class="muted text-sm">({{ "%.0f"|format(campaigns_paid / campaigns_total * 100) }}%)</span>{% endif %}</td></tr>
+        <tr style="border-top:2px solid var(--bg-rim);"><th style="color:var(--muted);">Draft</th><td>{{ campaigns_draft }}</td></tr>
+        <tr><th style="color:var(--muted);">Active</th><td>{{ campaigns_active }}</td></tr>
+        <tr><th style="color:var(--muted);">Running</th><td>{{ campaigns_running }}</td></tr>\n        <tr><th style="color:var(--muted);">Completed</th><td>{{ campaigns_completed }}</td></tr>
+        <tr><th style="color:var(--muted);">Paused</th><td>{{ campaigns_paused }}</td></tr>
+        <tr><th style="color:var(--muted);">Archived</th><td>{{ campaigns_archived }}</td></tr>
+      </table>
+    </div>
+
+    <div class="admin-section-label">Revenue</div>
+    <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+      <table>
+        <tr><th style="width:220px;">Total revenue</th><td><strong style="color:var(--green);">€{{ "%.2f"|format(revenue_total) }}</strong></td></tr>
+        <tr><th>Paid campaigns</th><td>{{ campaigns_paid }}</td></tr>
+      </table>
+    </div>
+
+    <div class="admin-section-label">Posts</div>
+    <div class="table-wrap" style="margin-bottom:32px; max-width:480px;">
+      <table>
+        <tr><th style="width:220px;">Total</th><td><strong>{{ posts_total }}</strong></td></tr>
+        <tr><th>Published</th><td><span class="badge badge-published">{{ posts_published }}</span>{% if posts_total > 0 %} <span class="muted text-sm">({{ "%.0f"|format(posts_published / posts_total * 100) }}%)</span>{% endif %}</td></tr>
+        <tr><th>Failed</th><td><span class="badge badge-failed">{{ posts_failed }}</span></td></tr>
+        <tr style="border-top:2px solid var(--bg-rim);"><th style="color:var(--muted);">Pending — running</th><td><span class="badge badge-pending">{{ posts_pending_running }}</span></td></tr>
+        <tr><th style="color:var(--muted);">Pending — paused</th><td><span class="badge badge-pending">{{ posts_pending_paused }}</span></td></tr>
+        <tr><th style="color:var(--muted);">Pending — unpaid</th><td><span class="badge badge-pending">{{ posts_pending_unpaid }}</span></td></tr>
+      </table>
+    </div>
+
+    <div class="admin-section-label">Manual Payment Override</div>
+    <div style="margin-bottom:32px; max-width:560px;">
+      {% if campaigns_list %}
+      <form method="post" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <div style="flex:1; min-width:260px;">
+          <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px;">Campaign</label>
+          <select name="campaign_id" style="width:100%;">
+            {% for c in campaigns_list %}
+            {% set acct = account_by_user.get(c.user_id) %}
+            <option value="{{ c.id }}">
+              {% if acct %}{{ acct.username }}@{{ acct.instance_url | replace("https://","") }}{% else %}user #{{ c.user_id }}{% endif %}
+              — {{ c.name }}
+              [{{ c.payment_status }}] [AI: {{ c.ai_posts_generated }}]
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" formaction="/admin/campaigns/mark-paid" class="btn btn-primary btn-sm">Mark as Paid</button>
+        <button type="submit" formaction="/admin/campaigns/reset-ai-counter" class="btn btn-outline btn-sm">Reset AI Counter</button>
+      </form>
+      {% else %}
+      <p class="muted text-sm">No campaigns yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB 3 · CONTROLS
+  ══════════════════════════════════════════ -->
+  <div class="admin-panel" id="tab-controls">
+
+    <div class="admin-section-label">Site Banner</div>
+    <div class="control-card">
+      <div class="control-card-title">
+        Banner
+        {% if banner_text %}
+        <span class="status-dot-green">● live</span>
+        {% else %}
+        <span class="status-dot-muted">● hidden</span>
+        {% endif %}
+      </div>
+      <form method="post" action="/admin/banner">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:6px;">
+          Shown on every page. Leave empty to hide.
+        </label>
+        <textarea name="banner_text" rows="2"
+          style="width:100%; font-family:inherit; font-size:14px; padding:8px 10px; border:var(--border); background:var(--surface); resize:vertical; margin-bottom:8px;"
+          placeholder="e.g. 🎉 Now live — pay what it's worth, from {{ settings.campaign_price }}€"
+        >{{ banner_text }}</textarea>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button type="submit" class="btn btn-primary btn-sm">Save Banner</button>
+          {% if banner_text %}
+          <button type="submit" name="banner_text" value="" class="btn btn-outline btn-sm">Clear Banner</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <div class="admin-section-label">Access</div>
+    <div class="control-card">
+      <div class="control-card-title">
+        Registration
+        {% if registration_open %}
+        <span class="status-dot-green">● open</span>
+        {% else %}
+        <span class="status-dot-orange">● closed</span>
+        {% endif %}
+      </div>
+      <form method="post" action="/admin/registration">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <input type="hidden" name="registration_open" value="{% if registration_open %}false{% else %}true{% endif %}">
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <button type="submit" class="btn {% if registration_open %}btn-outline{% else %}btn-primary{% endif %} btn-sm">
+            {% if registration_open %}Close Registration{% else %}Open Registration{% endif %}
+          </button>
+          <span class="muted text-sm">
+            {% if registration_open %}New users can sign up via Mastodon OAuth.{% else %}Only existing users can log in.{% endif %}
+          </span>
+        </div>
+      </form>
+    </div>
+
+    <div class="admin-section-label">Runtime Settings</div>
+    <div class="control-card" style="max-width:100%;">
+      <div class="control-card-title">Settings <span style="font-weight:400; color:var(--orange);">⚠ in-memory only — reset on restart</span></div>
+      <form method="post" action="/admin/settings">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <div class="table-wrap" style="max-width:560px;">
+          <table>
+            <tr><th style="width:240px;">Campaign price (min)</th>
+              <td><input type="text" name="campaign_price" value="{{ settings.campaign_price }}"
+                style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Campaign price (suggested)</th>
+              <td><input type="text" name="campaign_price_suggested" value="{{ settings.campaign_price_suggested }}"
+                style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Campaign currency</th>
+              <td><input type="text" name="campaign_currency" value="{{ settings.campaign_currency }}"
+                style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);" maxlength="3"></td>
+            </tr>
+            <tr><th>OpenAI model</th>
+              <td><input type="text" name="openai_model" value="{{ settings.openai_model }}"
+                style="width:200px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Max AI posts per campaign</th>
+              <td><input type="number" name="openai_max_posts_per_campaign" value="{{ settings.openai_max_posts_per_campaign }}"
+                min="1" max="200" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Max tokens per AI request</th>
+              <td><input type="number" name="openai_max_tokens" value="{{ settings.openai_max_tokens }}"
+                min="256" max="32000" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Max posts per campaign (hard cap)</th>
+              <td><input type="number" name="max_posts_per_campaign" value="{{ settings.max_posts_per_campaign }}"
+                min="1" max="500" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Max export generations per campaign</th>
+              <td><input type="number" name="export_max_per_campaign" value="{{ settings.export_max_per_campaign }}"
+                min="1" max="50" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Metrics: max days back</th>
+              <td><input type="number" name="metrics_max_days" value="{{ settings.metrics_max_days }}"
+                min="1" max="365" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+            <tr><th>Metrics: max posts per user</th>
+              <td><input type="number" name="metrics_max_posts_per_user" value="{{ settings.metrics_max_posts_per_user }}"
+                min="1" max="1000" style="width:80px; font-family:inherit; font-size:13px; padding:4px 6px; border:var(--border);"></td>
+            </tr>
+          </table>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="margin-top:12px;">Apply Changes</button>
+      </form>
+    </div>
+
+    <div class="admin-section-label">Actions</div>
+    <div class="control-card">
+      <div class="control-card-title">Manual Triggers</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <form method="post" action="/admin/collect-metrics" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-outline btn-sm">↻ Collect Metrics Now</button>
+        </form>
+      </div>
+      <p class="muted text-sm" style="margin-top:8px;">
+        Fetches latest engagement data for all published posts from Mastodon. Runs automatically once per day.
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+  (function() {
+    var tabs = document.querySelectorAll('.admin-tab');
+    var panels = document.querySelectorAll('.admin-panel');
+
+    // Restore active tab from sessionStorage
+    var saved = sessionStorage.getItem('adminTab');
+    if (saved) activate(saved);
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        activate(tab.dataset.tab);
+        sessionStorage.setItem('adminTab', tab.dataset.tab);
+      });
+    });
+
+    function activate(name) {
+      tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === name); });
+      panels.forEach(function(p) { p.classList.toggle('active', p.id === 'tab-' + name); });
+    }
+  })();
+  </script>
+
+{% endif %}
+</div>
+{% endblock %}

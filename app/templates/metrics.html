@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block title %}Metrics – {{ campaign.name }} – TootFlow{% endblock %}
+{% block content %}
+
+<style>
+  .metrics-wrap {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 0 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    align-items: start;
+  }
+  .metrics-sidebar { position: sticky; top: 24px; }
+  .metrics-main { min-width: 0; }
+
+  .info-panel {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .info-panel-head {
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+  }
+  .info-panel-head .eyebrow { color: #47b8b1; }
+  .info-panel-body { padding: 4px 0; }
+  .info-row {
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .info-row:last-child { border-bottom: 0; }
+  .info-row strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink); display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;
+  }
+
+  .metric-def {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .metric-def:last-child { border-bottom: 0; }
+  .metric-swatch {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  @media (max-width: 760px) {
+    .metrics-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
+    .metrics-sidebar { position: static; margin-bottom: 24px; }
+  }
+
+/* ── Replies ── */
+.reply-toggle {
+  background: none;
+  border: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--teal);
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.5px;
+  text-decoration: underline;
+}
+.reply-toggle:hover { color: var(--ink); }
+.replies-row td {
+  padding: 0 !important;
+  border-bottom: 2px solid var(--ink);
+}
+.replies-container {
+  padding: 12px 16px;
+  background: var(--canvas);
+  border-top: 1px solid var(--border-soft);
+}
+.replies-list { display: flex; flex-direction: column; gap: 8px; }
+.reply-item {
+  border-left: 3px solid var(--teal);
+  padding: 6px 10px;
+  background: var(--surface);
+}
+.reply-meta {
+  display: flex;
+  gap: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.reply-author { color: var(--ink); font-weight: bold; }
+.reply-content { font-size: 12px; color: var(--ink); line-height: 1.5; }
+.reply-empty { font-size: 12px; color: var(--muted); font-style: italic; padding: 4px 0; }
+.reply-show-more {
+  background: none;
+  border: 1px solid var(--border-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+.reply-show-more:hover { border-color: var(--ink); color: var(--ink); }
+</style>
+
+<div class="metrics-wrap">
+
+  <!-- Left sidebar -->
+  <aside class="metrics-sidebar">
+
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">What Each Metric Means</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="metric-def">
+          <div class="metric-swatch" style="background:var(--orange);"></div>
+          <div><strong style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Favourites</strong>The simplest signal of approval — someone bookmarked or liked your post.</div>
+        </div>
+        <div class="metric-def">
+          <div class="metric-swatch" style="background:var(--purple);"></div>
+          <div><strong style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Reblogs</strong>Shared to their followers. The strongest reach multiplier on Mastodon.</div>
+        </div>
+        <div class="metric-def">
+          <div class="metric-swatch" style="background:var(--teal);"></div>
+          <div><strong style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Replies</strong>Direct engagement — someone took the time to respond. High-quality signal.</div>
+        </div>
+        {% if total_voters > 0 %}
+        <div class="metric-def">
+          <div class="metric-swatch" style="background:var(--green);"></div>
+          <div><strong style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Poll Voters</strong>Unique accounts that voted in one of your polls. Strong active-participation signal.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if follower_current is not none %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Followers</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>Current</strong>
+          {{ follower_current }}
+        </div>
+        {% if follower_delta is not none %}
+        <div class="info-row">
+          <strong>Since campaign start</strong>
+          <span style="color:{% if follower_delta >= 0 %}#c8a800{% else %}var(--red){% endif %}; font-weight:bold;">
+            {% if follower_delta >= 0 %}+{% endif %}{{ follower_delta }}
+          </span>
+        </div>
+        {% endif %}
+        {% if snapshots | length > 1 %}
+        <div class="info-row">
+          <strong>{{ snapshots | length }}-day trend</strong>
+          <div style="display:flex; align-items:flex-end; gap:2px; height:32px; margin-top:6px;">
+            {% set min_c = snapshots | map(attribute='count') | min %}
+            {% set max_c = snapshots | map(attribute='count') | max %}
+            {% set range_c = [max_c - min_c, 1] | max %}
+            {% for s in snapshots[-14:] %}
+            <div style="flex:1; background:var(--green); min-height:2px; height:{{ ((s.count - min_c) / range_c * 28 + 4) | int }}px;"
+                 title="{{ s.recorded_at.strftime('%b %d') }}: {{ s.count }}"></div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">How It Updates</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>Daily refresh</strong>
+          Metrics are fetched once per day for all published posts via the Mastodon API.
+        </div>
+        <div class="info-row">
+          <strong>New posts</strong>
+          Just published? Check back tomorrow for first numbers to appear.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Reading the Chart</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>Stacked bars</strong>
+          Each bar is one week. Height shows total engagement; colours show the split between favs, reblogs, and replies.
+        </div>
+        <div class="info-row">
+          <strong>Trend over time</strong>
+          Rising bars late in the campaign often mean your audience is warming up — good signal to plan a follow-up.
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <div class="metrics-main">
+    <div class="page-head">
+      <div>
+        <h1>Metrics</h1>
+        <span class="meta">
+          {{ campaign.name }}
+          <span class="badge badge-{{ campaign.status }}" style="margin-left:6px;">{{ campaign.status | replace("_"," ") }}</span>
+        </span>
+      </div>
+      <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
+    </div>
+
+    {% set card_count = 3 + (1 if follower_delta is not none else 0) + (1 if total_voters > 0 else 0) %}
+    <div style="display:grid; grid-template-columns: repeat({{ card_count }}, 1fr); gap:12px; margin-bottom:36px;">
+      <div class="stat-box">
+        <div class="num">{{ total_favs }}</div>
+        <div class="label">Favourites</div>
+      </div>
+      <div class="stat-box">
+        <div class="num">{{ total_reblogs }}</div>
+        <div class="label">Reblogs</div>
+      </div>
+      <div class="stat-box">
+        <div class="num">{{ total_replies }}</div>
+        <div class="label">Replies</div>
+      </div>
+      {% if total_voters > 0 %}
+      <div class="stat-box" style="border-top:4px solid var(--green);">
+        <div class="num" style="color:var(--green);">{{ total_voters }}</div>
+        <div class="label">Poll Voters</div>
+      </div>
+      {% endif %}
+      {% if follower_delta is not none %}
+      <div class="stat-box" style="border-top:4px solid #c8a800;">
+        <div class="num" style="color:{% if follower_delta >= 0 %}#c8a800{% else %}var(--red){% endif %};">
+          {% if follower_delta >= 0 %}+{% endif %}{{ follower_delta }}
+        </div>
+        <div class="label">Followers ±</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if chart %}
+    <h2>Engagement by Week</h2>
+    <div style="background:var(--surface); border:var(--border); padding:20px 20px 10px; margin-bottom:32px;">
+      <div style="display:flex; align-items:flex-end; gap:{% if chart|length > 12 %}4{% else %}8{% endif %}px; height:100px;">
+        {% for w in chart %}
+        {% set total = w.favs + w.reblogs + w.replies %}
+        <div style="flex:1; display:flex; flex-direction:column; height:{{ [w.bar_pct, 2]|max }}%;"
+             title="Week {{ loop.index }}: {{ w.favs }} favs · {{ w.reblogs }} reblogs · {{ w.replies }} replies">
+          {% if total > 0 %}
+          <div style="flex:{{ w.reply_pct }}; background:var(--teal); min-height:{% if w.replies %}1{% else %}0{% endif %}px;"></div>
+          <div style="flex:{{ w.reblog_pct }}; background:var(--purple); min-height:{% if w.reblogs %}1{% else %}0{% endif %}px;"></div>
+          <div style="flex:{{ w.fav_pct }}; background:var(--orange); min-height:{% if w.favs %}1{% else %}0{% endif %}px;"></div>
+          {% else %}
+          <div style="flex:1; background:var(--canvas); border-top:2px solid #c8bfb4;"></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex; gap:{% if chart|length > 12 %}4{% else %}8{% endif %}px; margin-top:6px;">
+        {% for w in chart %}
+        <div style="flex:1; text-align:center; font-size:10px; color:var(--muted); letter-spacing:0.5px;">
+          {% if loop.index == 1 or loop.index == chart|length or loop.index % (([chart|length, 4]|min)) == 0 %}
+            {{ w.label }}
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if chart | selectattr("follower_delta") | list %}
+      <div style="display:flex; align-items:flex-end; gap:{% if chart|length > 12 %}4{% else %}8{% endif %}px; height:36px; margin-top:10px; padding-top:8px; border-top:1px dashed #c8bfb4;">
+        {% for w in chart %}
+        <div style="flex:1; background:{% if w.follower_delta is not none and w.follower_delta >= 0 %}#c8a800{% elif w.follower_delta is not none %}var(--red){% else %}transparent{% endif %}; height:{{ w.follower_pct }}%; min-height:{% if w.follower_delta is not none %}2{% else %}0{% endif %}px;"
+             title="{% if w.follower_delta is not none %}{{ w.label }} followers: {% if w.follower_delta >= 0 %}+{% endif %}{{ w.follower_delta }}{% else %}{{ w.label }}: no data{% endif %}"></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div style="display:flex; gap:20px; margin-top:12px; padding-top:10px; border-top:var(--border-soft); font-size:11px; letter-spacing:1px; text-transform:uppercase;">
+        <span><span style="display:inline-block; width:10px; height:10px; background:var(--orange); margin-right:5px;"></span>Favs</span>
+        <span><span style="display:inline-block; width:10px; height:10px; background:var(--purple); margin-right:5px;"></span>Reblogs</span>
+        <span><span style="display:inline-block; width:10px; height:10px; background:var(--teal); margin-right:5px;"></span>Replies</span>
+        {% if chart | selectattr("follower_delta") | list %}
+        <span><span style="display:inline-block; width:10px; height:10px; background:#c8a800; margin-right:5px;"></span>Followers ±</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <h2>Per Post</h2>
+    {% if not post_metrics %}
+    <div class="empty-state">No published posts yet.</div>
+    {% else %}
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:32px;">#</th>
+          <th style="width:110px;">Scheduled</th>
+          <th style="width:100px;">Status</th>
+          <th>Content</th>
+          <th style="width:60px; text-align:center;">Favs</th>
+          <th style="width:70px; text-align:center;">Reblogs</th>
+          <th style="width:70px; text-align:center;">Replies</th>
+          <th style="width:70px; text-align:center;">Voters</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pm in post_metrics %}
+        {% set p = pm.post %}
+        {% set m = pm.metrics %}
+        <tr>
+          <td style="color:var(--muted);">{{ loop.index }}</td>
+          <td style="white-space:nowrap; font-size:13px; color:var(--muted);">{{ p.scheduled_time.strftime("%Y-%m-%d") }}</td>
+          <td><span class="badge badge-{{ p.status }}">{{ p.status }}</span></td>
+          <td style="font-size:12px; color:var(--muted);">{{ p.content[:80] }}{% if p.content|length > 80 %}&hellip;{% endif %}</td>
+          <td style="text-align:center; font-weight:bold; color:var(--orange);">{{ m.favourites if m else "—" }}</td>
+          <td style="text-align:center; font-weight:bold; color:var(--purple);">{{ m.reblogs if m else "—" }}</td>
+          <td style="text-align:center; font-weight:bold; color:var(--teal);">
+            {% if m and m.replies > 0 and p.mastodon_status_id %}
+              <button class="reply-toggle" onclick="toggleReplies({{ p.id }}, this)">{{ m.replies }}</button>
+            {% else %}
+              {{ m.replies if m else "—" }}
+            {% endif %}
+          </td>
+          <td style="text-align:center; font-weight:bold; color:var(--muted);">{{ m.poll_voters if (m and p.poll_options) else "—" }}</td>
+        </tr>
+        <tr class="replies-row" id="replies-row-{{ p.id }}" style="display:none;">
+          <td colspan="8">
+            <div class="replies-container" id="replies-{{ p.id }}">
+              <span style="font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace;">Loading…</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+<script>
+function toggleReplies(postId, btn) {
+  var row = document.getElementById('replies-row-' + postId);
+  var container = document.getElementById('replies-' + postId);
+  if (row.style.display !== 'none') {
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = '';
+  if (container.dataset.loaded) return;
+  fetch('/posts/' + postId + '/replies')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(html) {
+      container.innerHTML = html;
+      container.dataset.loaded = '1';
+    })
+    .catch(function() {
+      container.innerHTML = '<div class="reply-empty">Could not load replies.</div>';
+    });
+}
+</script>
+{% endblock %}

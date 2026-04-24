@@ -1,0 +1,800 @@
+{% extends "base.html" %}
+{% block title %}Edit Posts – {{ campaign.name }} – TootFlow{% endblock %}
+{% block content %}
+
+<style>
+  /* ── Layout ── */
+  .edit-wrap {
+    display: grid;
+    grid-template-columns: 190px 1fr 170px;
+    gap: 0 28px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    align-items: start;
+  }
+  .edit-main  { min-width: 0; }
+  .edit-sidebar { position: sticky; top: 24px; }
+
+  @media (max-width: 960px) {
+    .edit-wrap { grid-template-columns: 1fr 180px; padding: 20px 16px 40px; }
+    .tips-sidebar { display: none; }
+  }
+  @media (max-width: 640px) {
+    .edit-wrap { grid-template-columns: 1fr; }
+    .nav-sidebar { display: none; }
+  }
+
+  /* ── Tips panel ── */
+  .tips-panel {
+    border: 2px solid var(--ink);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .tips-panel-head {
+    padding: 10px 14px;
+    background: var(--ink);
+  }
+  .tips-panel-body { padding: 4px 0; }
+  .tip {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 9px 14px;
+    border-bottom: 1px solid #ece6de;
+    line-height: 1.5;
+  }
+  .tip:last-child { border-bottom: 0; }
+  .tip strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── Post navigator ── */
+  .post-nav {
+    border: 2px solid var(--ink);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .post-nav-head {
+    padding: 10px 14px;
+    background: var(--ink);
+  }
+  .post-nav-list { padding: 4px 0; }
+  .post-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    font-size: 12px;
+    text-decoration: none;
+    color: var(--muted);
+    border-left: 3px solid transparent;
+    line-height: 1.3;
+    transition: background 0.1s, color 0.1s;
+  }
+  .post-nav-item:hover { background: var(--surface-soft); color: var(--ink); }
+  .post-nav-item.is-active { border-left-color: var(--teal); color: var(--ink); background: var(--surface-soft); }
+  .post-nav-item .nav-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--teal);
+    min-width: 20px;
+    font-size: 10px;
+  }
+  .post-nav-item.is-active .nav-num { color: var(--ink); }
+  .post-nav-item .nav-date { flex: 1; font-size: 11px; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .nav-dot-pending   { background: var(--orange); }
+  .nav-dot-published { background: var(--green); }
+  .nav-dot-failed    { background: #c0392b; }
+
+  /* ── AI generation banner ── */
+  .ai-banner {
+    border: 2px solid var(--ink);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .ai-banner.available { background: var(--ink); }
+  .ai-banner.locked    { background: var(--surface-soft); border-color: #c8bfb4; }
+  .ai-banner-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .ai-banner.available .ai-banner-label { color: var(--teal); }
+  .ai-banner.locked    .ai-banner-label { color: var(--muted); }
+  .ai-banner-usage {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .ai-banner.available .ai-banner-usage { color: #4a6a80; }
+  .ai-banner.locked    .ai-banner-usage { color: var(--muted); }
+  .ai-banner-desc { font-size: 13px; }
+  .ai-banner.available .ai-banner-desc { color: #c1ceda; }
+  .ai-banner.locked    .ai-banner-desc { color: var(--muted); }
+
+  /* ── Add post section ── */
+  .add-post-section {
+    border: 2px solid #c8bfb4;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .add-post-summary {
+    padding: 11px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-soft);
+    transition: color 0.1s, background 0.1s;
+  }
+  .add-post-section[open] > .add-post-summary { color: var(--ink); background: #fff; }
+  .add-post-summary::-webkit-details-marker { display: none; }
+  .add-post-summary::before {
+    content: '+';
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--teal);
+    line-height: 1;
+  }
+  .add-post-section[open] > .add-post-summary::before { content: '–'; }
+  .add-post-body {
+    padding: 20px;
+    border-top: 1px solid #e0d8ce;
+    background: var(--surface);
+  }
+
+  /* ── Post card ── */
+  .post-card {
+    border: 2px solid var(--ink);
+    margin-bottom: 16px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .post-card.cancelled { opacity: 0.45; border-color: #c8bfb4; }
+
+  /* Card header */
+  .pc-head {
+    background: var(--ink);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pc-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .pc-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #4a6a80;
+    flex: 1;
+  }
+  .pc-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+  }
+  .pc-badge-pending   { background: rgba(217,95,42,0.18); color: var(--orange); }
+  .pc-badge-published { background: rgba(39,174,96,0.18); color: #27ae60; }
+  .pc-badge-failed    { background: rgba(192,57,43,0.18); color: #c0392b; }
+  .pc-badge-cancelled { background: rgba(0,0,0,0.06); color: var(--muted); }
+
+  /* Card edit zone */
+  .pc-edit-zone { padding: 18px 20px 0; }
+
+  .pc-field { margin-bottom: 14px; }
+  .pc-field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .pc-char {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: color 0.1s;
+  }
+  .pc-char.over { color: #c0392b; }
+
+  .pc-textarea {
+    width: 100%;
+    font-size: 13.5px;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 108px;
+    box-sizing: border-box;
+    display: block;
+  }
+
+  /* Poll */
+  .pc-poll-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    padding: 12px 0 0;
+    border-top: 1px solid #ece6de;
+  }
+  .pc-poll-toggle-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: color 0.1s;
+  }
+  .pc-poll-header:hover .pc-poll-toggle-label { color: var(--ink); }
+  .pc-poll-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 0.5px;
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .pc-poll-body {
+    margin-top: 10px;
+    padding: 14px;
+    background: var(--surface-soft);
+    border: 1px solid #e0d8ce;
+    margin-bottom: 4px;
+  }
+  .pc-poll-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .pc-poll-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .pc-poll-input { flex: 1; font-size: 12.5px; }
+  .pc-poll-cnt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    min-width: 32px;
+    text-align: right;
+  }
+  .pc-poll-expires-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e0d8ce;
+  }
+  .pc-poll-expires-row select { font-size: 12.5px; }
+  .pc-poll-hint { font-size: 11px; color: var(--muted); flex: 1; }
+
+  /* ── Card action bar ── */
+  .pc-action-bar {
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid #e0d8ce;
+    margin-top: 16px;
+    background: var(--surface);
+  }
+  /* Shared button style for all action-bar buttons */
+  .pc-action-btn {
+    padding: 9px 16px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid #e0d8ce;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+  }
+  .pc-save-btn   { color: var(--teal); }
+  .pc-save-btn:hover   { background: rgba(71,184,177,0.07); }
+  .pc-regen-btn  { color: var(--muted); }
+  .pc-regen-btn:hover  { background: var(--surface-soft); color: var(--ink); }
+  .pc-regen-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .pc-delete-btn { color: var(--muted); }
+  .pc-delete-btn:hover { background: rgba(192,57,43,0.05); color: #c0392b; }
+
+  /* Schedule field — sits between content and poll */
+  .pc-sched-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0 12px;
+    border-top: 1px solid #ece6de;
+    margin-top: 2px;
+  }
+  .pc-sched-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--muted);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .pc-sched-utc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #c8bfb4;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .pc-sched-input {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid #ddd5c8;
+    padding: 4px 4px 3px;
+    outline: none;
+    min-width: 0;
+    transition: border-color 0.12s;
+  }
+  .pc-sched-input:focus { border-color: var(--teal); }
+
+  /* Refine zone — matches Export Studio refine bar exactly */
+  .pc-refine-zone {
+    display: flex;
+    align-items: stretch;
+    border-top: 2px solid var(--ink);
+    background: var(--surface);
+  }
+  .pc-refine-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: "Avenir Next", "Segoe UI", Helvetica, sans-serif;
+    color: var(--ink);
+    background: var(--surface-soft);
+    min-width: 0;
+  }
+  .pc-refine-input::placeholder { color: var(--muted); }
+  .pc-refine-input:focus { background: #fff; outline: none; }
+  .pc-refine-submit {
+    flex-shrink: 0;
+    padding: 0 18px;
+    background: var(--ink);
+    color: var(--teal);
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .pc-refine-submit:hover { background: var(--teal); color: #fff; }
+
+  /* Published post view */
+  .pc-published-body {
+    padding: 18px 20px;
+  }
+  .pc-published-content {
+    font-size: 13.5px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    color: var(--muted);
+  }
+  .pc-published-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #c8bfb4;
+    letter-spacing: 0.3px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ece6de;
+  }
+
+  /* Footer nav */
+  .edit-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e0d8ce;
+  }
+</style>
+
+<div class="edit-wrap">
+
+  <!-- Col 1: Tips -->
+  <aside class="edit-sidebar tips-sidebar">
+    <div class="tips-panel">
+      <div class="tips-panel-head">
+        <div class="eyebrow">Craft Tips</div>
+      </div>
+      <div class="tips-panel-body">
+        <div class="tip"><strong>One idea per toot</strong>Don't cram multiple topics. Focus drives engagement.</div>
+        <div class="tip"><strong>Use your 500 chars</strong>Get to the point fast. Cut anything that doesn't add value.</div>
+        <div class="tip"><strong>End with a hook</strong>A question or call-to-action drives replies and reach.</div>
+        <div class="tip"><strong>Line breaks matter</strong>White space makes toots scannable. Break at natural pauses.</div>
+        <div class="tip"><strong>2–3 hashtags max</strong>Pick specific ones. More looks spammy and dilutes focus.</div>
+        <div class="tip"><strong>Vary your format</strong>Mix statements, questions, and short threads across your campaign.</div>
+        <div class="tip"><strong>Links at the end</strong>URLs eat chars and disrupt reading flow — put them last.</div>
+        <div class="tip"><strong>Read it aloud</strong>If it sounds robotic, rewrite it. Real voice outperforms polish.</div>
+        <div class="tip"><strong>Polls drive replies</strong>A simple 2-option poll can double engagement.</div>
+        <div class="tip"><strong>Poll timing</strong>1-day polls create urgency. 7-day polls suit slow-burn topics.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Col 2: Editor -->
+  <div class="edit-main">
+
+    <div class="page-head">
+      <div>
+        <h1>Edit Posts</h1>
+        <span class="meta">{{ campaign.name }} &middot; {{ posts | length }} post(s)</span>
+      </div>
+      <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
+    </div>
+
+    {% if campaign.status != "archived" %}
+    <!-- AI Generation banner -->
+    {% set paid = campaign.payment_status == "paid" %}
+    {% set pending_count = posts | selectattr("status", "equalto", "pending") | list | length %}
+    {% set ai_used = campaign.ai_posts_generated %}
+    {% set ai_limit_reached = ai_used >= ai_max %}
+    {% set ai_available = paid and not ai_limit_reached %}
+
+    <div class="ai-banner {% if ai_available %}available{% else %}locked{% endif %}">
+      <div>
+        <div class="ai-banner-label">
+          AI Generation
+          <span class="ai-banner-usage">{{ ai_used }} / {{ ai_max }} used</span>
+        </div>
+        <div class="ai-banner-desc">
+          {% if ai_limit_reached %}
+            Generation limit of {{ ai_max }} posts reached for this campaign.
+          {% elif not paid %}
+            Activate this campaign (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI-drafted post generation.
+          {% elif pending_count > 0 %}
+            Replaces {{ pending_count }} pending post(s) with a fresh AI-drafted schedule.
+          {% else %}
+            Generate a full AI-drafted post schedule for this campaign.
+          {% endif %}
+        </div>
+      </div>
+      {% if ai_available %}
+      <form method="post" action="/campaigns/{{ campaign.id }}/generate"
+            onsubmit="return {% if pending_count > 0 %}confirmAndGenerate({{ pending_count }}){% else %}showAiLoading('Generating your campaign…', 'The AI is drafting all posts. This usually takes 15–30 seconds.'){% endif %};">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <button type="submit" class="btn btn-primary">✦ Generate Campaign</button>
+      </form>
+      {% else %}
+      <button class="btn btn-primary" disabled style="opacity:0.4; cursor:not-allowed;">✦ Generate Campaign</button>
+      {% endif %}
+    </div>
+
+    <!-- Add new post -->
+    {% set at_limit = posts | length >= max_posts %}
+    <details class="add-post-section" {% if at_limit %}open{% endif %}>
+      <summary class="add-post-summary" {% if at_limit %}style="cursor:default;"{% endif %}>
+        Add New Post
+      </summary>
+      <div class="add-post-body">
+        {% if at_limit %}
+        <div class="notice">
+          Maximum of {{ max_posts }} posts per campaign reached. Delete an existing post to add a new one.
+        </div>
+        {% else %}
+        <form method="post" action="/campaigns/{{ campaign.id }}/posts/add">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <div class="form-group">
+            <label>Content <span style="font-weight:normal; color:var(--muted);">(max 500 chars)</span></label>
+            <textarea name="content" id="new-content" rows="4" maxlength="500" required
+              oninput="updateCount('new-content','new-count')"></textarea>
+            <div class="char-count" id="new-count">0 / 500</div>
+          </div>
+          <div class="form-group">
+            <label>Scheduled Time <span style="font-weight:normal; color:var(--muted);">(UTC)</span></label>
+            <input type="datetime-local" name="scheduled_time" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add Post</button>
+        </form>
+        {% endif %}
+      </div>
+    </details>
+
+{% endif %}{# /campaign.status != "archived" #}
+
+    <!-- Post list -->
+    {% if not posts %}
+    <div class="empty-state">
+      {% if campaign.payment_status == "paid" %}
+        No posts yet.<br>
+        Click <strong>✦ Generate Campaign</strong> above for AI-drafted posts, or add manually.
+      {% else %}
+        No posts yet. Add posts manually above,<br>
+        or <a href="/campaigns/{{ campaign.id }}">activate the campaign</a> (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI generation.
+      {% endif %}
+    </div>
+    {% else %}
+
+    {% for post in posts %}
+    <div class="post-card{% if post.status == 'cancelled' %} cancelled{% endif %}" id="post-{{ post.id }}">
+
+      <!-- Card header: identity only, no actions -->
+      <div class="pc-head">
+        <span class="pc-num">#{{ loop.index }}</span>
+        <span class="pc-date">{{ post.scheduled_time.strftime("%Y-%m-%d") }}</span>
+        <span class="pc-badge pc-badge-{{ post.status }}">{{ post.status }}</span>
+      </div>
+
+      {% if post.status == "pending" %}
+
+      {# ── Invisible action forms referenced via HTML5 form= attribute ── #}
+      {% if ai_available %}
+      <form id="regen-{{ post.id }}" method="post"
+            action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/regenerate"
+            style="display:none;"
+            onsubmit="showAiLoading('Regenerating post…', 'The AI is rewriting this post. Usually done in 5–10 seconds.');">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      </form>
+      {% endif %}
+      <form id="delete-{{ post.id }}" method="post"
+            action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/delete"
+            style="display:none;"
+            onsubmit="return confirm('Delete this post?');">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      </form>
+
+      {# ── Save form: textarea + poll + action bar ── #}
+      <form id="save-{{ post.id }}" method="post"
+            action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/edit">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <div class="pc-edit-zone">
+
+          <!-- Content -->
+          <div class="pc-field">
+            <div class="pc-field-label">
+              Content
+              <span class="pc-char" id="count-{{ post.id }}">{{ post.content | length }} / 500</span>
+            </div>
+            <textarea class="pc-textarea" name="content" id="content-{{ post.id }}" rows="5" maxlength="500"
+              oninput="updateCount('content-{{ post.id }}','count-{{ post.id }}')">{{ post.content }}</textarea>
+          </div>
+
+          <!-- Schedule -->
+          <div class="pc-sched-row">
+            <span class="pc-sched-label">Schedule</span>
+            <input class="pc-sched-input" type="datetime-local" name="scheduled_time"
+                   value="{{ post.scheduled_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+            <span class="pc-sched-utc">UTC</span>
+          </div>
+
+          <!-- Poll -->
+          {% set existing_opts = poll_data.get(post.id, []) %}
+          <div class="pc-poll-header" onclick="togglePoll({{ post.id }})">
+            <span class="pc-poll-toggle-label" id="poll-toggle-{{ post.id }}">{% if existing_opts %}▾ Poll{% else %}▸ Poll{% endif %}</span>
+            <span class="pc-poll-badge" id="poll-badge-{{ post.id }}"{% if not existing_opts %} style="display:none;"{% endif %}>● Active</span>
+          </div>
+          <div class="pc-poll-body" id="poll-section-{{ post.id }}"{% if not existing_opts %} style="display:none;"{% endif %}>
+            {% for i in range(4) %}
+            {% set opt_val = existing_opts[i] if i < existing_opts|length else "" %}
+            <div class="pc-poll-row">
+              <span class="pc-poll-num">{{ i+1 }}{% if i < 2 %}*{% endif %}</span>
+              <input type="text" class="pc-poll-input" name="poll_option"
+                     id="poll-opt-{{ post.id }}-{{ i }}"
+                     maxlength="50" value="{{ opt_val }}"
+                     placeholder="Option {{ i+1 }}{% if i >= 2 %} (optional){% endif %}"
+                     oninput="updatePollCount({{ post.id }}, {{ i }}, this.value)">
+              <span class="pc-poll-cnt" id="poll-count-{{ post.id }}-{{ i }}">{{ opt_val|length }}/50</span>
+            </div>
+            {% endfor %}
+            <div class="pc-poll-expires-row">
+              <span class="pc-poll-num">Exp</span>
+              <select name="poll_expires_in">
+                <option value="86400"  {% if post.poll_expires_in == 86400  %}selected{% endif %}>1 day</option>
+                <option value="259200" {% if post.poll_expires_in == 259200 %}selected{% endif %}>3 days</option>
+                <option value="604800" {% if post.poll_expires_in == 604800 %}selected{% endif %}>7 days</option>
+              </select>
+              <span class="pc-poll-hint">Leave all options blank to remove.</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Action bar: [Save] | [✦ Regenerate] | [Delete] -->
+        <div class="pc-action-bar">
+          <button type="submit" class="pc-action-btn pc-save-btn">Save</button>
+          {% if ai_available %}
+          <button type="submit" class="pc-action-btn pc-regen-btn"
+                  form="regen-{{ post.id }}">✦ Regenerate</button>
+          {% else %}
+          <button type="button" class="pc-action-btn pc-regen-btn" disabled
+                  title="{% if ai_limit_reached %}AI limit reached{% else %}Activate campaign to unlock{% endif %}">✦ Regenerate</button>
+          {% endif %}
+          <button type="submit" class="pc-action-btn pc-delete-btn"
+                  form="delete-{{ post.id }}">Delete</button>
+        </div>
+      </form>
+
+      {% if ai_available %}
+      <!-- Refine zone -->
+      <form class="pc-refine-zone" method="post"
+            action="/campaigns/{{ campaign.id }}/posts/{{ post.id }}/refine"
+            onsubmit="showAiLoading('Refining post…', 'The AI is refining this post. Usually done in 5–10 seconds.');">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <input class="pc-refine-input" type="text" name="instructions" maxlength="300" required
+               placeholder="Refine — e.g. 'make it shorter', 'end with a question', 'add a hashtag'…">
+        <button type="submit" class="pc-refine-submit">Refine →</button>
+      </form>
+      {% endif %}
+
+      {% else %}
+      <!-- Published / failed view -->
+      <div class="pc-published-body">
+        <div class="pc-published-content">{{ post.content }}</div>
+        {% if post.mastodon_status_id %}
+        <div class="pc-published-meta">
+          Published {{ post.published_at.strftime("%Y-%m-%d %H:%M") if post.published_at else "—" }}
+          &middot; ID: <code>{{ post.mastodon_status_id }}</code>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="edit-footer">
+      <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline">Done Editing</a>
+    </div>
+
+  </div>
+
+  <!-- Col 3: Post navigator -->
+  <aside class="edit-sidebar nav-sidebar">
+    <div class="post-nav">
+      <div class="post-nav-head">
+        <div class="eyebrow">{{ posts | length }} Posts</div>
+      </div>
+      <div class="post-nav-list">
+        {% for post in posts %}
+        <a href="#post-{{ post.id }}" class="post-nav-item" data-post-id="{{ post.id }}">
+          <span class="nav-num">#{{ loop.index }}</span>
+          <span class="nav-date">{{ post.scheduled_time.strftime("%b %d") }}</span>
+          <span class="nav-dot nav-dot-{{ post.status }}"></span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- AI loading overlay -->
+<div id="ai-loading" style="display:none; position:fixed; inset:0; background:rgba(13,24,34,0.82); z-index:999; align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border:2px solid var(--ink); padding:36px 40px; max-width:360px; width:90%; text-align:center;">
+    <div style="font-size:22px; margin-bottom:16px; letter-spacing:8px; font-family:'JetBrains Mono',monospace; color:var(--teal);" id="loading-dots">· · ·</div>
+    <div style="font-family:'Playfair Display',Georgia,serif; font-size:17px; font-weight:700; margin-bottom:8px;" id="loading-title">Generating…</div>
+    <div style="font-size:13px; color:var(--muted);" id="loading-msg"></div>
+  </div>
+</div>
+
+<script>
+function showAiLoading(title, msg) {
+  document.getElementById('loading-title').textContent = title;
+  document.getElementById('loading-msg').textContent = msg;
+  const overlay = document.getElementById('ai-loading');
+  overlay.style.display = 'flex';
+  const frames = ['·  ·  ·', '✦ ·  ·', '✦ ✦ ·', '✦ ✦ ✦', '· ✦ ✦', '· · ✦'];
+  let i = 0;
+  setInterval(() => {
+    document.getElementById('loading-dots').textContent = frames[i++ % frames.length];
+  }, 380);
+  return true;
+}
+function confirmAndGenerate(count) {
+  if (!confirm('Replace all ' + count + ' pending post(s) with AI-generated content?')) return false;
+  return showAiLoading('Generating your campaign…', 'The AI is drafting all posts. This usually takes 15–30 seconds.');
+}
+
+function updateCount(textareaId, countId) {
+  const ta = document.getElementById(textareaId);
+  const counter = document.getElementById(countId);
+  const len = ta.value.length;
+  counter.textContent = len + ' / 500';
+  counter.classList.toggle('over', len > 500);
+}
+document.querySelectorAll('textarea[id^="content-"], textarea[id="new-content"]').forEach(ta => {
+  const countId = ta.id.replace('content-', 'count-').replace('new-content', 'new-count');
+  const counter = document.getElementById(countId);
+  if (counter) counter.textContent = ta.value.length + ' / 500';
+});
+
+function togglePoll(postId) {
+  const section = document.getElementById('poll-section-' + postId);
+  const toggle  = document.getElementById('poll-toggle-' + postId);
+  const badge   = document.getElementById('poll-badge-' + postId);
+  const isOpen  = section.style.display !== 'none';
+  section.style.display = isOpen ? 'none' : '';
+  toggle.textContent    = isOpen ? '▸ Poll' : '▾ Poll';
+  for (let i = 0; i < 2; i++) {
+    const inp = document.getElementById('poll-opt-' + postId + '-' + i);
+    if (inp) inp.required = !isOpen;
+  }
+}
+
+function updatePollCount(postId, idx, val) {
+  const el = document.getElementById('poll-count-' + postId + '-' + idx);
+  if (el) el.textContent = val.length + '/50';
+}
+
+// Scroll spy
+const navItems  = document.querySelectorAll('.post-nav-item[data-post-id]');
+const postCards = document.querySelectorAll('.post-card');
+if (postCards.length && navItems.length) {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id.replace('post-', '');
+        navItems.forEach(item => item.classList.toggle('is-active', item.dataset.postId === id));
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  postCards.forEach(card => observer.observe(card));
+}
+</script>
+{% endblock %}

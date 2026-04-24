@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Account – TootFlow{% endblock %}
+{% block content %}
+
+<style>
+  .acct-wrap {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 0 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    align-items: start;
+  }
+  .acct-sidebar { position: sticky; top: 24px; }
+  .acct-main { min-width: 0; max-width: 560px; }
+
+  .info-panel {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .info-panel-head {
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+  }
+  .info-panel-head .eyebrow { color: #47b8b1; }
+  .info-panel-body { padding: 4px 0; }
+  .info-row {
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .info-row:last-child { border-bottom: 0; }
+  .info-row strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink); display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;
+  }
+
+  @media (max-width: 760px) {
+    .acct-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
+    .acct-sidebar { position: static; margin-bottom: 24px; }
+  }
+</style>
+
+<div class="acct-wrap">
+
+  <!-- Left sidebar -->
+  <aside class="acct-sidebar">
+
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Privacy</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>No passwords</strong>
+          Login is entirely via Mastodon OAuth — we never see or store your password.
+        </div>
+        <div class="info-row">
+          <strong>Token storage</strong>
+          Your Mastodon access token is encrypted at rest and only decrypted when publishing posts.
+        </div>
+        <div class="info-row">
+          <strong>What we store</strong>
+          Your Mastodon username, instance URL, campaigns, posts, and engagement metrics. Nothing else.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Your Data</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <strong>Data export</strong>
+          Downloads everything as JSON — identity, all campaigns, posts, metrics, and Export Studio drafts.
+        </div>
+        <div class="info-row">
+          <strong>Account deletion</strong>
+          Permanently removes all your data. Payment records are also wiped. Cannot be undone.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Quick Links</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <a href="/dashboard" style="font-size:12px;">← Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <div class="acct-main">
+    <h1>Account</h1>
+
+    <h2>Identity</h2>
+    <div class="table-wrap" style="margin-bottom:32px;">
+    <table>
+      {% if mastodon %}
+      <tr>
+        <th style="width:140px;">Mastodon</th>
+        <td><strong style="color:var(--purple);">@{{ mastodon.username }}@{{ mastodon.instance_url | replace("https://","") | replace("http://","") }}</strong></td>
+      </tr>
+      <tr>
+        <th>Instance</th>
+        <td style="color:var(--muted);">{{ mastodon.instance_url }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <th>Member since</th>
+        <td style="color:var(--muted);">{{ user.created_at.strftime("%Y-%m-%d") }}</td>
+      </tr>
+      <tr>
+        <th>Campaigns</th>
+        <td>{{ campaign_count }}</td>
+      </tr>
+    </table>
+    </div>
+
+    <h2>Your Data</h2>
+    <p class="muted text-sm" style="margin-bottom:16px;">
+      Download a copy of everything TootFlow holds about you: your Mastodon identity,
+      all campaigns, posts, and engagement metrics.
+    </p>
+    <a href="/account/export" class="btn btn-outline">Download Data Export (JSON)</a>
+
+    <div class="danger-zone">
+      <h2 style="color:var(--red); border:none; margin-bottom:8px;">Danger Zone</h2>
+      <p class="muted text-sm" style="margin-bottom:16px;">
+        Permanently deletes your account, all campaigns, posts, and metrics.
+        This cannot be undone. Payment records are also removed from our system.
+      </p>
+      <form method="post" action="/account/delete"
+            onsubmit="return confirm('Delete your account and all data permanently? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <button type="submit" class="btn btn-danger">Delete My Account</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

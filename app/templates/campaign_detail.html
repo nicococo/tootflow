@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.name }} – TootFlow{% endblock %}
+{% block content %}
+
+<style>
+  .camp-wrap {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 0 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    align-items: start;
+  }
+  .camp-sidebar { position: sticky; top: 24px; }
+  .camp-main { min-width: 0; }
+
+  .info-panel {
+    border: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .info-panel-head {
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+  }
+  .info-panel-head .eyebrow { color: #47b8b1; }
+  .info-panel-body { padding: 4px 0; }
+  .info-row {
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .info-row:last-child { border-bottom: 0; }
+  .info-row span { color: var(--muted); }
+
+  /* Progress steps */
+  .progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+  }
+  .progress-step:last-child { border-bottom: 0; }
+  .step-icon {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    margin-top: 1px;
+  }
+  .step-icon.done { border-color: var(--green); color: var(--green); font-weight: bold; }
+  .step-icon.current { border-color: var(--orange); background: var(--orange); color: #fff; font-weight: bold; }
+  .step-label { color: var(--ink); }
+  .step-label.muted { color: var(--muted); }
+  .step-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Post stat rows */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: var(--border-soft);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stat-row:last-child { border-bottom: 0; }
+  .stat-row strong { color: var(--ink); font-size: 13px; }
+
+  /* ── Action bar ── */
+  .action-bar { margin-bottom: 36px; }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: var(--border-soft);
+    margin-bottom: 12px;
+  }
+  .action-sep {
+    width: 1px;
+    height: 18px;
+    background: #d5cdc4;
+    flex-shrink: 0;
+  }
+  .action-spacer { flex: 1; }
+
+  /* Complete button — muted outline, severity communicated via sidebar */
+  .btn-complete {
+    font-size: 13px;
+    padding: 6px 14px;
+    border: 2px solid #c8bfb4;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .btn-complete:hover {
+    border-color: #b8742a;
+    color: #b8742a;
+  }
+
+  /* Sidebar danger-zone panel */
+  .danger-panel {
+    border: var(--border);
+    background: var(--surface);
+    margin-bottom: 16px;
+  }
+  .danger-panel-head {
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+  }
+  .danger-panel-head .eyebrow { color: #c8bfb4; }
+  .danger-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid #ece6de;
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .danger-item:last-child { border-bottom: 0; }
+  .danger-item-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .danger-item-title.amber { color: #b8742a; }
+  .danger-item-title.red   { color: #c0392b; }
+
+  .mgmt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .mgmt-row-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .paid-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px 12px;
+    border: 2px solid var(--ink);
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .paid-row-locked { border-color: var(--orange); background: #fffaf3; }
+  .paid-row-active  { border-color: var(--teal);   background: var(--teal-light); }
+
+  .paid-row-tag {
+    position: absolute;
+    top: -11px;
+    left: 12px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    font-weight: bold;
+  }
+  .paid-feature-list {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .paid-feature-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+  .paid-row-exports { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+  .btn-teal {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+  }
+  .btn-teal:hover {
+    background: #339e97;
+    border-color: #339e97;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  @media (max-width: 760px) {
+    .camp-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
+    .camp-sidebar { position: static; margin-bottom: 24px; }
+    .paid-row-exports { margin-left: 0; }
+  }
+  /* ── Campaign Brief card ── */
+  .brief-card {
+    border: var(--border);
+    background: var(--surface);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .brief-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--ink);
+    cursor: pointer;
+    user-select: none;
+    gap: 10px;
+  }
+  .brief-toggle:hover { background: var(--ink-soft); }
+  .brief-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brief-toggle-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .brief-toggle-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: #3a5268;
+    letter-spacing: 0.5px;
+  }
+  .brief-chevron {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    color: #3a5268;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .brief-card.open .brief-chevron { transform: rotate(90deg); }
+  .brief-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    border-left: 3px solid var(--teal);
+  }
+  .brief-card.open .brief-body { max-height: 600px; }
+  .brief-fields {
+    padding: 6px 0;
+  }
+  .brief-field {
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    gap: 0 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #ece6de;
+    align-items: baseline;
+  }
+  .brief-field:last-child { border-bottom: 0; }
+  .brief-field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--teal);
+    padding-top: 1px;
+  }
+  .brief-field-value {
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .brief-footer {
+    padding: 8px 16px;
+    border-top: 1px solid #ece6de;
+    background: var(--surface-soft);
+    text-align: right;
+  }
+  .brief-footer a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .brief-footer a:hover { color: var(--teal); }
+</style>
+
+{% set pending_count   = posts | selectattr("status", "equalto", "pending")   | list | length %}
+{% set published_count = posts | selectattr("status", "equalto", "published") | list | length %}
+{% set failed_count    = posts | selectattr("status", "equalto", "failed")    | list | length %}
+{% set is_paid         = campaign.payment_status == "paid" %}
+{% set metrics_locked = request.query_params.get("metrics_locked") == "1" %}
+{% set is_running      = campaign.status in ("running", "completed", "archived") %}
+{% set has_posts       = posts | length > 0 %}
+
+<div class="camp-wrap">
+
+  <!-- Left sidebar -->
+  <aside class="camp-sidebar">
+
+    <!-- Paused notice -->
+    {% if not campaign.enabled and campaign.payment_status == "paid" %}
+    <div class="info-panel" style="border-color:var(--orange);">
+      <div class="info-panel-head" style="background:var(--orange);">
+        <div class="eyebrow" style="color:#fff;">Paused</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">No posts will publish until you resume the campaign.</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Campaign progress -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Progress</div>
+      </div>
+      <div class="info-panel-body">
+
+        <div class="progress-step">
+          <div class="step-icon done">✓</div>
+          <div>
+            <div class="step-label">Created</div>
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if has_posts %}done{% else %}current{% endif %}">
+            {% if has_posts %}✓{% else %}2{% endif %}
+          </div>
+          <div>
+            <div class="step-label">Posts Added</div>
+            {% if not has_posts %}
+            <div class="step-hint">Add posts manually. <a href="/campaigns/{{ campaign.id }}/posts" style="color:var(--teal);">Go to posts →</a></div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if campaign.status in ('running','completed','archived') %}{% if campaign.status == 'running' %}current{% else %}done{% endif %}{% endif %}">
+            {% if campaign.status in ('completed','archived') %}✓{% else %}3{% endif %}
+          </div>
+          <div>
+            <div class="step-label {% if campaign.status not in ('running','completed','archived') %}muted{% endif %}">Publishing</div>
+            {% if campaign.status == 'running' %}
+            <div class="step-hint">{{ published_count }} of {{ posts | length }} published.</div>
+            {% elif campaign.status in ('completed','archived') %}
+            <div class="step-hint">{{ published_count }} post{{ 's' if published_count != 1 else '' }} published.</div>
+            {% elif has_posts %}
+            <div class="step-hint">{{ pending_count }} post{{ 's' if pending_count != 1 else '' }} pending.</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="progress-step">
+          <div class="step-icon {% if campaign.status == 'archived' %}current{% endif %}">4</div>
+          <div>
+            <div class="step-label {% if campaign.status != 'archived' %}muted{% endif %}">Archived</div>
+            {% if campaign.status == 'archived' %}
+            <div class="step-hint">Campaign is frozen. No further changes.</div>
+            {% else %}
+            <div class="step-hint">Archive campaign when done, or it auto-completes when the post limit is reached.</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Post breakdown -->
+    {% if has_posts %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Posts</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="stat-row">
+          <span>Pending</span>
+          <strong>{{ pending_count }}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Published</span>
+          <strong style="color:var(--green);">{{ published_count }}</strong>
+        </div>
+        {% if failed_count > 0 %}
+        <div class="stat-row">
+          <span>Failed</span>
+          <strong style="color:var(--red, #c0392b);">{{ failed_count }}</strong>
+        </div>
+        {% endif %}
+        <div class="stat-row">
+          <span>Total</span>
+          <strong>{{ posts | length }}</strong>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Campaign settings summary -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Settings</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <span>{{ campaign.duration_days }} days · {{ campaign.posts_per_week }}×/week</span>
+        </div>
+        <div class="info-row">
+          <span>{{ campaign.tone | title }} · {{ campaign.language }}</span>
+        </div>
+        {% if campaign.start_date %}
+        <div class="info-row">
+          <span>Started {{ campaign.start_date.strftime("%b %d, %Y") }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Engagement overview (all campaigns) -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Engagement</div>
+      </div>
+      <div class="info-panel-body">
+        {% if published_count > 0 %}
+        <div class="stat-row">
+          <span>Favourites</span>
+          <strong style="color:var(--orange);">{{ overview_favs }}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Reblogs</span>
+          <strong style="color:var(--purple);">{{ overview_reblogs }}</strong>
+        </div>
+        <div class="stat-row">
+          <span>Replies</span>
+          <strong style="color:var(--teal);">{{ overview_replies }}</strong>
+        </div>
+        {% if is_paid %}
+        <div class="stat-row">
+          <a href="/campaigns/{{ campaign.id }}/metrics" style="font-size:11px; letter-spacing:0.5px;">View full metrics →</a>
+        </div>
+        {% else %}
+        <div class="stat-row" style="font-size:11px; color:var(--muted);">
+          Activate for per-post metrics &amp; charts.
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="info-row" style="color:var(--muted); font-size:12px;">
+          No posts published yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if campaign.status != "archived" %}
+    <!-- Danger zone explanation -->
+    <div class="danger-panel">
+      <div class="danger-panel-head">
+        <div class="eyebrow">Before you act</div>
+      </div>
+      <div class="danger-item">
+        <div class="danger-item-title amber">✓ Archive Campaign</div>
+        Permanently freezes this campaign. All pending posts will be cancelled.
+        {% if pending_count > 0 %}<strong>{{ pending_count }} pending post{{ 's' if pending_count != 1 else '' }} will be cancelled.</strong>{% endif %}
+        No edits, posts, or publishing after this point. Contact support to unlock.
+      </div>
+      <div class="danger-item">
+        <div class="danger-item-title red">✕ Delete Campaign</div>
+        Permanently removes this campaign, all posts, metrics, and payment records. Cannot be undone.
+      </div>
+    </div>
+    {% endif %}
+
+  </aside>
+
+  <!-- Main content -->
+  <div class="camp-main">
+    <div class="page-head">
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <h1 id="campaign-name-display">{{ campaign.name }}</h1>
+          <button type="button" class="btn btn-outline btn-sm" onclick="toggleRename(true)"
+                  id="rename-btn" style="margin-bottom:4px;">Rename</button>
+        </div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/rename"
+              id="rename-form" style="display:none; margin-bottom:8px;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" name="name" id="rename-input" value="{{ campaign.name }}"
+                   required maxlength="200" style="flex:1; min-width:200px;">
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleRename(false)">Cancel</button>
+          </div>
+        </form>
+        <span class="badge badge-{{ campaign.status }}">{{ campaign.status | replace("_"," ") }}</span>
+        {% if campaign.payment_status == "paid" %}
+          <span class="badge badge-paid" style="margin-left:4px;">Paid</span>
+        {% else %}
+          <span class="badge badge-unpaid" style="margin-left:4px;">Unpaid</span>
+        {% endif %}
+      </div>
+      <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
+    </div>
+
+    <script>
+    function toggleRename(show) {
+      document.getElementById('rename-form').style.display      = show ? 'block' : 'none';
+      document.getElementById('campaign-name-display').style.display = show ? 'none'  : '';
+      document.getElementById('rename-btn').style.display       = show ? 'none'  : '';
+      if (show) document.getElementById('rename-input').focus();
+    }
+    </script>
+
+    <div class="table-wrap" style="margin-bottom:28px;">
+    <table>
+      <tr><th style="width:140px;">Template</th><td>{{ campaign.template_type | replace("_"," ") | title }}</td></tr>
+      <tr><th>Tone</th><td>{{ campaign.tone | title }}</td></tr>
+      <tr><th>Language</th><td>{{ campaign.language }}</td></tr>
+      <tr><th>Duration</th><td>{{ campaign.duration_days }} days</td></tr>
+      <tr><th>Posts / Week</th><td>{{ campaign.posts_per_week }}</td></tr>
+      <tr>
+        <th>Start Date</th>
+        <td>
+          {{ campaign.start_date.strftime("%Y-%m-%d %H:%M") if campaign.start_date else "—" }}
+          {% if campaign.payment_status == "paid" %}
+          <form method="post" action="/campaigns/{{ campaign.id }}/reset-start-date" style="display:inline; margin-left:10px;">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <button type="submit" class="btn btn-outline btn-sm">Reset to today</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      <tr><th>End Date</th><td>{{ campaign.end_date.strftime("%Y-%m-%d %H:%M") if campaign.end_date else "—" }}</td></tr>
+      <tr>
+        <th>AI Calls</th>
+        <td>
+          {% if campaign.payment_status != "paid" %}
+            <span style="color:var(--muted); font-size:13px;">Activate this campaign to unlock AI generation.</span>
+          {% elif campaign.ai_posts_generated >= ai_max %}
+            <span style="color:var(--red, #c0392b); font-weight:bold;">{{ campaign.ai_posts_generated }} / {{ ai_max }}</span>
+            <span style="color:var(--muted); font-size:12px; margin-left:6px;">— limit reached</span>
+          {% else %}
+            {{ campaign.ai_posts_generated }} / {{ ai_max }}
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+    </div>
+
+    {% if description_fields or campaign.description %}
+    {% set field_count = description_fields | length if description_fields else 1 %}
+    <div class="brief-card" id="brief-card">
+      <div class="brief-toggle" onclick="toggleBrief()">
+        <div class="brief-toggle-left">
+          <span class="brief-toggle-label">Campaign Brief</span>
+          <span class="brief-toggle-count">{{ field_count }} field{{ 's' if field_count != 1 else '' }}</span>
+        </div>
+        <span class="brief-chevron">▶</span>
+      </div>
+      <div class="brief-body">
+        <div class="brief-fields">
+          {% if description_fields %}
+            {% for field in description_fields %}
+            <div class="brief-field">
+              <div class="brief-field-label">{{ field.label if field.label else '—' }}</div>
+              <div class="brief-field-value">{{ field.value }}</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="brief-field">
+              <div class="brief-field-label">Description</div>
+              <div class="brief-field-value">{{ campaign.description }}</div>
+            </div>
+          {% endif %}
+        </div>
+        <div class="brief-footer">
+          <a href="/campaigns/{{ campaign.id }}/edit">Edit brief →</a>
+        </div>
+      </div>
+    </div>
+    <script>
+    function toggleBrief() {
+      document.getElementById('brief-card').classList.toggle('open');
+    }
+    </script>
+    {% endif %}
+
+    {% if not campaign.enabled %}
+    <div class="notice" style="margin-bottom:20px; border-color:var(--orange); background:#fffaf3;">
+      <strong>Campaign paused.</strong> No posts will be published until you resume it.
+    </div>
+    {% endif %}
+
+    {% if metrics_locked %}
+    <div class="notice" style="border-color:var(--orange); background:#fffaf3; margin-bottom:20px;">
+      <strong>Full metrics require an activated campaign.</strong>
+      Activate this campaign (from {{ settings.campaign_price }} {{ settings.campaign_currency }}, pay what it's worth) to unlock per-post metrics, engagement charts, and reply tracking. Publishing is always free.
+    </div>
+    {% endif %}
+
+    <div class="action-bar">
+
+      {% if campaign.status != "archived" %}
+      <div class="action-row">
+        <!-- Workflow -->
+        <a href="/campaigns/{{ campaign.id }}/posts" class="btn">Edit Posts <span style="color:var(--teal); margin-left:4px;">({{ posts | length }})</span></a>
+        <a href="/campaigns/{{ campaign.id }}/edit" class="btn btn-outline">Edit Campaign</a>
+        {% if has_posts %}
+        <div class="action-sep"></div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/toggle" style="margin:0;" id="toggle-form">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          {% if not campaign.enabled and stale_pending_count > 0 %}
+          <button type="button" class="btn btn-outline" onclick="showResumeWarning()">▶ Resume</button>
+          {% else %}
+          <button type="submit" class="btn btn-outline">
+            {% if campaign.enabled %}⏸ Pause{% else %}▶ Resume{% endif %}
+          </button>
+          {% endif %}
+        </form>
+        {% endif %}
+        <!-- Destructive — pushed right -->
+        <div class="action-spacer"></div>
+        <div class="action-sep"></div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/complete"
+              onsubmit="return confirm('{% if pending_count > 0 %}{{ pending_count }} pending post{{ 's' if pending_count != 1 else '' }} will be cancelled.\n\n{% endif %}Archive this campaign?\n\nThis cannot be undone — the campaign will be frozen.');"
+              style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn-complete">Archive Campaign</button>
+        </form>
+        <form method="post" action="/campaigns/{{ campaign.id }}/delete"
+              onsubmit="return confirm('Delete this campaign and all its posts? This cannot be undone.');"
+              style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </div>
+
+      {% else %}
+      <div class="action-row">
+        <a href="/campaigns/{{ campaign.id }}/posts" class="btn btn-outline">View Posts <span style="color:var(--teal); margin-left:4px;">({{ posts | length }})</span></a>
+        <div class="action-spacer"></div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/delete"
+              onsubmit="return confirm('Delete this campaign and all its posts? This cannot be undone.');"
+              style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Paid features -->
+      {% if not is_paid and campaign.status != "archived" %}
+      <div class="paid-row paid-row-locked">
+        <div class="paid-row-tag" style="background:var(--orange);">Paid Features</div>
+        <div class="paid-feature-list">
+          <span class="paid-feature-item">⬡ AI Generation</span>
+          <span class="paid-feature-item">⬡ Full Metrics</span>
+          <span class="paid-feature-item">⬡ Export Studio (Newsletter · LinkedIn · Reddit)</span>
+        </div>
+        <form method="post" action="/campaigns/{{ campaign.id }}/activate" style="margin:0; margin-left:auto;">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+          <button type="submit" class="btn btn-primary">Activate — from {{ settings.campaign_price }} {{ settings.campaign_currency }} →</button>
+        </form>
+      </div>
+      {% elif is_paid %}
+      <div class="paid-row paid-row-active">
+        <div class="paid-row-tag" style="background:var(--teal);">Activated ✓</div>
+        <a href="/campaigns/{{ campaign.id }}/metrics" class="btn btn-outline">View Metrics</a>
+        {% if has_posts %}
+        <div class="paid-row-exports">
+          <a href="/campaigns/{{ campaign.id }}/export" class="btn btn-teal">Open Export Studio &rarr;</a>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Resume warning modal -->
+    {% if not campaign.enabled and stale_pending_count > 0 %}
+    <div id="resume-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+      <div style="background:var(--surface); border:var(--border); max-width:420px; width:100%; box-shadow:var(--shadow-md);">
+        <div style="padding:12px 16px; border-bottom:var(--border); background:var(--orange);">
+          <div class="eyebrow" style="color:#fff;">Heads up</div>
+        </div>
+        <div style="padding:20px 16px; font-size:13px; line-height:1.6;">
+          <p style="margin:0 0 10px;">
+            <strong>{{ stale_pending_count }} pending post{{ 's' if stale_pending_count != 1 else '' }}</strong>
+            {{ 'are' if stale_pending_count != 1 else 'is' }} overdue.
+            On resume, {{ 'they' if stale_pending_count != 1 else 'it' }} will be automatically rescheduled
+            by the number of days the campaign was paused, keeping the original posting times.
+          </p>
+          <p style="color:var(--muted); margin:0;">
+            No posts will be published in bulk — everything shifts forward cleanly.
+          </p>
+        </div>
+        <div style="padding:10px 16px; border-top:var(--border-soft); display:flex; gap:8px; justify-content:flex-end;">
+          <button type="button" class="btn btn-outline" onclick="closeResumeModal()">Keep paused</button>
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('toggle-form').submit()">Resume &amp; Reschedule</button>
+        </div>
+      </div>
+    </div>
+    <script>
+    function showResumeWarning() { document.getElementById('resume-modal').style.display = 'flex'; }
+    function closeResumeModal()  { document.getElementById('resume-modal').style.display = 'none'; }
+    </script>
+    {% endif %}
+
+    <script>
+    </script>
+
+    <h2>
+      Posts <span style="color:var(--muted); font-weight:normal; font-size:14px;">({{ posts | length }})</span>
+    </h2>
+    {% if not posts %}
+    <div class="empty-state">
+      No posts yet. <a href="/campaigns/{{ campaign.id }}/posts">Add posts.</a>
+    </div>
+    {% else %}
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:32px;">#</th><th style="width:140px;">Scheduled</th><th style="width:100px;">Status</th><th>Content</th></tr>
+      </thead>
+      <tbody>
+        {% for p in posts %}
+        <tr>
+          <td style="color:var(--muted);">{{ loop.index }}</td>
+          <td style="white-space:nowrap; font-size:13px; color:var(--muted);">{{ p.scheduled_time.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td><span class="badge badge-{{ p.status }}">{{ p.status }}</span></td>
+          <td style="font-size:13px;">{{ p.content[:100] }}{% if p.content|length > 100 %}<span style="color:var(--muted);">…</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
