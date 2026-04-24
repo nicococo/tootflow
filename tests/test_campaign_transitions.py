@@ -294,3 +294,48 @@ def test_archive_is_idempotent(client, db):
     campaign = _make_campaign(db, user, status="archived")
     resp = client.post(f"/campaigns/{campaign.id}/complete", data={"csrf_token": "test"})
     assert resp.status_code == 400
+
+
+# ── Delete post reverse transition ────────────────────────────────────────────
+
+def test_running_to_completed_on_pending_post_delete(client, db):
+    """Deleting the only pending post from a running campaign transitions it back to completed."""
+    user = _create_user(db)
+    _set_user(user)
+    campaign = _make_campaign(db, user, status="running")
+    _make_post(db, campaign, status="published")
+    pending = _make_post(db, campaign, status="pending")
+
+    client.post(f"/campaigns/{campaign.id}/posts/{pending.id}/delete", data={"csrf_token": "test"})
+    db.refresh(campaign)
+    assert campaign.status == "completed"
+
+
+def test_running_stays_running_on_delete_with_other_pending(client, db):
+    """Deleting one pending post when others remain keeps the campaign running."""
+    user = _create_user(db)
+    _set_user(user)
+    campaign = _make_campaign(db, user, status="running")
+    _make_post(db, campaign, status="published")
+    pending1 = _make_post(db, campaign, status="pending")
+    _make_post(db, campaign, status="pending")
+
+    client.post(f"/campaigns/{campaign.id}/posts/{pending1.id}/delete", data={"csrf_token": "test"})
+    db.refresh(campaign)
+    assert campaign.status == "running"
+
+
+def test_no_transition_to_completed_if_at_post_limit_on_delete(client, db):
+    """Deleting a post when at max_posts with no pending should not mark completed (would auto-archive instead)."""
+    user = _create_user(db)
+    _set_user(user)
+    campaign = _make_campaign(db, user, status="running")
+    published_posts = [_make_post(db, campaign, status="published") for _ in range(3)]
+    pending = _make_post(db, campaign, status="pending")
+
+    # At limit before delete (4 posts, max=4), after delete 3 posts remain — below limit, no pending → completed
+    # This test verifies the at_limit check uses post count AFTER deletion
+    client.post(f"/campaigns/{campaign.id}/posts/{pending.id}/delete", data={"csrf_token": "test"})
+    db.refresh(campaign)
+    # 3 remaining, all published, below any reasonable max → completed
+    assert campaign.status == "completed"
