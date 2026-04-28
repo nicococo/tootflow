@@ -235,7 +235,10 @@ async def regenerate_post(
         session.commit()
     except Exception as e:
         logger.error(f"AI regeneration failed for post {post_id}: {e}")
-        raise HTTPException(status_code=500, detail="AI regeneration failed — please try again")
+        return RedirectResponse(
+            f"/campaigns/{campaign_id}/posts?error=ai_failed",
+            status_code=302,
+        )
 
     return RedirectResponse(f"/campaigns/{campaign_id}/posts", status_code=302)
 
@@ -288,7 +291,10 @@ async def refine_post(
         session.commit()
     except Exception as e:
         logger.error(f"AI refinement failed for post {post_id}: {e}")
-        raise HTTPException(status_code=500, detail="AI refinement failed — please try again")
+        return RedirectResponse(
+            f"/campaigns/{campaign_id}/posts?error=ai_failed#post-{post_id}",
+            status_code=302,
+        )
 
     return RedirectResponse(f"/campaigns/{campaign_id}/posts#post-{post_id}", status_code=302)
 
