@@ -2,6 +2,7 @@ import random
 import re
 from datetime import datetime, timedelta
 from typing import List
+import httpx
 from openai import AsyncOpenAI
 from app.config import get_settings
 
@@ -44,7 +45,7 @@ async def generate_posts(
     duration_days: int,
     posts_per_week: int,
 ) -> List[str]:
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     total_posts = min(
         max(1, int(duration_days / 7 * posts_per_week)),
@@ -99,7 +100,7 @@ async def regenerate_single_post(
     language: str,
 ) -> str:
     """Generate a single replacement post in the context of the campaign."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
@@ -145,7 +146,7 @@ async def refine_single_post(
     poll_options: list[str] | None = None,
 ) -> str:
     """Refine an existing post based on user instructions, keeping campaign context."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
@@ -202,7 +203,7 @@ async def generate_newsletter_digest(
     post_contents: List[str],
 ) -> str:
     """Generate a newsletter digest from a campaign's published/pending posts."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -245,7 +246,7 @@ async def generate_linkedin_summary(
     post_contents: List[str],
 ) -> str:
     """Generate a standalone long-form LinkedIn article from campaign insights."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -376,7 +377,7 @@ async def generate_export(
     include_emoji: bool = False,
 ) -> str:
     """Unified export generator supporting newsletter, LinkedIn, and Reddit targets."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -419,7 +420,7 @@ async def refine_export(
     include_emoji: bool = False,
 ) -> str:
     """Refine an existing export based on user instructions, keeping all original context."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
