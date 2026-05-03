@@ -61,27 +61,59 @@ async def inject_banner(request: Request, call_next):
     return await call_next(request)
 
 
+# Paths that are never meaningful visitor signals
+_TRACKING_SKIP_PATHS = frozenset({
+    "/health", "/favicon.ico", "/robots.txt", "/sitemap.xml",
+})
+_TRACKING_SKIP_PREFIXES = ("/static/", "/admin", "/webhooks", "/mastodon/callback")
+
+# Internal IPs — Docker healthcheck, loopback, private ranges
+_TRACKING_SKIP_IPS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+# Bot/crawler keyword fragments matched against lowercased User-Agent
+_BOT_UA_KEYWORDS = frozenset({
+    "bot", "crawler", "spider", "scraper", "slurp",
+    "googlebot", "bingbot", "duckduckbot", "baiduspider", "yandexbot",
+    "facebookexternalhit", "twitterbot", "linkedinbot", "whatsapp",
+    "curl", "wget", "python-requests", "python-httpx", "python/",
+    "go-http-client", "java/", "ruby/", "scrapy", "axios",
+    "pingdom", "uptimerobot", "statuscake", "freshping",
+    "semrushbot", "ahrefsbot", "mj12bot", "dotbot",
+    "lighthouse", "headlesschrome", "phantomjs", "selenium",
+})
+
+
 @app.middleware("http")
 async def track_pageview(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
-    # Only track GET requests; skip admin, webhooks, and OAuth callbacks
-    if (request.method == "GET"
-            and not path.startswith("/admin")
-            and not path.startswith("/webhooks")
-            and path != "/mastodon/callback"):
-        try:
-            from app.database import engine
-            from app.models import PageView
-            from sqlmodel import Session as SyncSession
-            ip = (request.client.host if request.client else "") or ""
-            date_str = datetime.utcnow().strftime("%Y-%m-%d")
-            visitor_hash = hashlib.sha256(f"{ip}:{date_str}".encode()).hexdigest()
-            with SyncSession(engine) as db:
-                db.add(PageView(visitor_hash=visitor_hash, path=path))
-                db.commit()
-        except Exception:
-            pass  # never let analytics break the response
+
+    if request.method != "GET":
+        return response
+    if path in _TRACKING_SKIP_PATHS:
+        return response
+    if any(path.startswith(p) for p in _TRACKING_SKIP_PREFIXES):
+        return response
+
+    ip = (request.client.host if request.client else "") or ""
+    if ip in _TRACKING_SKIP_IPS:
+        return response
+
+    ua = request.headers.get("user-agent", "").lower()
+    if not ua or any(kw in ua for kw in _BOT_UA_KEYWORDS):
+        return response
+
+    try:
+        from app.database import engine
+        from app.models import PageView
+        from sqlmodel import Session as SyncSession
+        date_str = datetime.utcnow().strftime("%Y-%m-%d")
+        visitor_hash = hashlib.sha256(f"{ip}:{date_str}".encode()).hexdigest()
+        with SyncSession(engine) as db:
+            db.add(PageView(visitor_hash=visitor_hash, path=path))
+            db.commit()
+    except Exception:
+        pass  # never let analytics break the response
     return response
 
 
