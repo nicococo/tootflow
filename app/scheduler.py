@@ -16,6 +16,19 @@ logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
 
 
+def _resolve_mastodon_account(session: Session, campaign: Campaign) -> MastodonAccount | None:
+    """Return the Mastodon account to use for a campaign.
+
+    If mastodon_account_id is set, use that specific account.
+    Otherwise fall back to the user's first Mastodon account (legacy behaviour).
+    """
+    if campaign.mastodon_account_id is not None:
+        return session.get(MastodonAccount, campaign.mastodon_account_id)
+    return session.exec(
+        select(MastodonAccount).where(MastodonAccount.user_id == campaign.user_id)
+    ).first()
+
+
 async def publish_due_posts():
     """Publish posts that are due for active/running campaigns."""
     settings = get_settings()
@@ -35,9 +48,7 @@ async def publish_due_posts():
 
         for post in due_posts:
             campaign = session.get(Campaign, post.campaign_id)
-            account = session.exec(
-                select(MastodonAccount).where(MastodonAccount.user_id == campaign.user_id)
-            ).first()
+            account = _resolve_mastodon_account(session, campaign)
 
             if not account:
                 logger.warning(f"No Mastodon account for campaign {campaign.id}, skipping post {post.id}")
@@ -137,9 +148,7 @@ async def update_metrics():
 
         for post in published_posts:
             campaign = session.get(Campaign, post.campaign_id)
-            account = session.exec(
-                select(MastodonAccount).where(MastodonAccount.user_id == campaign.user_id)
-            ).first()
+            account = _resolve_mastodon_account(session, campaign)
             if not account:
                 continue
 
