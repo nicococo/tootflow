@@ -47,13 +47,14 @@ If you added or changed any SQLModel fields, a migration script is required.
 `create_db_and_tables()` only creates *new* tables — it never alters existing ones.
 
 Migration scripts live in `app/migrations/`. Each script is idempotent (safe to re-run).
+Migrations are always run **locally** — never during or after deploy.
 
-**Run locally first:**
+**Run locally against SQLite first:**
 ```bash
 python -m app.migrations.<script_name>
 ```
 
-**Then run against prod PostgreSQL:**
+**Then run locally against prod PostgreSQL via `.env.migrate`:**
 ```bash
 python -m app.migrations.<script_name> --prod
 ```
@@ -63,6 +64,10 @@ The `--prod` flag reads `POSTGRES_URL` from `.env.migrate` (gitignored).
 > **Order matters:** always migrate *before* deploying new code. New columns
 > are nullable so the running app continues to work against the updated schema
 > during the deploy window.
+>
+> **Never automate migrations into the deploy pipeline.** They are a
+> deliberate, manual step — running them automatically risks applying
+> incomplete or incorrect schema changes to prod without review.
 
 ---
 
@@ -131,9 +136,11 @@ docker compose up --build -d app
 |-------|---------|---------|
 | 1. Tests | `python -m pytest tests/ -m "not integration" -v` | Any test fails |
 | 2. Local testing | `./start.sh` | Feature broken locally |
-| 3. Migrations | `python -m app.migrations.<name> --prod` | Migration errors |
+| 3. Migrations (if models changed) | `python -m app.migrations.<name>` then `--prod` | Migration errors |
 | 4. Git push | `git push` | Push rejected |
 | 5. mlox deploy | via mlox RepoDeployDockerService | Health check fails |
+
+Migrations are always run **locally before git push** — never automated into the deploy.
 
 ---
 
