@@ -212,8 +212,14 @@ async def create_campaign(
             status_code=302,
         )
 
+    # Auto-assign the user's first Mastodon account (single account = no picker needed)
+    mastodon_account = session.exec(
+        select(MastodonAccount).where(MastodonAccount.user_id == user.id)
+    ).first()
+
     campaign = Campaign(
         user_id=user.id,
+        mastodon_account_id=mastodon_account.id if mastodon_account else None,
         name=name,
         description=description,
         template_type=template_type,
