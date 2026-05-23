@@ -10,8 +10,9 @@ from app.config import get_settings
 from app.crypto import decrypt_token
 from app.database import get_session
 from app.limiter import limiter
-from app.models import Campaign, Post, Metrics, User, MastodonAccount, FollowerSnapshot
+from app.models import AccountLink, Campaign, Post, Metrics, User, MastodonAccount, FollowerSnapshot
 from app.auth import get_current_user
+from sqlalchemy import or_
 from app.services import mastodon_service
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campaigns")
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = get_settings()
+
+
+def _get_linked_user_ids(session: Session, user_id: int) -> list[int]:
+    links = session.exec(
+        select(AccountLink).where(
+            or_(AccountLink.user_id == user_id, AccountLink.linked_user_id == user_id)
+        )
+    ).all()
+    return [
+        link.linked_user_id if link.user_id == user_id else link.user_id
+        for link in links
+    ]
 
 
 @router.get("/{campaign_id}/metrics", response_class=HTMLResponse)
@@ -29,7 +42,10 @@ def campaign_metrics(
     user: User = Depends(get_current_user),
 ):
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign:
+        raise HTTPException(status_code=404)
+    linked_ids = _get_linked_user_ids(session, user.id)
+    if campaign.user_id != user.id and campaign.user_id not in linked_ids:
         raise HTTPException(status_code=404)
 
     if campaign.payment_status != "paid":
@@ -53,10 +69,10 @@ def campaign_metrics(
     total_voters  = sum((pm["metrics"].poll_voters if pm["metrics"] else 0) for pm in post_metrics
                         if pm["post"].poll_options)
 
-    # Follower snapshots for this user
+    # Follower snapshots for the campaign owner (may differ from logged-in user for linked accounts)
     snapshots = session.exec(
         select(FollowerSnapshot)
-        .where(FollowerSnapshot.user_id == user.id)
+        .where(FollowerSnapshot.user_id == campaign.user_id)
         .order_by(FollowerSnapshot.recorded_at)
     ).all()
 
@@ -180,7 +196,10 @@ async def post_replies(
         raise HTTPException(status_code=404)
 
     campaign = session.get(Campaign, post.campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign:
+        raise HTTPException(status_code=404)
+    linked_ids = _get_linked_user_ids(session, user.id)
+    if campaign.user_id != user.id and campaign.user_id not in linked_ids:
         raise HTTPException(status_code=404)
 
     if not post.mastodon_status_id:

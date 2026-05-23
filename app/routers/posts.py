@@ -8,10 +8,11 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import Campaign, Post, User
+from app.models import AccountLink, Campaign, Post, User
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
+from sqlalchemy import or_
 from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, schedule_posts
 from app.routers.campaigns import format_description_for_ai
 
@@ -34,6 +35,24 @@ templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = settings
 
 
+def _get_linked_user_ids(session: Session, user_id: int) -> list[int]:
+    links = session.exec(
+        select(AccountLink).where(
+            or_(AccountLink.user_id == user_id, AccountLink.linked_user_id == user_id)
+        )
+    ).all()
+    return [
+        link.linked_user_id if link.user_id == user_id else link.user_id
+        for link in links
+    ]
+
+
+def _can_access(session: Session, campaign: Campaign, user: User) -> bool:
+    if campaign.user_id == user.id:
+        return True
+    return campaign.user_id in _get_linked_user_ids(session, user.id)
+
+
 @router.get("/{campaign_id}/posts", response_class=HTMLResponse)
 def edit_posts_page(
     campaign_id: int,
@@ -42,7 +61,7 @@ def edit_posts_page(
     user: User = Depends(get_current_user),
 ):
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     posts = session.exec(
         select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)
@@ -75,7 +94,7 @@ def add_post(
     _csrf: None = Depends(verify_csrf),
 ):
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
@@ -113,7 +132,7 @@ def edit_post(
     _csrf: None = Depends(verify_csrf),
 ):
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
@@ -143,7 +162,7 @@ async def generate_campaign_posts(
 ):
     """Generate all posts for a paid campaign via AI, replacing existing pending posts."""
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
@@ -208,7 +227,7 @@ async def regenerate_post(
 ):
     """Regenerate the content of a single pending post via AI."""
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
@@ -256,7 +275,7 @@ async def refine_post(
 ):
     """Refine a single pending post based on user instructions."""
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
@@ -308,7 +327,7 @@ def delete_post(
     _csrf: None = Depends(verify_csrf),
 ):
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign or not _can_access(session, campaign, user):
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
