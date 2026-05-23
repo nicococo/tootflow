@@ -17,7 +17,8 @@ from app.csrf import CSRFMiddleware
 from app.limiter import limiter
 from app.database import create_db_and_tables, get_session, engine
 from sqlalchemy import func
-from app.models import Campaign, MastodonAccount, Metrics, Post, User
+from app.models import AccountLink, Campaign, MastodonAccount, Metrics, Post, User
+from sqlalchemy import or_
 from app.auth import optional_current_user, get_current_user
 from app.scheduler import start_scheduler, stop_scheduler
 from app.site_config import get_banner, load_from_db
@@ -206,16 +207,59 @@ def index(request: Request, session: Session = Depends(get_session)):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+def _get_linked_user_ids(session: Session, user_id: int) -> list[int]:
+    links = session.exec(
+        select(AccountLink).where(
+            or_(AccountLink.user_id == user_id, AccountLink.linked_user_id == user_id)
+        )
+    ).all()
+    return [
+        link.linked_user_id if link.user_id == user_id else link.user_id
+        for link in links
+    ]
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(
     request: Request,
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
+    linked_user_ids = _get_linked_user_ids(session, user.id)
+    all_user_ids = [user.id] + linked_user_ids
+
     campaigns_list = session.exec(
-        select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())
+        select(Campaign).where(Campaign.user_id.in_(all_user_ids)).order_by(Campaign.created_at.desc())
     ).all()
+
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
+
+    # Build account label map for all campaigns
+    all_mastodon = session.exec(
+        select(MastodonAccount).where(MastodonAccount.user_id.in_(all_user_ids))
+    ).all()
+    mastodon_by_id = {acc.id: acc for acc in all_mastodon}
+    mastodon_by_user = {acc.user_id: acc for acc in all_mastodon}
+
+    def _account_label(acc: MastodonAccount | None) -> str | None:
+        if not acc:
+            return None
+        return f"@{acc.username}@{acc.instance_url.replace('https://','').replace('http://','')}"
+
+    account_label_by_campaign: dict[int, str | None] = {}
+    for c in campaigns_list:
+        acc = mastodon_by_id.get(c.mastodon_account_id) if c.mastodon_account_id else mastodon_by_user.get(c.user_id)
+        account_label_by_campaign[c.id] = _account_label(acc)
+
+    linked_accounts = [mastodon_by_user[uid] for uid in linked_user_ids if uid in mastodon_by_user]
+
+    # Assign a distinct color to each account — current user always gets teal (index 0)
+    _ACCOUNT_PALETTE = ["#47b8b1", "#d95f2a", "#7b5ea7", "#2d7d5f", "#b8732a", "#3a6fa8"]
+    account_color: dict[int, str] = {}
+    if mastodon:
+        account_color[user.id] = _ACCOUNT_PALETTE[0]
+    for i, acc in enumerate(linked_accounts):
+        account_color[acc.user_id] = _ACCOUNT_PALETTE[(i + 1) % len(_ACCOUNT_PALETTE)]
 
     campaign_ids = [c.id for c in campaigns_list]
     published_count = 0
@@ -270,5 +314,9 @@ def dashboard(
             "published_count": published_count, "active_count": active_count, "paused_count": paused_count,
             "next_post": next_post, "next_post_campaign": next_post_campaign,
             "engagement_by_campaign": engagement_by_campaign,
+            "linked_accounts": linked_accounts,
+            "account_label_by_campaign": account_label_by_campaign,
+            "account_color": account_color,
+            "own_user_id": user.id,
         },
     )

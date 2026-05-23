@@ -11,12 +11,30 @@ from app.auth import get_current_user
 from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User
+from app.models import AccountLink, Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User
+from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/account")
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = get_settings()
+
+
+def _get_linked_accounts(session: Session, user_id: int) -> list[MastodonAccount]:
+    links = session.exec(
+        select(AccountLink).where(
+            or_(AccountLink.user_id == user_id, AccountLink.linked_user_id == user_id)
+        )
+    ).all()
+    linked_ids = [
+        link.linked_user_id if link.user_id == user_id else link.user_id
+        for link in links
+    ]
+    if not linked_ids:
+        return []
+    return session.exec(
+        select(MastodonAccount).where(MastodonAccount.user_id.in_(linked_ids))
+    ).all()
 
 
 @router.get("", response_class=HTMLResponse)
@@ -31,6 +49,9 @@ def account_page(
     campaign_count = len(
         session.exec(select(Campaign).where(Campaign.user_id == user.id)).all()
     )
+    linked_accounts = _get_linked_accounts(session, user.id)
+    linked = request.query_params.get("linked") == "1"
+    link_error = request.query_params.get("link_error") == "1"
     return templates.TemplateResponse(
         "account.html",
         {
@@ -38,6 +59,9 @@ def account_page(
             "user": user,
             "mastodon": mastodon,
             "campaign_count": campaign_count,
+            "linked_accounts": linked_accounts,
+            "linked": linked,
+            "link_error": link_error,
         },
     )
 

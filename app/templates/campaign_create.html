@@ -255,6 +255,40 @@ input.cc-brief-input:focus,
 }
 .cc-cancel-link:hover { color: #8fa8c0; }
 
+/* ── Account picker ── */
+.cc-account-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cc-acct-card {
+  border: 2px solid #e0d8ce;
+  background: #faf7f2;
+  padding: 8px 14px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.cc-acct-card:hover { border-color: #9ab8be; background: #f0ece6; }
+.cc-acct-card.selected { border-color: #47b8b1; background: #eef8f7; }
+.cc-acct-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 2px solid #c8bfb4;
+  flex-shrink: 0;
+  transition: border-color 0.12s, background 0.12s;
+}
+.cc-acct-card.selected .cc-acct-dot { border-color: #47b8b1; background: #47b8b1; }
+.cc-acct-handle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.cc-acct-card.selected .cc-acct-handle { color: #2d8f96; }
+
 /* ── Responsive ── */
 @media (max-width: 680px) {
   .cc-section { padding: 20px; }
@@ -368,6 +402,30 @@ input.cc-brief-input:focus,
           </div>
         </div>
       </div>
+
+      <!-- ── Account (only shown when multiple accounts are linked) ── -->
+      {% if available_accounts and available_accounts | length > 1 %}
+      <div class="cc-section">
+        <div class="cc-step-label"><span>4</span> Posting Account</div>
+        <div class="cc-field">
+          <label>Post from</label>
+          <div class="cc-account-grid" id="account-grid">
+            {% for acc in available_accounts %}
+            {% set handle = "@" + acc.username + "@" + (acc.instance_url | replace("https://","") | replace("http://","")) %}
+            {% set is_selected = (edit_campaign and edit_campaign.mastodon_account_id == acc.id) or (not edit_campaign and loop.first) %}
+            <div class="cc-acct-card{% if is_selected %} selected{% endif %}"
+                 data-id="{{ acc.id }}"
+                 onclick="selectAccount({{ acc.id }})">
+              <div class="cc-acct-dot"></div>
+              <span class="cc-acct-handle">{{ handle }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" id="mastodon_account_id" name="mastodon_account_id"
+                 value="{{ edit_campaign.mastodon_account_id if edit_campaign else (available_accounts[0].id if available_accounts else '') }}">
+        </div>
+      </div>
+      {% endif %}
 
       <!-- ── Submit ──────────────────────────────────────────────────── -->
       <div class="cc-submit-bar">
@@ -504,6 +562,13 @@ function selectTone(tone) {
   toneInput.value = tone;
   document.querySelectorAll('.cc-tone-pill').forEach(p =>
     p.classList.toggle('selected', p.dataset.tone === tone));
+}
+
+function selectAccount(id) {
+  const input = document.getElementById('mastodon_account_id');
+  if (input) input.value = id;
+  document.querySelectorAll('.cc-acct-card').forEach(c =>
+    c.classList.toggle('selected', parseInt(c.dataset.id) === id));
 }
 
 // ── Copy from existing campaign ───────────────────────────────────────────────

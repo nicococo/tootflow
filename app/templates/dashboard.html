@@ -57,6 +57,35 @@
   }
   .status-row:last-child { border-bottom: 0; }
 
+  /* ── Account color stripe on table rows ── */
+  .acct-stripe td:first-child { border-left: 5px solid var(--acct-color, #47b8b1); }
+  .acct-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+  }
+  .acct-chip-block {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+  }
+  .acct-chip-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+  .acct-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+  }
+
   @media (max-width: 760px) {
     .dash-wrap { grid-template-columns: 1fr; padding: 20px 16px 40px; }
     .dash-sidebar { position: static; margin-bottom: 24px; }
@@ -126,6 +155,65 @@
       </div>
     </div>
 
+    <!-- Linked accounts -->
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Linked Accounts</div>
+      </div>
+      <div class="info-panel-body">
+        {% if mastodon %}
+        {% set instance = mastodon.instance_url | replace("https://","") | replace("http://","") %}
+        {% set dot_color = account_color.get(mastodon.user_id, '#47b8b1') %}
+        <div class="info-row" style="padding:8px 14px; display:flex; align-items:flex-start; gap:6px; background:#f7f4ed;">
+          <span class="acct-dot" style="background:{{ dot_color }}; margin-top:3px;"></span>
+          <div style="min-width:0; flex:1; overflow:hidden;">
+            <a href="{{ mastodon.instance_url }}/@{{ mastodon.username }}" target="_blank" rel="noopener noreferrer"
+               style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+                      color:{{ dot_color }}; text-decoration:none; display:block;
+                      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+               title="@{{ mastodon.username }}@{{ instance }}">@{{ mastodon.username }}</a>
+            <div style="font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden;
+                        text-overflow:ellipsis; margin-top:1px;" title="{{ instance }}">{{ instance }}</div>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.5px;
+                       text-transform:uppercase; color:#c8bfb4; padding-top:2px; flex-shrink:0;">you</span>
+        </div>
+        {% endif %}
+        {% for acc in linked_accounts %}
+        {% set instance = acc.instance_url | replace("https://","") | replace("http://","") %}
+        {% set dot_color = account_color.get(acc.user_id, '#47b8b1') %}
+        <div class="info-row" style="padding:8px 14px; display:flex; align-items:flex-start; gap:6px;">
+          <span class="acct-dot" style="background:{{ dot_color }}; margin-top:3px;"></span>
+          <div style="min-width:0; flex:1; overflow:hidden;">
+            <a href="{{ acc.instance_url }}/@{{ acc.username }}" target="_blank" rel="noopener noreferrer"
+               style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+                      color:{{ dot_color }}; text-decoration:none; display:block;
+                      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+               title="@{{ acc.username }}@{{ instance }}">@{{ acc.username }}</a>
+            <div style="font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden;
+                        text-overflow:ellipsis; margin-top:1px;" title="{{ instance }}">{{ instance }}</div>
+          </div>
+          <form method="post" action="/mastodon/unlink/{{ acc.user_id }}" style="margin:0; flex-shrink:0; padding-top:1px;">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <button type="submit"
+                    style="background:none; border:none; color:#c8bfb4; cursor:pointer; font-size:11px;
+                           padding:0; line-height:1;"
+                    onmouseenter="this.style.color='#c0392b'" onmouseleave="this.style.color='#c8bfb4'"
+                    title="Unlink" onclick="return confirm('Unlink @{{ acc.username }}@{{ instance }}?')">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+        <div class="info-row" style="padding:8px 14px;">
+          <a href="/account#link-account"
+             style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.5px;
+                    text-transform:uppercase; color:var(--muted); text-decoration:none;"
+             onmouseenter="this.style.color='var(--teal)'" onmouseleave="this.style.color='var(--muted)'">
+            + Link account
+          </a>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick links -->
     <div class="info-panel">
       <div class="info-panel-head">
@@ -150,14 +238,6 @@
       <a href="/campaigns/new" class="btn btn-primary">+ New Campaign</a>
     </div>
 
-    {% if mastodon %}
-    <div class="mastodon-pill">
-      <span>Mastodon</span>
-      <a href="{{ mastodon.instance_url }}/@{{ mastodon.username }}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
-        <strong>@{{ mastodon.username }}@{{ mastodon.instance_url | replace("https://","") | replace("http://","") }}</strong>
-      </a>
-    </div>
-    {% endif %}
 
     {% if campaigns %}
     <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:28px;">
@@ -204,40 +284,46 @@
     <table>
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Template</th>
+          <th>Campaign</th>
           <th>Status</th>
-          <th>Payment</th>
-          <th>Engagement</th>
+          <th style="text-align:center;">Eng.</th>
           <th>Created</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for c in campaigns %}
-        <tr>
-          <td><a href="/campaigns/{{ c.id }}" style="font-weight:bold;">{{ c.name }}</a></td>
-          <td style="color:var(--muted); font-size:13px;">{{ c.template_type | replace("_"," ") | title }}</td>
+        {% set row_color = account_color.get(c.user_id, '#47b8b1') %}
+        <tr class="acct-stripe" style="--acct-color:{{ row_color }};{% if c.user_id != own_user_id %} opacity:0.88;{% endif %}">
           <td>
-            {% if not c.enabled and c.payment_status == "paid" %}
-            <span class="badge" style="background:#fff3e0; color:#b45309; border:1px solid #f59e0b;">paused</span>
-            {% else %}
-            <span class="badge badge-{{ c.status }}">{{ c.status | replace("_"," ") }}</span>
+            <a href="/campaigns/{{ c.id }}" style="font-weight:bold; display:block; margin-bottom:3px;">{{ c.name }}</a>
+            {% set acct = account_label_by_campaign.get(c.id) %}
+            {% if acct %}
+            <div class="acct-chip">
+              <span class="acct-chip-block" style="background:{{ row_color }};"></span>
+              <span class="acct-chip-label" style="color:{{ row_color }};">{{ acct }}</span>
+            </div>
             {% endif %}
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">{{ c.template_type | replace("_"," ") | title }}</div>
           </td>
-          <td>
-            {% if c.payment_status == "paid" %}
-              <span class="badge badge-paid">Paid</span>
-            {% else %}
-              <span class="badge badge-unpaid">Unpaid</span>
-            {% endif %}
+          <td style="white-space:nowrap; vertical-align:middle;">
+            <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
+              {% if not c.enabled and c.payment_status == "paid" %}
+              <span class="badge" style="background:#fff3e0; color:#b45309; border:1px solid #f59e0b; font-size:10px;">paused</span>
+              {% else %}
+              <span class="badge badge-{{ c.status }}" style="font-size:10px;">{{ c.status | replace("_"," ") }}</span>
+              {% endif %}
+              {% if c.payment_status == "paid" %}
+              <span class="badge badge-paid" style="font-size:10px;">paid</span>
+              {% endif %}
+            </div>
           </td>
-          <td style="font-size:13px; white-space:nowrap;">
+          <td style="font-size:13px; white-space:nowrap; text-align:center; color:var(--muted);">
             {% set eng = engagement_by_campaign.get(c.id) %}
             {% if eng is not none %}{{ "%.1f"|format(eng) }}{% else %}—{% endif %}
           </td>
-          <td style="color:var(--muted); font-size:13px; white-space:nowrap;">{{ c.created_at.strftime("%Y-%m-%d") }}</td>
-          <td style="min-width:140px;">
+          <td style="color:var(--muted); font-size:12px; white-space:nowrap;">{{ c.created_at.strftime("%b %d, %Y") }}</td>
+          <td style="white-space:nowrap;">
             <div class="actions">
               <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
               {% if c.payment_status == "paid" %}<a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>{% endif %}

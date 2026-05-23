@@ -106,6 +106,13 @@ class LoginEvent(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 
+class AccountLink(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    linked_user_id: int = Field(foreign_key="user.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class SiteConfig(SQLModel, table=True):
     key: str = Field(primary_key=True)
     value: str = ""

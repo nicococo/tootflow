@@ -129,6 +129,58 @@
     </table>
     </div>
 
+    <h2>Linked Accounts</h2>
+    <p class="muted text-sm" style="margin-bottom:16px;">
+      Link additional Mastodon accounts to see all their campaigns combined in your dashboard.
+      You'll need to be logged into that Mastodon account in your browser when you click Connect.
+    </p>
+
+    {% if linked %}
+    <div style="background:#e8f5e9; border:2px solid #4caf50; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      Account linked successfully.
+    </div>
+    {% endif %}
+    {% if link_error %}
+    <div style="background:#fff3cd; border:2px solid #d95f2a; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      Could not connect to that Mastodon instance. Please check the URL and try again.
+    </div>
+    {% endif %}
+
+    {% if linked_accounts %}
+    <div class="table-wrap" style="margin-bottom:20px;">
+    <table>
+      {% for acc in linked_accounts %}
+      <tr>
+        <td>
+          <strong style="color:var(--teal);">@{{ acc.username }}@{{ acc.instance_url | replace("https://","") | replace("http://","") }}</strong>
+        </td>
+        <td style="text-align:right;">
+          <form method="post" action="/mastodon/unlink/{{ acc.user_id }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <button type="submit" class="btn btn-sm btn-outline"
+                    style="color:#c0392b; border-color:#c0392b;"
+                    onclick="return confirm('Unlink this account?')">Unlink</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% endif %}
+
+    <div id="link-account" style="background:var(--surface-soft); border:var(--border); padding:16px; margin-bottom:32px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Link Another Account</div>
+      <form method="post" action="/mastodon/link" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <input type="url" name="instance_url" placeholder="https://mastodon.social"
+               required style="flex:1; min-width:200px; padding:8px 10px; border:2px solid #c8bfb4 !important; font-size:13px; background:#fff;">
+        <button type="submit" class="btn btn-primary">Connect</button>
+      </form>
+      <p class="muted" style="font-size:11px; margin-top:8px; margin-bottom:0;">
+        You'll be redirected to Mastodon to authenticate. Log into the account you want to link first.
+      </p>
+    </div>
+
     <h2>Your Data</h2>
     <p class="muted text-sm" style="margin-bottom:16px;">
       Download a copy of everything TootFlow holds about you: your Mastodon identity,

@@ -8,13 +8,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
-from app.auth import create_access_token, get_token_payload, optional_current_user, auth_cookie_params
+from app.auth import create_access_token, get_token_payload, optional_current_user, auth_cookie_params, get_current_user
 from app.config import get_settings
 from app.crypto import encrypt_token
 from app.csrf import verify_csrf
 from app.database import get_session
 from app.limiter import limiter
-from app.models import LoginEvent, MastodonAccount, User
+from app.models import AccountLink, LoginEvent, MastodonAccount, User
 from app.services import mastodon_service
 from app.site_config import get_registration_open
 
@@ -92,6 +92,60 @@ async def login(
     return RedirectResponse(auth_url, status_code=302)
 
 
+@router.post("/mastodon/link")
+@limiter.limit("10/minute")
+async def mastodon_link(
+    request: Request,
+    instance_url: str = Form(...),
+    _csrf: None = Depends(verify_csrf),
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    """Start OAuth to link a second Mastodon account to the current user."""
+    instance_url = _validate_instance_url(instance_url)
+    redirect_uri = f"{settings.app_base_url}/mastodon/callback"
+    try:
+        app_data = await mastodon_service.register_app(instance_url, redirect_uri)
+    except Exception as e:
+        logger.error(f"Could not register OAuth app with {instance_url}: {e}")
+        return RedirectResponse("/account?link_error=1", status_code=302)
+
+    state = secrets.token_urlsafe(16)
+    _oauth_apps[state] = {
+        "instance_url": instance_url,
+        "client_id": app_data["client_id"],
+        "client_secret": app_data["client_secret"],
+        "mode": "link",
+        "linking_user_id": user.id,
+    }
+    auth_url = mastodon_service.get_oauth_url(instance_url, app_data["client_id"], redirect_uri, state)
+    return RedirectResponse(auth_url, status_code=302)
+
+
+@router.post("/mastodon/unlink/{linked_user_id}")
+def mastodon_unlink(
+    linked_user_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    """Remove a link between two accounts."""
+    from sqlalchemy import or_, and_
+    link = session.exec(
+        select(AccountLink).where(
+            or_(
+                and_(AccountLink.user_id == user.id, AccountLink.linked_user_id == linked_user_id),
+                and_(AccountLink.user_id == linked_user_id, AccountLink.linked_user_id == user.id),
+            )
+        )
+    ).first()
+    if link:
+        session.delete(link)
+        session.commit()
+    return RedirectResponse("/account", status_code=302)
+
+
 @router.get("/mastodon/callback")
 async def mastodon_callback(
     request: Request,
@@ -119,7 +173,55 @@ async def mastodon_callback(
     username = info.get("username", "")
     encrypted_token = encrypt_token(token)
 
-    # Get-or-create user by Mastodon identity
+    # Link mode: connect this Mastodon identity to an existing logged-in user
+    if app.get("mode") == "link":
+        linking_user_id = app["linking_user_id"]
+        existing_account = session.exec(
+            select(MastodonAccount).where(
+                MastodonAccount.username == username,
+                MastodonAccount.instance_url == instance_url,
+            )
+        ).first()
+
+        if existing_account:
+            linked_user_id = existing_account.user_id
+            # Refresh token for the linked account
+            existing_account.access_token = encrypted_token
+            session.add(existing_account)
+            session.commit()
+        else:
+            # Create a new TootFlow user for this Mastodon identity
+            new_user = User()
+            session.add(new_user)
+            session.commit()
+            session.refresh(new_user)
+            account = MastodonAccount(
+                user_id=new_user.id,
+                instance_url=instance_url,
+                access_token=encrypted_token,
+                username=username,
+            )
+            session.add(account)
+            session.commit()
+            linked_user_id = new_user.id
+
+        if linked_user_id != linking_user_id:
+            from sqlalchemy import or_, and_
+            already = session.exec(
+                select(AccountLink).where(
+                    or_(
+                        and_(AccountLink.user_id == linking_user_id, AccountLink.linked_user_id == linked_user_id),
+                        and_(AccountLink.user_id == linked_user_id, AccountLink.linked_user_id == linking_user_id),
+                    )
+                )
+            ).first()
+            if not already:
+                session.add(AccountLink(user_id=linking_user_id, linked_user_id=linked_user_id))
+                session.commit()
+
+        return RedirectResponse("/account?linked=1", status_code=302)
+
+    # Normal login: get-or-create user by Mastodon identity
     existing_account = session.exec(
         select(MastodonAccount).where(
             MastodonAccount.username == username,

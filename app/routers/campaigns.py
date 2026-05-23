@@ -2,6 +2,7 @@ import json
 import logging
 import math
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -9,7 +10,8 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import Campaign, Metrics, Payment, Post, User, MastodonAccount
+from app.models import AccountLink, Campaign, Metrics, Payment, Post, User, MastodonAccount
+from sqlalchemy import or_
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
@@ -149,9 +151,19 @@ def list_campaigns(request: Request, session: Session = Depends(get_session), us
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "campaigns": campaigns})
 
 
+def _get_available_accounts(session: Session, user: User) -> list[MastodonAccount]:
+    """Return current user's account plus accounts from all linked users."""
+    linked_ids = _get_linked_user_ids(session, user.id)
+    all_user_ids = [user.id] + linked_ids
+    return session.exec(
+        select(MastodonAccount).where(MastodonAccount.user_id.in_(all_user_ids))
+    ).all()
+
+
 @router.get("/new", response_class=HTMLResponse)
 def new_campaign_page(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     existing = session.exec(select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())).all()
+    available_accounts = _get_available_accounts(session, user)
     error = None
     if request.query_params.get("error") == "limit":
         count = request.query_params.get("count", settings.max_free_campaigns)
@@ -166,6 +178,7 @@ def new_campaign_page(request: Request, session: Session = Depends(get_session),
             "languages": LANGUAGES,
             "existing_campaigns": existing,
             "template_fields": TEMPLATE_FIELDS,
+            "available_accounts": available_accounts,
             "error": error,
         },
     )
@@ -182,6 +195,7 @@ async def create_campaign(
     language: str = Form("English"),
     duration_days: int = Form(30),
     posts_per_week: int = Form(3),
+    mastodon_account_id: Optional[int] = Form(None),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
@@ -212,14 +226,22 @@ async def create_campaign(
             status_code=302,
         )
 
-    # Auto-assign the user's first Mastodon account (single account = no picker needed)
-    mastodon_account = session.exec(
-        select(MastodonAccount).where(MastodonAccount.user_id == user.id)
-    ).first()
+    # Validate and resolve the posting account
+    available = _get_available_accounts(session, user)
+    available_ids = {acc.id for acc in available}
 
+    if mastodon_account_id and mastodon_account_id in available_ids:
+        resolved_account = session.get(MastodonAccount, mastodon_account_id)
+    else:
+        # Fall back to current user's account
+        resolved_account = session.exec(
+            select(MastodonAccount).where(MastodonAccount.user_id == user.id)
+        ).first()
+
+    # Campaign owner is always the current user; mastodon_account_id may point to a linked account
     campaign = Campaign(
         user_id=user.id,
-        mastodon_account_id=mastodon_account.id if mastodon_account else None,
+        mastodon_account_id=resolved_account.id if resolved_account else None,
         name=name,
         description=description,
         template_type=template_type,
@@ -276,6 +298,18 @@ def _polar_activate_campaign(campaign_id: int, user_id: int, session: Session) -
     return False
 
 
+def _get_linked_user_ids(session: Session, user_id: int) -> list[int]:
+    links = session.exec(
+        select(AccountLink).where(
+            or_(AccountLink.user_id == user_id, AccountLink.linked_user_id == user_id)
+        )
+    ).all()
+    return [
+        link.linked_user_id if link.user_id == user_id else link.user_id
+        for link in links
+    ]
+
+
 @router.get("/{campaign_id}", response_class=HTMLResponse)
 def campaign_detail(
     campaign_id: int,
@@ -284,15 +318,28 @@ def campaign_detail(
     user: User = Depends(get_current_user),
 ):
     campaign = session.get(Campaign, campaign_id)
-    if not campaign or campaign.user_id != user.id:
+    if not campaign:
         raise HTTPException(status_code=404)
+    linked_ids = _get_linked_user_ids(session, user.id)
+    if campaign.user_id != user.id and campaign.user_id not in linked_ids:
+        raise HTTPException(status_code=404)
+    is_owner = (campaign.user_id == user.id)
 
     # Fallback: if returning from Polar checkout but campaign not yet activated, query Polar API
-    if campaign.payment_status != "paid" and request.query_params.get("customer_session_token"):
+    if is_owner and campaign.payment_status != "paid" and request.query_params.get("customer_session_token"):
         _polar_activate_campaign(campaign_id, user.id, session)
         session.refresh(campaign)
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
+
+    # Resolve campaign's posting account for display
+    campaign_account = None
+    if campaign.mastodon_account_id:
+        campaign_account = session.get(MastodonAccount, campaign.mastodon_account_id)
+    if not campaign_account:
+        campaign_account = session.exec(
+            select(MastodonAccount).where(MastodonAccount.user_id == campaign.user_id)
+        ).first()
     now = datetime.utcnow()
     stale_pending_count = sum(1 for p in posts if p.status == "pending" and p.scheduled_time < now)
     # Overview metrics for all campaigns (publishing is free)
@@ -319,7 +366,7 @@ def campaign_detail(
         {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
          "ai_max": settings.openai_max_posts_per_campaign, "stale_pending_count": stale_pending_count,
          "overview_favs": overview_favs, "overview_reblogs": overview_reblogs, "overview_replies": overview_replies,
-         "description_fields": description_fields},
+         "description_fields": description_fields, "is_owner": is_owner, "campaign_account": campaign_account},
     )
 
 
@@ -363,10 +410,12 @@ def edit_campaign_page(
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be edited")
+    available_accounts = _get_available_accounts(session, user)
     return templates.TemplateResponse(
         "campaign_create.html",
         {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
-         "template_fields": TEMPLATE_FIELDS, "edit_campaign": campaign},
+         "template_fields": TEMPLATE_FIELDS, "edit_campaign": campaign,
+         "available_accounts": available_accounts},
     )
 
 
@@ -380,6 +429,7 @@ def update_campaign(
     language: str = Form("English"),
     duration_days: int = Form(30),
     posts_per_week: int = Form(3),
+    mastodon_account_id: Optional[int] = Form(None),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
@@ -402,6 +452,10 @@ def update_campaign(
     campaign.language = language
     campaign.duration_days = max(1, min(365, duration_days))
     campaign.posts_per_week = max(1, min(14, posts_per_week))
+    if mastodon_account_id is not None:
+        available = _get_available_accounts(session, user)
+        if mastodon_account_id in {acc.id for acc in available}:
+            campaign.mastodon_account_id = mastodon_account_id
     session.add(campaign)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)
