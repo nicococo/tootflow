@@ -388,6 +388,21 @@
     transition: border-color 0.12s;
   }
   .pc-sched-input:focus { border-color: var(--teal); }
+  .btn-now {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    color: var(--teal);
+    background: transparent;
+    border: 1.5px solid var(--teal);
+    padding: 2px 7px;
+    cursor: pointer;
+    flex-shrink: 0;
+    line-height: 1.6;
+  }
+  .btn-now:hover { background: var(--teal); color: #fff; }
 
   /* Refine zone — matches Export Studio refine bar exactly */
   .pc-refine-zone {
@@ -553,7 +568,10 @@
           </div>
           <div class="form-group">
             <label>Scheduled Time <span style="font-weight:normal; color:var(--muted);">(UTC)</span></label>
-            <input type="datetime-local" name="scheduled_time" required>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="datetime-local" id="new-sched" name="scheduled_time" required style="flex:1;">
+              <button type="button" class="btn-now" onclick="setNow(document.getElementById('new-sched'))">Now</button>
+            </div>
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Add Post</button>
         </form>
@@ -624,7 +642,9 @@
           <div class="pc-sched-row">
             <span class="pc-sched-label">Schedule</span>
             <input class="pc-sched-input" type="datetime-local" name="scheduled_time"
+                   id="sched-{{ post.id }}"
                    value="{{ post.scheduled_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+            <button type="button" class="btn-now" onclick="setNow(document.getElementById('sched-{{ post.id }}'))">Now</button>
             <span class="pc-sched-utc">UTC</span>
           </div>
 
@@ -755,6 +775,12 @@ function showAiLoading(title, msg) {
 function confirmAndGenerate(count) {
   if (!confirm('Replace all ' + count + ' pending post(s) with AI-generated content?')) return false;
   return showAiLoading('Generating your campaign…', 'The AI is drafting all posts. This usually takes 15–30 seconds.');
+}
+
+function setNow(input) {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  input.value = d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
 }
 
 function updateCount(textareaId, countId) {
