@@ -57,6 +57,55 @@
   }
   .status-row:last-child { border-bottom: 0; }
 
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: var(--border);
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .filter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+  .fchip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 3px 8px;
+    border: 2px solid #ddd6cc;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .fchip:hover { border-color: var(--ink); color: var(--ink); }
+  .fchip.active { border-color: var(--ink); background: var(--ink); color: #f2ece0; }
+  .filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
   /* ── Account color stripe on table rows ── */
   .acct-stripe td:first-child { border-left: 5px solid var(--acct-color, #47b8b1); }
   .acct-chip {
@@ -280,6 +329,34 @@
       <a href="/campaigns/new" style="font-weight:bold;">Create your first campaign.</a>
     </div>
     {% else %}
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      {% if linked_accounts %}
+      <div class="filter-group">
+        <span class="filter-label">Account</span>
+        <button class="fchip active" data-filter="account" data-value="all">All</button>
+        {% if mastodon %}
+        {% set mc = account_color.get(mastodon.user_id, '#47b8b1') %}
+        <button class="fchip" data-filter="account" data-value="{{ mastodon.user_id }}" data-color="{{ mc }}">@{{ mastodon.username }}</button>
+        {% endif %}
+        {% for acc in linked_accounts %}
+        {% set lc = account_color.get(acc.user_id, '#47b8b1') %}
+        <button class="fchip" data-filter="account" data-value="{{ acc.user_id }}" data-color="{{ lc }}">@{{ acc.username }}</button>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="filter-group">
+        <span class="filter-label">Status</span>
+        <button class="fchip active" data-filter="status" data-value="all">All</button>
+        <button class="fchip" data-filter="status" data-value="active">Active</button>
+        <button class="fchip" data-filter="status" data-value="paused">Paused</button>
+        <button class="fchip" data-filter="status" data-value="draft">Draft</button>
+        <button class="fchip" data-filter="status" data-value="done">Done</button>
+      </div>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+
     <div class="table-wrap">
     <table>
       <thead>
@@ -291,10 +368,15 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="campaigns-tbody">
         {% for c in campaigns %}
         {% set row_color = account_color.get(c.user_id, '#47b8b1') %}
-        <tr class="acct-stripe" style="--acct-color:{{ row_color }};{% if c.user_id != own_user_id %} opacity:0.88;{% endif %}">
+        {% if not c.enabled and c.payment_status == "paid" %}{% set sg = "paused" %}
+        {% elif c.status in ("completed", "archived") %}{% set sg = "done" %}
+        {% elif c.status == "draft" %}{% set sg = "draft" %}
+        {% else %}{% set sg = "active" %}{% endif %}
+        <tr class="acct-stripe" data-uid="{{ c.user_id }}" data-sg="{{ sg }}"
+            style="--acct-color:{{ row_color }};{% if c.user_id != own_user_id %} opacity:0.88;{% endif %}">
           <td>
             <a href="/campaigns/{{ c.id }}" style="font-weight:bold; display:block; margin-bottom:3px;">{{ c.name }}</a>
             {% set acct = account_label_by_campaign.get(c.id) %}
@@ -338,4 +420,57 @@
   </div>
 
 </div>
+
+<script>
+(function () {
+  const filters = { account: 'all', status: 'all' };
+  const tbody = document.getElementById('campaigns-tbody');
+  const counter = document.getElementById('filter-count');
+  if (!tbody) return;
+
+  const total = tbody.querySelectorAll('tr').length;
+
+  function applyFilters() {
+    let visible = 0;
+    tbody.querySelectorAll('tr').forEach(row => {
+      const matchAccount = filters.account === 'all' || row.dataset.uid === filters.account;
+      const matchStatus  = filters.status  === 'all' || row.dataset.sg  === filters.status;
+      const show = matchAccount && matchStatus;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    if (counter) {
+      const isFiltered = filters.account !== 'all' || filters.status !== 'all';
+      counter.textContent = isFiltered ? visible + ' / ' + total : '';
+    }
+  }
+
+  document.querySelectorAll('.fchip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const group = chip.dataset.filter;
+      filters[group] = chip.dataset.value;
+
+      // Update active state within this group
+      document.querySelectorAll('.fchip[data-filter="' + group + '"]').forEach(c => {
+        const isActive = c.dataset.value === chip.dataset.value;
+        c.classList.toggle('active', isActive);
+        // Account chips: active = account color; others = ink
+        if (group === 'account' && c.dataset.color && c.dataset.value !== 'all') {
+          if (isActive) {
+            c.style.background = c.dataset.color;
+            c.style.borderColor = c.dataset.color;
+            c.style.color = '#fff';
+          } else {
+            c.style.background = '';
+            c.style.borderColor = '';
+            c.style.color = '';
+          }
+        }
+      });
+
+      applyFilters();
+    });
+  });
+})();
+</script>
 {% endblock %}

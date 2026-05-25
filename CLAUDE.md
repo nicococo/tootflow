@@ -38,7 +38,9 @@ The UI follows brutalist web design:
 
 - **User**: created_at
 - **MastodonAccount**: instance_url, access_token (Fernet-encrypted), username
-- **Campaign**: name, description (JSON), template_type, tone, language, duration_days, posts_per_week, status, payment_status, enabled (pause/resume)
+- **XAccount**: user_id, username, access_token, access_token_secret
+- **AccountLink**: user_id, linked_user_id — joins two TootFlow users so their campaigns appear combined in the dashboard
+- **Campaign**: name, description (JSON), template_type, tone, language, duration_days, posts_per_week, status, payment_status, enabled (pause/resume), mastodon_account_id, x_account_id
 - **Post**: campaign_id, content (max 500 chars), scheduled_time, status, mastodon_status_id, poll_options, poll_expires_in
 - **Metrics**: post_id, favourites, reblogs, replies, poll_voters
 - **Payment**: campaign_id, lemonsqueezy_order_id (used as generic order_id field), amount, currency, status
@@ -46,6 +48,16 @@ The UI follows brutalist web design:
 - **PageView**: visitor_hash, path, created_at — privacy-safe (hashed IP+date)
 - **SiteConfig**: key/value — stores banner_text, registration_open
 - **FollowerSnapshot**: user_id, count, recorded_at
+
+## Account Linking
+
+Users can link multiple TootFlow accounts (each backed by a different Mastodon account) via `AccountLink`. Linked accounts share dashboard visibility and full campaign management access.
+
+**Links are direct-only — not transitive.** If A links to B and B links to C, A does NOT see C. This is deliberate: links are explicit actions, and transitivity would silently grant visibility to accounts the user never consciously connected. Do not implement graph traversal in `_get_linked_user_ids`. If A needs to see C, the user must link A→C directly.
+
+- Linking flow: `POST /mastodon/link` → OAuth → callback creates `AccountLink`; new TootFlow user created if the Mastodon identity doesn't exist yet
+- Unlinking: `POST /mastodon/unlink/{linked_user_id}`
+- Migration: `python -m app.migrations.add_account_links [--prod]`
 
 ## Campaign States
 
