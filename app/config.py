@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     export_max_per_campaign: int = 10  # cap on export generations per campaign
     openai_max_tokens: int = 4096  # max tokens per OpenAI response
 
+    # X.com (Twitter) OAuth 1.0a consumer credentials — empty disables X UI
+    x_api_key: str = ""
+    x_api_secret: str = ""
+
     polar_access_token: str = ""
     polar_product_id: str = ""
     polar_webhook_secret: str = ""

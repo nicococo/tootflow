@@ -14,8 +14,8 @@ from app.crypto import encrypt_token
 from app.csrf import verify_csrf
 from app.database import get_session
 from app.limiter import limiter
-from app.models import AccountLink, LoginEvent, MastodonAccount, User
-from app.services import mastodon_service
+from app.models import AccountLink, LoginEvent, MastodonAccount, User, XAccount, Campaign
+from app.services import mastodon_service, x_service
 from app.site_config import get_registration_open
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,9 @@ templates.env.globals["settings"] = settings
 
 # OAuth state store: state_token → {instance_url, client_id, client_secret}
 _oauth_apps: dict[str, dict] = {}
+
+# X OAuth 1.0a state store: request oauth_token → {token_secret, user_id}
+_x_oauth_states: dict[str, dict] = {}
 
 
 def _validate_instance_url(url: str) -> str:
@@ -142,6 +145,96 @@ def mastodon_unlink(
     ).first()
     if link:
         session.delete(link)
+        session.commit()
+    return RedirectResponse("/account", status_code=302)
+
+
+@router.post("/x/connect")
+@limiter.limit("10/minute")
+async def x_connect(
+    request: Request,
+    _csrf: None = Depends(verify_csrf),
+    user: User = Depends(get_current_user),
+):
+    """Start OAuth 1.0a flow to connect an X account to the current user."""
+    if not settings.x_api_key:
+        raise HTTPException(status_code=404)
+    callback_url = f"{settings.app_base_url}/x/callback"
+    try:
+        data = await x_service.get_request_token(callback_url)
+    except Exception as e:
+        logger.error(f"X request-token fetch failed: {e}")
+        return RedirectResponse("/account?x_error=1", status_code=302)
+
+    _x_oauth_states[data["oauth_token"]] = {
+        "token_secret": data["oauth_token_secret"],
+        "user_id": user.id,
+    }
+    return RedirectResponse(x_service.get_authorize_url(data["oauth_token"]), status_code=302)
+
+
+@router.get("/x/callback")
+async def x_callback(
+    oauth_token: str,
+    oauth_verifier: str,
+    session: Session = Depends(get_session),
+):
+    """X OAuth callback: exchange verifier, store encrypted tokens on XAccount."""
+    state = _x_oauth_states.pop(oauth_token, None)
+    if not state:
+        raise HTTPException(status_code=400, detail="OAuth session expired or invalid state")
+
+    try:
+        data = await x_service.exchange_verifier(
+            oauth_token, state["token_secret"], oauth_verifier
+        )
+    except Exception as e:
+        logger.error(f"X token exchange failed: {e}")
+        return RedirectResponse("/account?x_error=1", status_code=302)
+
+    username = data.get("screen_name", "")
+    user_id = state["user_id"]
+    encrypted_token = encrypt_token(data["oauth_token"])
+    encrypted_secret = encrypt_token(data["oauth_token_secret"])
+
+    existing = session.exec(
+        select(XAccount).where(
+            XAccount.user_id == user_id,
+            XAccount.username == username,
+        )
+    ).first()
+    if existing:
+        existing.access_token = encrypted_token
+        existing.access_token_secret = encrypted_secret
+        session.add(existing)
+    else:
+        session.add(XAccount(
+            user_id=user_id,
+            username=username,
+            access_token=encrypted_token,
+            access_token_secret=encrypted_secret,
+        ))
+    session.commit()
+    return RedirectResponse("/account?x_linked=1", status_code=302)
+
+
+@router.post("/x/disconnect/{x_account_id}")
+def x_disconnect(
+    x_account_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    """Remove a connected X account; campaigns that used it fall back to none."""
+    account = session.get(XAccount, x_account_id)
+    if account and account.user_id == user.id:
+        affected = session.exec(
+            select(Campaign).where(Campaign.x_account_id == x_account_id)
+        ).all()
+        for campaign in affected:
+            campaign.x_account_id = None
+            session.add(campaign)
+        session.delete(account)
         session.commit()
     return RedirectResponse("/account", status_code=302)
 

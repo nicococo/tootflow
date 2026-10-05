@@ -65,6 +65,7 @@ class Post(SQLModel, table=True):
     scheduled_time: datetime
     status: str = "pending"
     mastodon_status_id: Optional[str] = None
+    x_status_id: Optional[str] = None
     published_at: Optional[datetime] = None
     poll_options: Optional[str] = None   # JSON list e.g. '["Yes","No","Maybe"]'
     poll_expires_in: int = 86400         # seconds; default = 1 day

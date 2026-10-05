@@ -484,16 +484,18 @@
         <div class="eyebrow">Craft Tips</div>
       </div>
       <div class="tips-panel-body">
-        <div class="tip"><strong>One idea per toot</strong>Don't cram multiple topics. Focus drives engagement.</div>
-        <div class="tip"><strong>Use your 500 chars</strong>Get to the point fast. Cut anything that doesn't add value.</div>
+        <div class="tip"><strong>One idea per post</strong>Don't cram multiple topics. Focus drives engagement.</div>
+        <div class="tip"><strong>Use your {{ max_chars }} chars</strong>Get to the point fast. Cut anything that doesn't add value.</div>
         <div class="tip"><strong>End with a hook</strong>A question or call-to-action drives replies and reach.</div>
-        <div class="tip"><strong>Line breaks matter</strong>White space makes toots scannable. Break at natural pauses.</div>
+        <div class="tip"><strong>Line breaks matter</strong>White space makes posts scannable. Break at natural pauses.</div>
         <div class="tip"><strong>2–3 hashtags max</strong>Pick specific ones. More looks spammy and dilutes focus.</div>
         <div class="tip"><strong>Vary your format</strong>Mix statements, questions, and short threads across your campaign.</div>
         <div class="tip"><strong>Links at the end</strong>URLs eat chars and disrupt reading flow — put them last.</div>
         <div class="tip"><strong>Read it aloud</strong>If it sounds robotic, rewrite it. Real voice outperforms polish.</div>
+        {% if not is_x_campaign %}
         <div class="tip"><strong>Polls drive replies</strong>A simple 2-option poll can double engagement.</div>
         <div class="tip"><strong>Poll timing</strong>1-day polls create urgency. 7-day polls suit slow-burn topics.</div>
+        {% endif %}
       </div>
     </div>
   </aside>
@@ -561,10 +563,10 @@
         <form method="post" action="/campaigns/{{ campaign.id }}/posts/add">
           <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
           <div class="form-group">
-            <label>Content <span style="font-weight:normal; color:var(--muted);">(max 500 chars)</span></label>
-            <textarea name="content" id="new-content" rows="4" maxlength="500" required
+            <label>Content <span style="font-weight:normal; color:var(--muted);">(max {{ max_chars }} chars)</span></label>
+            <textarea name="content" id="new-content" rows="4" maxlength="{{ max_chars }}" required
               oninput="updateCount('new-content','new-count')"></textarea>
-            <div class="char-count" id="new-count">0 / 500</div>
+            <div class="char-count" id="new-count">0 / {{ max_chars }}</div>
           </div>
           <div class="form-group">
             <label>Scheduled Time <span style="font-weight:normal; color:var(--muted);">(UTC)</span></label>
@@ -632,9 +634,9 @@
           <div class="pc-field">
             <div class="pc-field-label">
               Content
-              <span class="pc-char" id="count-{{ post.id }}">{{ post.content | length }} / 500</span>
+              <span class="pc-char" id="count-{{ post.id }}">{{ post.content | length }} / {{ max_chars }}</span>
             </div>
-            <textarea class="pc-textarea" name="content" id="content-{{ post.id }}" rows="5" maxlength="500"
+            <textarea class="pc-textarea" name="content" id="content-{{ post.id }}" rows="5" maxlength="{{ max_chars }}"
               oninput="updateCount('content-{{ post.id }}','count-{{ post.id }}')">{{ post.content }}</textarea>
           </div>
 
@@ -648,8 +650,9 @@
             <span class="pc-sched-utc">UTC</span>
           </div>
 
-          <!-- Poll -->
+          <!-- Poll (Mastodon only — X API cannot create polls) -->
           {% set existing_opts = poll_data.get(post.id, []) %}
+          {% if not is_x_campaign %}
           <div class="pc-poll-header" onclick="togglePoll({{ post.id }})">
             <span class="pc-poll-toggle-label" id="poll-toggle-{{ post.id }}">{% if existing_opts %}▾ Poll{% else %}▸ Poll{% endif %}</span>
             <span class="pc-poll-badge" id="poll-badge-{{ post.id }}"{% if not existing_opts %} style="display:none;"{% endif %}>● Active</span>
@@ -677,6 +680,7 @@
               <span class="pc-poll-hint">Leave all options blank to remove.</span>
             </div>
           </div>
+          {% endif %}
 
         </div>
 
@@ -711,10 +715,10 @@
       <!-- Published / failed view -->
       <div class="pc-published-body">
         <div class="pc-published-content">{{ post.content }}</div>
-        {% if post.mastodon_status_id %}
+        {% if post.mastodon_status_id or post.x_status_id %}
         <div class="pc-published-meta">
           Published {{ post.published_at.strftime("%Y-%m-%d %H:%M") if post.published_at else "—" }}
-          &middot; ID: <code>{{ post.mastodon_status_id }}</code>
+          &middot; ID: <code>{{ post.mastodon_status_id or post.x_status_id }}</code>
         </div>
         {% endif %}
       </div>
@@ -783,17 +787,19 @@ function setNow(input) {
   input.value = d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
 }
 
+const MAX_CHARS = {{ max_chars }};
+
 function updateCount(textareaId, countId) {
   const ta = document.getElementById(textareaId);
   const counter = document.getElementById(countId);
   const len = ta.value.length;
-  counter.textContent = len + ' / 500';
-  counter.classList.toggle('over', len > 500);
+  counter.textContent = len + ' / ' + MAX_CHARS;
+  counter.classList.toggle('over', len > MAX_CHARS);
 }
 document.querySelectorAll('textarea[id^="content-"], textarea[id="new-content"]').forEach(ta => {
   const countId = ta.id.replace('content-', 'count-').replace('new-content', 'new-count');
   const counter = document.getElementById(countId);
-  if (counter) counter.textContent = ta.value.length + ' / 500';
+  if (counter) counter.textContent = ta.value.length + ' / ' + MAX_CHARS;
 });
 
 function togglePoll(postId) {

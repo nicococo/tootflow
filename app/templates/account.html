@@ -118,6 +118,12 @@
         <td style="color:var(--muted);">{{ mastodon.instance_url }}</td>
       </tr>
       {% endif %}
+      {% for xacc in x_accounts %}
+      <tr>
+        <th style="width:140px;">X (Twitter)</th>
+        <td><strong style="color:var(--ink);">@{{ xacc.username }}</strong></td>
+      </tr>
+      {% endfor %}
       <tr>
         <th>Member since</th>
         <td style="color:var(--muted);">{{ user.created_at.strftime("%Y-%m-%d") }}</td>
@@ -180,6 +186,59 @@
         You'll be redirected to Mastodon to authenticate. Log into the account you want to link first.
       </p>
     </div>
+
+    {% if settings.x_api_key %}
+    <h2>X (Twitter) Accounts</h2>
+    <p class="muted text-sm" style="margin-bottom:16px;">
+      Connect your X account to publish campaigns there. A campaign publishes to one platform —
+      you pick the account when creating it.
+    </p>
+
+    {% if x_linked %}
+    <div style="background:#e8f5e9; border:2px solid #4caf50; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      X account connected successfully.
+    </div>
+    {% endif %}
+    {% if x_error %}
+    <div style="background:#fff3cd; border:2px solid #d95f2a; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      Could not connect your X account. Please try again.
+    </div>
+    {% endif %}
+
+    {% if x_accounts %}
+    <div class="table-wrap" style="margin-bottom:20px;">
+    <table>
+      {% for xacc in x_accounts %}
+      <tr>
+        <td>
+          <strong style="color:var(--ink);">@{{ xacc.username }}</strong>
+          <span class="muted" style="font-size:11px;">on X</span>
+        </td>
+        <td style="text-align:right;">
+          <form method="post" action="/x/disconnect/{{ xacc.id }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <button type="submit" class="btn btn-sm btn-outline"
+                    style="color:#c0392b; border-color:#c0392b;"
+                    onclick="return confirm('Disconnect this X account? Campaigns using it will stop publishing.')">Disconnect</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% endif %}
+
+    <div style="background:var(--surface-soft); border:var(--border); padding:16px; margin-bottom:32px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Connect X Account</div>
+      <form method="post" action="/x/connect" style="display:flex; gap:8px; align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <button type="submit" class="btn btn-primary">Connect via X</button>
+      </form>
+      <p class="muted" style="font-size:11px; margin-top:8px; margin-bottom:0;">
+        You'll be redirected to x.com to authorize TootFlow. Log into the X account you want to connect first.
+      </p>
+    </div>
+    {% endif %}
 
     <h2>Your Data</h2>
     <p class="muted text-sm" style="margin-bottom:16px;">

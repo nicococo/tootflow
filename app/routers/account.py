@@ -11,7 +11,7 @@ from app.auth import get_current_user
 from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import AccountLink, Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User
+from app.models import AccountLink, Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User, XAccount
 from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,11 @@ def account_page(
     linked_accounts = _get_linked_accounts(session, user.id)
     linked = request.query_params.get("linked") == "1"
     link_error = request.query_params.get("link_error") == "1"
+    x_accounts = session.exec(
+        select(XAccount).where(XAccount.user_id == user.id)
+    ).all()
+    x_linked = request.query_params.get("x_linked") == "1"
+    x_error = request.query_params.get("x_error") == "1"
     return templates.TemplateResponse(
         "account.html",
         {
@@ -62,6 +67,9 @@ def account_page(
             "linked_accounts": linked_accounts,
             "linked": linked,
             "link_error": link_error,
+            "x_accounts": x_accounts,
+            "x_linked": x_linked,
+            "x_error": x_error,
         },
     )
 
@@ -84,12 +92,16 @@ def export_data(
     follower_snapshots = session.exec(
         select(FollowerSnapshot).where(FollowerSnapshot.user_id == user.id).order_by(FollowerSnapshot.recorded_at)
     ).all()
+    x_accounts = session.exec(
+        select(XAccount).where(XAccount.user_id == user.id)
+    ).all()
 
     export = {
         "exported_at": datetime.utcnow().isoformat() + "Z",
         "account": {
             "mastodon_username": mastodon.username if mastodon else None,
             "mastodon_instance": mastodon.instance_url if mastodon else None,
+            "x_usernames": [x.username for x in x_accounts],
             "member_since": user.created_at.isoformat() + "Z",
         },
         "payments": [
@@ -127,6 +139,7 @@ def export_data(
                 "created_at": p.created_at.isoformat() + "Z",
                 "published_at": p.published_at.isoformat() + "Z" if p.published_at else None,
                 "mastodon_status_id": p.mastodon_status_id,
+                "x_status_id": p.x_status_id,
                 "poll": {"options": poll, "expires_in_seconds": p.poll_expires_in} if poll else None,
                 "metrics": {
                     "favourites": m.favourites,
@@ -208,6 +221,11 @@ def delete_account(
     ).first()
     if mastodon:
         session.delete(mastodon)
+
+    for x_acc in session.exec(
+        select(XAccount).where(XAccount.user_id == user.id)
+    ).all():
+        session.delete(x_acc)
 
     for snapshot in session.exec(
         select(FollowerSnapshot).where(FollowerSnapshot.user_id == user.id)

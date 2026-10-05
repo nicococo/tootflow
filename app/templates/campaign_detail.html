@@ -419,7 +419,22 @@
     {% endif %}
 
     <!-- Posting account -->
-    {% if campaign_account %}
+    {% if campaign_x_account %}
+    <div class="info-panel">
+      <div class="info-panel-head">
+        <div class="eyebrow">Posting As</div>
+      </div>
+      <div class="info-panel-body">
+        <div class="info-row">
+          <a href="https://x.com/{{ campaign_x_account.username }}"
+             target="_blank" rel="noopener noreferrer"
+             style="color:var(--ink); font-size:12px; font-weight:700;">
+            𝕏 @{{ campaign_x_account.username }}
+          </a>
+        </div>
+      </div>
+    </div>
+    {% elif campaign_account %}
     <div class="info-panel">
       <div class="info-panel-head">
         <div class="eyebrow">Posting As</div>

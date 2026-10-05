@@ -8,8 +8,8 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import engine
-from app.models import Campaign, Post, Metrics, MastodonAccount, FollowerSnapshot
-from app.services import mastodon_service
+from app.models import Campaign, Post, Metrics, MastodonAccount, FollowerSnapshot, XAccount
+from app.services import mastodon_service, x_service
 from app.crypto import decrypt_token
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,44 @@ def _resolve_mastodon_account(session: Session, campaign: Campaign) -> MastodonA
     return session.exec(
         select(MastodonAccount).where(MastodonAccount.user_id == campaign.user_id)
     ).first()
+
+
+async def _publish_to_x(session: Session, campaign: Campaign, post: Post) -> None:
+    """Publish a single post to X. Mirrors Mastodon error policy:
+    4xx → permanent failure; 5xx/429/network → leave pending for retry."""
+    account = session.get(XAccount, campaign.x_account_id)
+    if not account:
+        logger.warning(f"No X account for campaign {campaign.id}, skipping post {post.id}")
+        return
+
+    try:
+        # Transient copy — decrypted tokens never touch the session (can't be flushed)
+        tmp = XAccount(
+            user_id=account.user_id,
+            username=account.username,
+            access_token=decrypt_token(account.access_token),
+            access_token_secret=decrypt_token(account.access_token_secret),
+        )
+        result = await x_service.publish_post(tmp, post.content)
+        post.status = "published"
+        post.x_status_id = result.get("id")
+        post.published_at = datetime.utcnow()
+        session.add(post)
+
+        if campaign.status == "active":
+            campaign.status = "running"
+            session.add(campaign)
+
+        logger.info(f"Published post {post.id} to X for campaign {campaign.id}")
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code < 500 and e.response.status_code != 429:
+            post.status = "failed"
+            session.add(post)
+            logger.error(f"X post {post.id} permanently failed (HTTP {e.response.status_code}): {e}")
+        else:
+            logger.warning(f"X post {post.id} transient error (HTTP {e.response.status_code}), will retry: {e}")
+    except Exception as e:
+        logger.warning(f"X post {post.id} transient error, will retry: {e}")
 
 
 async def publish_due_posts():
@@ -48,6 +86,11 @@ async def publish_due_posts():
 
         for post in due_posts:
             campaign = session.get(Campaign, post.campaign_id)
+
+            if campaign.x_account_id is not None:
+                await _publish_to_x(session, campaign, post)
+                continue
+
             account = _resolve_mastodon_account(session, campaign)
 
             if not account:
@@ -55,11 +98,18 @@ async def publish_due_posts():
                 continue
 
             try:
-                # Decrypt token for use — do not persist the decrypted value (Fix #1)
-                account.access_token = decrypt_token(account.access_token)
+                # Transient copy — decrypted token never touches the session,
+                # so session.commit() can't persist it (Fix #1)
+                tmp_account = MastodonAccount(
+                    id=account.id,
+                    user_id=account.user_id,
+                    instance_url=account.instance_url,
+                    username=account.username,
+                    access_token=decrypt_token(account.access_token),
+                )
                 _poll_opts = json.loads(post.poll_options) if post.poll_options else None
                 result = await mastodon_service.publish_post(
-                    account,
+                    tmp_account,
                     post.content,
                     poll_options=_poll_opts,
                     poll_expires_in=post.poll_expires_in,
