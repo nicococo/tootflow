@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     polar_product_id: str = ""
     polar_webhook_secret: str = ""
     polar_server: str = "sandbox"  # "sandbox" or "production"
+    # Date-based API version pin (Polar-Version header). 2026-04 is the
+    # contract this integration was built against; supported until ~Jan 2027.
+    polar_api_version: str = "2026-04"
 
     app_base_url: str = "http://localhost:8000"
     app_env: str = "development"  # set to "production" in prod

@@ -280,8 +280,8 @@ async def create_campaign(
 def _polar_activate_campaign(campaign_id: int, user_id: int, session: Session) -> bool:
     """Query Polar for a paid order matching this campaign and activate it if found. Returns True if activated."""
     try:
-        from polar_sdk import Polar
-        client = Polar(access_token=settings.polar_access_token, server=settings.polar_server)
+        from app.services.payment_service import get_polar_client
+        client = get_polar_client()
         result = client.orders.list(metadata={"campaign_id": str(campaign_id)}, limit=5)
         orders = result.result.items if result and hasattr(result, "result") and result.result else []
         for order in orders:

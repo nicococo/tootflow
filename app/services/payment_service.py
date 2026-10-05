@@ -1,3 +1,4 @@
+import httpx
 from polar_sdk import Polar
 from polar_sdk.webhooks import validate_event, WebhookVerificationError
 
@@ -6,10 +7,12 @@ from app.config import get_settings
 settings = get_settings()
 
 
-def _client() -> Polar:
+def get_polar_client() -> Polar:
+    """Polar SDK client pinned to a date-based API version via Polar-Version header."""
     return Polar(
         access_token=settings.polar_access_token,
         server=settings.polar_server,
+        client=httpx.Client(headers={"Polar-Version": settings.polar_api_version}),
     )
 
 
@@ -27,7 +30,7 @@ def verify_webhook_signature(payload: bytes, headers: dict) -> object:
 
 async def create_checkout_url(campaign_id: int, user_id: int) -> str:
     """Create a Polar checkout URL for a campaign."""
-    client = _client()
+    client = get_polar_client()
     result = client.checkouts.create(request={
         "products": [settings.polar_product_id],
         "metadata": {

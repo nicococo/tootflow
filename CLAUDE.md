@@ -75,6 +75,7 @@ Campaign progression: `draft` → `active` (posts added) → `running` (first po
 2. Polar webhook `POST /webhooks/polar` → `order.paid` event → activate campaign
 3. Fallback: campaign detail page detects `?customer_session_token=` query param + unpaid status → queries Polar orders API directly to activate
 4. Event type detection uses `type(event).__name__` string check (not `isinstance`) for SDK version resilience
+5. **API version pinning**: all SDK requests send `Polar-Version` header from `settings.polar_api_version` (default `2026-04`, supported until ~Jan 2027). Single client factory: `payment_service.get_polar_client()` — use it for any new Polar calls. Migrate to `2026-10` before the January 2027 quarterly release.
 
 ### Scheduler (publish_due_posts)
 - Runs every 1 minute, `max_instances=1` (no overlapping runs)
