@@ -36,6 +36,16 @@ def _sanitize(text: str, max_len: int) -> str:
     return text[:max_len].strip()
 
 
+_PLATFORM_LIMITS = {"mastodon": 500, "x": 280}
+
+
+def _platform_style(platform: str) -> tuple[int, str]:
+    """Return (max_chars, style note) for a platform."""
+    if platform == "x":
+        return 280, "feel natural for X/Twitter (concise, punchy, no threads)"
+    return 500, "feel natural for Mastodon (not Twitter-style)"
+
+
 async def generate_posts(
     campaign_name: str,
     description: str,
@@ -44,6 +54,7 @@ async def generate_posts(
     language: str,
     duration_days: int,
     posts_per_week: int,
+    platform: str = "mastodon",
 ) -> List[str]:
     client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
@@ -53,6 +64,7 @@ async def generate_posts(
     )
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
+    max_chars, style_note = _platform_style(platform)
 
     # Sanitize user-supplied inputs before inserting into prompt
     safe_name = _sanitize(campaign_name, 200)
@@ -61,10 +73,10 @@ async def generate_posts(
 
     # Use system/user role separation to isolate instructions from user data (Fix #11)
     system_prompt = (
-        f"You are a social media expert creating Mastodon posts for {template_desc}. "
+        f"You are a social media expert creating social posts for {template_desc}. "
         f"Generate exactly {total_posts} posts. Each post must: "
-        f"be under 500 characters, match the {tone_desc} tone, "
-        f"feel natural for Mastodon (not Twitter-style), and optionally include 1-3 relevant hashtags. "
+        f"be under {max_chars} characters, match the {tone_desc} tone, "
+        f"{style_note}, and optionally include 1-3 relevant hashtags. "
         f"Output ONLY the posts, separated by a line containing exactly '---'. "
         f"Do not number them or add any explanation."
     )
@@ -88,7 +100,7 @@ async def generate_posts(
 
     raw = response.choices[0].message.content.strip()
     posts = [p.strip() for p in raw.split("---") if p.strip()]
-    posts = [p[:500] for p in posts]
+    posts = [p[:max_chars] for p in posts]
     return posts[:total_posts]
 
 
@@ -98,21 +110,23 @@ async def regenerate_single_post(
     template_type: str,
     tone: str,
     language: str,
+    platform: str = "mastodon",
 ) -> str:
     """Generate a single replacement post in the context of the campaign."""
     client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
+    max_chars, style_note = _platform_style(platform)
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
     safe_lang = _sanitize(language, 50)
 
     system_prompt = (
-        f"You are a social media expert writing a single Mastodon post for {template_desc}. "
-        f"The post must: be under 500 characters, match the {tone_desc} tone, "
-        f"feel natural for Mastodon (not Twitter-style), and optionally include 1-3 relevant hashtags. "
+        f"You are a social media expert writing a single social post for {template_desc}. "
+        f"The post must: be under {max_chars} characters, match the {tone_desc} tone, "
+        f"{style_note}, and optionally include 1-3 relevant hashtags. "
         f"Output ONLY the post text. No explanation, no numbering, no quotes."
     )
 
@@ -132,7 +146,7 @@ async def regenerate_single_post(
         max_completion_tokens=min(settings.openai_max_tokens, 600),  # single post never needs more
     )
 
-    return response.choices[0].message.content.strip()[:500]
+    return response.choices[0].message.content.strip()[:max_chars]
 
 
 async def refine_single_post(
@@ -144,17 +158,19 @@ async def refine_single_post(
     tone: str,
     language: str,
     poll_options: list[str] | None = None,
+    platform: str = "mastodon",
 ) -> str:
     """Refine an existing post based on user instructions, keeping campaign context."""
     client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
+    max_chars, style_note = _platform_style(platform)
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
     safe_lang = _sanitize(language, 50)
-    safe_content = _sanitize(current_content, 500)
+    safe_content = _sanitize(current_content, max_chars)
     safe_instructions = _sanitize(instructions, 300)
 
     poll_note = ""
@@ -167,10 +183,10 @@ async def refine_single_post(
         )
 
     system_prompt = (
-        f"You are a social media expert refining a Mastodon post for {template_desc}. "
+        f"You are a social media expert refining a social post for {template_desc}. "
         f"Rewrite the provided post according to the user's instructions. "
-        f"The refined post must: be under 500 characters, match the {tone_desc} tone, "
-        f"feel natural for Mastodon (not Twitter-style), and optionally include 1-3 relevant hashtags. "
+        f"The refined post must: be under {max_chars} characters, match the {tone_desc} tone, "
+        f"{style_note}, and optionally include 1-3 relevant hashtags. "
         f"Output ONLY the refined post text. No explanation, no numbering, no quotes."
     )
 
@@ -192,7 +208,7 @@ async def refine_single_post(
         max_completion_tokens=min(settings.openai_max_tokens, 600),
     )
 
-    return response.choices[0].message.content.strip()[:500]
+    return response.choices[0].message.content.strip()[:max_chars]
 
 
 async def generate_newsletter_digest(

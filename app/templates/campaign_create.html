@@ -403,29 +403,53 @@ input.cc-brief-input:focus,
         </div>
       </div>
 
-      <!-- ── Account (only shown when multiple accounts are linked) ── -->
-      {% if available_accounts and available_accounts | length > 1 %}
+      <!-- ── Account picker (grid shown when more than one posting account) ── -->
+      {% set x_accounts_list = available_x_accounts or [] %}
+      {% set total_accounts = (available_accounts | length) + (x_accounts_list | length) %}
+      {# Defaults: keep edit values; else first Mastodon account, else first X account #}
+      {% if edit_campaign %}
+        {% set default_mastodon_id = edit_campaign.mastodon_account_id or '' %}
+        {% set default_x_id = edit_campaign.x_account_id or '' %}
+      {% elif available_accounts %}
+        {% set default_mastodon_id = available_accounts[0].id %}
+        {% set default_x_id = '' %}
+      {% else %}
+        {% set default_mastodon_id = '' %}
+        {% set default_x_id = x_accounts_list[0].id if x_accounts_list else '' %}
+      {% endif %}
+      {% if total_accounts > 1 %}
       <div class="cc-section">
         <div class="cc-step-label"><span>4</span> Posting Account</div>
         <div class="cc-field">
-          <label>Post from</label>
+          <label>Post to</label>
           <div class="cc-account-grid" id="account-grid">
             {% for acc in available_accounts %}
             {% set handle = "@" + acc.username + "@" + (acc.instance_url | replace("https://","") | replace("http://","")) %}
-            {% set is_selected = (edit_campaign and edit_campaign.mastodon_account_id == acc.id) or (not edit_campaign and loop.first) %}
+            {% set is_selected = (default_mastodon_id == acc.id) %}
             <div class="cc-acct-card{% if is_selected %} selected{% endif %}"
+                 data-platform="mastodon"
                  data-id="{{ acc.id }}"
-                 onclick="selectAccount({{ acc.id }})">
+                 onclick="selectAccount('mastodon', {{ acc.id }})">
               <div class="cc-acct-dot"></div>
               <span class="cc-acct-handle">{{ handle }}</span>
             </div>
             {% endfor %}
+            {% for xacc in x_accounts_list %}
+            {% set is_selected = (default_x_id == xacc.id) %}
+            <div class="cc-acct-card{% if is_selected %} selected{% endif %}"
+                 data-platform="x"
+                 data-id="{{ xacc.id }}"
+                 onclick="selectAccount('x', {{ xacc.id }})">
+              <div class="cc-acct-dot" style="background:#0d1822;"></div>
+              <span class="cc-acct-handle">𝕏 @{{ xacc.username }}</span>
+            </div>
+            {% endfor %}
           </div>
-          <input type="hidden" id="mastodon_account_id" name="mastodon_account_id"
-                 value="{{ edit_campaign.mastodon_account_id if edit_campaign else (available_accounts[0].id if available_accounts else '') }}">
         </div>
       </div>
       {% endif %}
+      <input type="hidden" id="mastodon_account_id" name="mastodon_account_id" value="{{ default_mastodon_id }}">
+      <input type="hidden" id="x_account_id" name="x_account_id" value="{{ default_x_id }}">
 
       <!-- ── Submit ──────────────────────────────────────────────────── -->
       <div class="cc-submit-bar">
@@ -564,11 +588,16 @@ function selectTone(tone) {
     p.classList.toggle('selected', p.dataset.tone === tone));
 }
 
-function selectAccount(id) {
-  const input = document.getElementById('mastodon_account_id');
-  if (input) input.value = id;
+function selectAccount(platform, id) {
+  const mInput = document.getElementById('mastodon_account_id');
+  const xInput = document.getElementById('x_account_id');
+  // Disabled inputs are not submitted — keeps empty values out of the form
+  // (FastAPI would 422 on "" for Optional[int]).
+  if (mInput) { mInput.value = platform === 'mastodon' ? id : ''; mInput.disabled = platform !== 'mastodon'; }
+  if (xInput) { xInput.value = platform === 'x' ? id : ''; xInput.disabled = platform !== 'x'; }
   document.querySelectorAll('.cc-acct-card').forEach(c =>
-    c.classList.toggle('selected', parseInt(c.dataset.id) === id));
+    c.classList.toggle('selected',
+      c.dataset.platform === platform && parseInt(c.dataset.id) === id));
 }
 
 // ── Copy from existing campaign ───────────────────────────────────────────────
@@ -608,6 +637,12 @@ document.querySelector('form').addEventListener('submit', function(e) {
     c.classList.toggle('selected', c.dataset.id === tmpl));
   document.querySelectorAll('.cc-tone-pill').forEach(p =>
     p.classList.toggle('selected', p.dataset.tone === tone));
+
+  // Disable empty hidden account inputs so they are not submitted
+  ['mastodon_account_id', 'x_account_id'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !el.value;
+  });
 
   // For edit campaigns: parse existing description into field values
   const existing = parseDescription(descInput.value);
