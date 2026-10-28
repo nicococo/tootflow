@@ -30,7 +30,7 @@ async def register_app(instance_url: str, redirect_uri: str) -> dict:
                 "client_name": "TootFlow",
                 "redirect_uris": redirect_uri,
                 "scopes": OAUTH_SCOPES,
-                "website": "https://tootflow.app",
+                "website": "https://github.com/nicococo/tootflow",
             },
         )
         resp.raise_for_status()

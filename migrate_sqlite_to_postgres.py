@@ -37,13 +37,16 @@ if not POSTGRES_URL:
 TABLES = [
     "user",
     "mastodonaccount",
+    "xaccount",
+    "useraiconfig",
+    "accountlink",
     "campaign",
     "post",
     "metrics",
     "followersnapshot",
     "pageview",
+    "loginevent",
     "siteconfig",
-    "payment",
 ]
 
 
@@ -74,7 +77,7 @@ def migrate():
     sys.path.insert(0, os.path.dirname(__file__))
     from app.models import (
         User, MastodonAccount, Campaign, Post, Metrics,
-        FollowerSnapshot, PageView, SiteConfig, Payment
+        FollowerSnapshot, PageView, SiteConfig, XAccount, UserAIConfig, AccountLink, LoginEvent
     )
     from sqlmodel import SQLModel
     SQLModel.metadata.create_all(dst)

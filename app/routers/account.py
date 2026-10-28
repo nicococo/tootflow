@@ -2,22 +2,25 @@ import json
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi import APIRouter, Depends, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
 from app.auth import get_current_user
 from app.config import get_settings
+from app.crypto import encrypt_token
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import AccountLink, Campaign, FollowerSnapshot, MastodonAccount, Metrics, Payment, Post, User, XAccount
+from app.models import AccountLink, Campaign, FollowerSnapshot, MastodonAccount, Metrics, Post, User, UserAIConfig, XAccount
+from app.services.ai_service import build_ai_client
 from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/account")
 templates = Jinja2Templates(directory="app/templates")
-templates.env.globals["settings"] = get_settings()
+settings = get_settings()
+templates.env.globals["settings"] = settings
 
 
 def _get_linked_accounts(session: Session, user_id: int) -> list[MastodonAccount]:
@@ -57,6 +60,9 @@ def account_page(
     ).all()
     x_linked = request.query_params.get("x_linked") == "1"
     x_error = request.query_params.get("x_error") == "1"
+    ai_config = session.exec(
+        select(UserAIConfig).where(UserAIConfig.user_id == user.id)
+    ).first()
     return templates.TemplateResponse(
         "account.html",
         {
@@ -70,8 +76,75 @@ def account_page(
             "x_accounts": x_accounts,
             "x_linked": x_linked,
             "x_error": x_error,
+            "ai_config": ai_config,
+            "instance_ai_available": bool(settings.openai_api_key),
         },
     )
+
+
+@router.post("/ai/save")
+def ai_save(
+    base_url: str = Form(""),
+    model: str = Form(""),
+    api_key: str = Form(""),
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    """Save the user's AI provider config (bring-your-own-key)."""
+    base_url = base_url.strip().rstrip("/")
+    if base_url and not base_url.startswith(("http://", "https://")):
+        return RedirectResponse("/account?ai_error=Invalid+base+URL", status_code=302)
+    model = model.strip()[:200]
+
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    if not cfg:
+        if not api_key.strip():
+            return RedirectResponse("/account?ai_error=API+key+required", status_code=302)
+        cfg = UserAIConfig(user_id=user.id)
+    if api_key.strip():
+        cfg.api_key = encrypt_token(api_key.strip())
+    cfg.base_url = base_url
+    cfg.model = model
+    cfg.updated_at = datetime.utcnow()
+    session.add(cfg)
+    session.commit()
+    return RedirectResponse("/account?ai_saved=1", status_code=302)
+
+
+@router.post("/ai/remove")
+def ai_remove(
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    """Remove the user's AI provider config."""
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    if cfg:
+        session.delete(cfg)
+        session.commit()
+    return RedirectResponse("/account?ai_removed=1", status_code=302)
+
+
+@router.post("/ai/test")
+async def ai_test(
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+    _csrf: None = Depends(verify_csrf),
+):
+    """Verify the stored AI credentials with a cheap models.list call."""
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    client, _ = build_ai_client(cfg)
+    if client is None:
+        return JSONResponse({"ok": False, "error": "No API key configured."})
+    try:
+        await client.models.list()
+        return JSONResponse({"ok": True})
+    except Exception as e:
+        msg = str(e)
+        if len(msg) > 200:
+            msg = msg[:200] + "…"
+        return JSONResponse({"ok": False, "error": msg})
 
 
 @router.get("/export")
@@ -85,9 +158,6 @@ def export_data(
     ).first()
     campaigns = session.exec(
         select(Campaign).where(Campaign.user_id == user.id)
-    ).all()
-    payments = session.exec(
-        select(Payment).where(Payment.user_id == user.id).order_by(Payment.created_at)
     ).all()
     follower_snapshots = session.exec(
         select(FollowerSnapshot).where(FollowerSnapshot.user_id == user.id).order_by(FollowerSnapshot.recorded_at)
@@ -104,16 +174,6 @@ def export_data(
             "x_usernames": [x.username for x in x_accounts],
             "member_since": user.created_at.isoformat() + "Z",
         },
-        "payments": [
-            {
-                "lemonsqueezy_order_id": p.lemonsqueezy_order_id,
-                "amount": p.amount,
-                "currency": p.currency,
-                "status": p.status,
-                "created_at": p.created_at.isoformat() + "Z",
-            }
-            for p in payments
-        ],
         "follower_snapshots": [
             {
                 "count": s.count,
@@ -170,7 +230,6 @@ def export_data(
             "posts_per_week": c.posts_per_week,
             "status": c.status,
             "enabled": c.enabled,
-            "payment_status": c.payment_status,
             "ai_posts_generated": c.ai_posts_generated,
             "export_generations": c.export_generations,
             "export_drafts": export_drafts,
@@ -196,7 +255,7 @@ def delete_account(
     _csrf: None = Depends(verify_csrf),
 ):
     """Permanently delete the account and all associated data (GDPR Art. 17)."""
-    # Delete in FK-safe order: Metrics → Posts → Payments → Campaigns → MastodonAccount → User
+    # Delete in FK-safe order: Metrics → Posts → Campaigns → MastodonAccount → XAccount → User
     campaigns = session.exec(
         select(Campaign).where(Campaign.user_id == user.id)
     ).all()
@@ -209,11 +268,6 @@ def delete_account(
             if metrics:
                 session.delete(metrics)
             session.delete(post)
-        payment = session.exec(
-            select(Payment).where(Payment.campaign_id == campaign.id)
-        ).first()
-        if payment:
-            session.delete(payment)
         session.delete(campaign)
 
     mastodon = session.exec(
@@ -226,6 +280,11 @@ def delete_account(
         select(XAccount).where(XAccount.user_id == user.id)
     ).all():
         session.delete(x_acc)
+
+    for ai_cfg in session.exec(
+        select(UserAIConfig).where(UserAIConfig.user_id == user.id)
+    ).all():
+        session.delete(ai_cfg)
 
     for snapshot in session.exec(
         select(FollowerSnapshot).where(FollowerSnapshot.user_id == user.id)

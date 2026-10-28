@@ -5,8 +5,29 @@ from typing import List
 import httpx
 from openai import AsyncOpenAI
 from app.config import get_settings
+from app.crypto import decrypt_token
 
 settings = get_settings()
+
+
+def build_ai_client(user_config=None) -> tuple[AsyncOpenAI | None, str | None]:
+    """Resolve the AI client + model for a user.
+
+    Precedence: user's BYOK config → instance env defaults.
+    Returns (client, model_override); (None, None) when nothing is configured.
+    """
+    if user_config is not None and user_config.api_key:
+        client = AsyncOpenAI(
+            api_key=decrypt_token(user_config.api_key),
+            base_url=user_config.base_url or None,
+            http_client=httpx.AsyncClient(),
+        )
+        return client, (user_config.model or None)
+    if settings.openai_api_key:
+        return AsyncOpenAI(
+            api_key=settings.openai_api_key, http_client=httpx.AsyncClient()
+        ), None
+    return None, None
 
 
 TEMPLATE_DESCRIPTIONS = {
@@ -55,8 +76,11 @@ async def generate_posts(
     duration_days: int,
     posts_per_week: int,
     platform: str = "mastodon",
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> List[str]:
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     total_posts = min(
         max(1, int(duration_days / 7 * posts_per_week)),
@@ -89,7 +113,7 @@ async def generate_posts(
     )
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -111,9 +135,12 @@ async def regenerate_single_post(
     tone: str,
     language: str,
     platform: str = "mastodon",
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> str:
     """Generate a single replacement post in the context of the campaign."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
@@ -137,7 +164,7 @@ async def regenerate_single_post(
     )
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -159,9 +186,12 @@ async def refine_single_post(
     language: str,
     poll_options: list[str] | None = None,
     platform: str = "mastodon",
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> str:
     """Refine an existing post based on user instructions, keeping campaign context."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     template_desc = TEMPLATE_DESCRIPTIONS.get(template_type, template_type)
     tone_desc = TONE_DESCRIPTIONS.get(tone, tone)
@@ -199,7 +229,7 @@ async def refine_single_post(
     )
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -217,9 +247,12 @@ async def generate_newsletter_digest(
     tone: str,
     language: str,
     post_contents: List[str],
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> str:
     """Generate a newsletter digest from a campaign's published/pending posts."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -243,7 +276,7 @@ async def generate_newsletter_digest(
     )
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -260,9 +293,12 @@ async def generate_linkedin_summary(
     tone: str,
     language: str,
     post_contents: List[str],
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> str:
     """Generate a standalone long-form LinkedIn article from campaign insights."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -291,7 +327,7 @@ async def generate_linkedin_summary(
     )
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -391,9 +427,12 @@ async def generate_export(
     tone_shift: str = "keep",
     include_cta: bool = True,
     include_emoji: bool = False,
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> str:
     """Unified export generator supporting newsletter, LinkedIn, and Reddit targets."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -410,7 +449,7 @@ async def generate_export(
     max_tokens = token_map.get(length, 900)
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": user_prompt},
@@ -434,9 +473,12 @@ async def refine_export(
     tone_shift: str = "keep",
     include_cta: bool = True,
     include_emoji: bool = False,
+    client: AsyncOpenAI | None = None,
+    model: str | None = None,
 ) -> str:
     """Refine an existing export based on user instructions, keeping all original context."""
-    client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    client = client or AsyncOpenAI(api_key=settings.openai_api_key, http_client=httpx.AsyncClient())
+    model = model or settings.openai_model
 
     safe_name = _sanitize(campaign_name, 200)
     safe_desc = _sanitize(description, 2000)
@@ -472,7 +514,7 @@ async def refine_export(
     max_tokens = token_map.get(length, 900)
 
     response = await client.chat.completions.create(
-        model=settings.openai_model,
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": user_prompt},

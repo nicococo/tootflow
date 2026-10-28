@@ -28,6 +28,15 @@ from app.services.ai_service import (
     refine_export,
     schedule_posts,
 )
+
+
+@pytest.fixture(autouse=True)
+def _mock_ai_resolution(monkeypatch):
+    """Endpoint tests mock the AI functions themselves — bypass BYOK resolution."""
+    mock = MagicMock()
+    for mod in ("app.routers.posts", "app.routers.campaigns"):
+        monkeypatch.setattr(f"{mod}.build_ai_client", lambda cfg=None: (mock, None))
+    yield
 from app.main import app
 from app.auth import get_current_user
 from app.models import Campaign, MastodonAccount, Post, User
@@ -64,7 +73,6 @@ def _make_campaign(session: Session, user: User, **kwargs) -> Campaign:
         template_type="knowledge_sharing",
         tone="professional",
         status="active",
-        payment_status="paid",
         enabled=True,
         ai_posts_generated=0,
         export_generations=0,
@@ -463,7 +471,7 @@ class TestGenerateCampaignPostsEndpoint:
     def test_success_redirects_to_posts(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid")
+        campaign = _make_campaign(db, user)
 
         with patch("app.routers.posts.generate_posts", new=AsyncMock(return_value=["Post 1", "Post 2"])):
             resp = client.post(f"/campaigns/{campaign.id}/generate", data={"csrf_token": "test"})
@@ -474,7 +482,7 @@ class TestGenerateCampaignPostsEndpoint:
     def test_creates_posts_in_db(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid")
+        campaign = _make_campaign(db, user)
 
         with patch("app.routers.posts.generate_posts", new=AsyncMock(return_value=["Generated A", "Generated B"])):
             client.post(f"/campaigns/{campaign.id}/generate", data={"csrf_token": "test"})
@@ -485,25 +493,17 @@ class TestGenerateCampaignPostsEndpoint:
     def test_ai_failure_redirects_with_error(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid")
+        campaign = _make_campaign(db, user)
 
         with patch("app.routers.posts.generate_posts", new=AsyncMock(side_effect=Exception("API down"))):
             resp = client.post(f"/campaigns/{campaign.id}/generate", data={"csrf_token": "test"})
 
         assert resp.status_code in (302, 500)
 
-    def test_unpaid_campaign_returns_403(self, client, db):
-        user = _create_user(db)
-        _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="unpaid")
-
-        resp = client.post(f"/campaigns/{campaign.id}/generate", data={"csrf_token": "test"})
-        assert resp.status_code == 403
-
     def test_archived_campaign_returns_403(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, status="archived", payment_status="paid")
+        campaign = _make_campaign(db, user, status="archived")
 
         resp = client.post(f"/campaigns/{campaign.id}/generate", data={"csrf_token": "test"})
         assert resp.status_code == 403
@@ -513,7 +513,7 @@ class TestGenerateCampaignPostsEndpoint:
         max_ai = get_settings().openai_max_posts_per_campaign
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", ai_posts_generated=max_ai)
+        campaign = _make_campaign(db, user, ai_posts_generated=max_ai)
 
         resp = client.post(f"/campaigns/{campaign.id}/generate", data={"csrf_token": "test"})
         assert resp.status_code == 403
@@ -523,7 +523,7 @@ class TestRegeneratePostEndpoint:
     def test_success_redirects_to_posts(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="running")
+        campaign = _make_campaign(db, user, status="running")
         post = _make_post(db, campaign, status="pending")
 
         with patch("app.routers.posts.regenerate_single_post", new=AsyncMock(return_value="Regenerated content")):
@@ -536,7 +536,7 @@ class TestRegeneratePostEndpoint:
     def test_ai_failure_redirects_with_error(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="running")
+        campaign = _make_campaign(db, user, status="running")
         post = _make_post(db, campaign, status="pending")
 
         with patch("app.routers.posts.regenerate_single_post", new=AsyncMock(side_effect=Exception("fail"))):
@@ -548,16 +548,16 @@ class TestRegeneratePostEndpoint:
     def test_published_post_returns_404(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="running")
+        campaign = _make_campaign(db, user, status="running")
         post = _make_post(db, campaign, status="published")
 
         resp = client.post(f"/campaigns/{campaign.id}/posts/{post.id}/regenerate", data={"csrf_token": "test"})
         assert resp.status_code == 404
 
-    def test_unpaid_returns_403(self, client, db):
+    def test_archived_returns_403(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="unpaid", status="running")
+        campaign = _make_campaign(db, user, status="archived")
         post = _make_post(db, campaign, status="pending")
 
         resp = client.post(f"/campaigns/{campaign.id}/posts/{post.id}/regenerate", data={"csrf_token": "test"})
@@ -568,7 +568,7 @@ class TestRefinePostEndpoint:
     def test_success_redirects_back(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="running")
+        campaign = _make_campaign(db, user, status="running")
         post = _make_post(db, campaign, status="pending")
 
         with patch("app.routers.posts.refine_single_post", new=AsyncMock(return_value="Refined content")):
@@ -584,7 +584,7 @@ class TestRefinePostEndpoint:
     def test_ai_failure_redirects_with_error(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="running")
+        campaign = _make_campaign(db, user, status="running")
         post = _make_post(db, campaign, status="pending")
 
         with patch("app.routers.posts.refine_single_post", new=AsyncMock(side_effect=Exception("API error"))):
@@ -599,7 +599,7 @@ class TestRefinePostEndpoint:
     def test_empty_instructions_returns_400(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="running")
+        campaign = _make_campaign(db, user, status="running")
         post = _make_post(db, campaign, status="pending")
 
         resp = client.post(
@@ -608,22 +608,10 @@ class TestRefinePostEndpoint:
         )
         assert resp.status_code == 400
 
-    def test_unpaid_returns_403(self, client, db):
-        user = _create_user(db)
-        _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="unpaid", status="running")
-        post = _make_post(db, campaign, status="pending")
-
-        resp = client.post(
-            f"/campaigns/{campaign.id}/posts/{post.id}/refine",
-            data={"instructions": "Fix it", "csrf_token": "test"},
-        )
-        assert resp.status_code == 403
-
     def test_archived_returns_403(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="archived")
+        campaign = _make_campaign(db, user, status="archived")
         post = _make_post(db, campaign, status="pending")
 
         resp = client.post(
@@ -635,7 +623,7 @@ class TestRefinePostEndpoint:
     def test_wrong_owner_returns_404(self, client, db):
         owner = _create_user(db)
         attacker = _create_user(db)
-        campaign = _make_campaign(db, owner, payment_status="paid", status="running")
+        campaign = _make_campaign(db, owner, status="running")
         post = _make_post(db, campaign, status="pending")
         _set_user(attacker)
 
@@ -650,7 +638,7 @@ class TestExportEndpoints:
     def test_export_generate_success(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="completed")
+        campaign = _make_campaign(db, user, status="completed")
         _make_post(db, campaign, status="published")
 
         with patch("app.routers.campaigns.generate_export", new=AsyncMock(return_value="Subject: Test\nNewsletter body")):
@@ -669,7 +657,7 @@ class TestExportEndpoints:
     def test_export_generate_increments_counter(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="completed", export_generations=0)
+        campaign = _make_campaign(db, user, status="completed", export_generations=0)
         _make_post(db, campaign, status="published")
 
         with patch("app.routers.campaigns.generate_export", new=AsyncMock(return_value="Headline: Test\nBody")):
@@ -682,23 +670,10 @@ class TestExportEndpoints:
         db.refresh(campaign)
         assert campaign.export_generations == 1
 
-    def test_export_generate_unpaid_returns_403(self, client, db):
-        user = _create_user(db)
-        _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="unpaid")
-        _make_post(db, campaign, status="published")
-
-        resp = client.post(f"/campaigns/{campaign.id}/export/generate", data={
-            "target": "newsletter", "length": "medium", "tone_shift": "keep",
-            "include_cta": "false", "include_emoji": "false",
-            "selected_posts": "", "csrf_token": "test",
-        })
-        assert resp.status_code == 403
-
     def test_export_generate_no_posts_returns_400(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="completed")
+        campaign = _make_campaign(db, user, status="completed")
         # no posts added
 
         resp = client.post(f"/campaigns/{campaign.id}/export/generate", data={
@@ -711,7 +686,7 @@ class TestExportEndpoints:
     def test_export_refine_success(self, client, db):
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="completed")
+        campaign = _make_campaign(db, user, status="completed")
         _make_post(db, campaign, status="published")
 
         with patch("app.routers.campaigns.refine_export", new=AsyncMock(return_value="Refined newsletter")):
@@ -731,7 +706,7 @@ class TestExportEndpoints:
         max_exp = get_settings().export_max_per_campaign
         user = _create_user(db)
         _set_user(user)
-        campaign = _make_campaign(db, user, payment_status="paid", status="completed",
+        campaign = _make_campaign(db, user, status="completed",
                                   export_generations=max_exp)
         _make_post(db, campaign, status="published")
 

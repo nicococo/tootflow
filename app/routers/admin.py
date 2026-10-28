@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.csrf import verify_csrf
 from app.database import get_session
-from app.models import Campaign, LoginEvent, MastodonAccount, PageView, Payment, Post, SiteConfig, User
+from app.models import Campaign, LoginEvent, MastodonAccount, PageView, Post, SiteConfig, User
 from app.scheduler import update_metrics
 from app.site_config import get_banner, set_banner, get_registration_open, set_registration_open
 
@@ -81,10 +81,6 @@ def _build_stats(session: Session) -> dict:
     for d in login_chart:
         d["pct"] = round(d["count"] / max_logins * 100)
 
-    revenue = session.exec(
-        select(func.sum(Payment.amount)).where(Payment.status == "paid")
-    ).one() or 0.0
-
     return {
         # Visitors
         "visitors_1d":  unique_visitors(day_ago),
@@ -96,15 +92,12 @@ def _build_stats(session: Session) -> dict:
         "users_30d":    count(User, User.created_at >= month_ago),
         # Campaigns
         "campaigns_total":     count(Campaign),
-        "campaigns_paid":      count(Campaign, Campaign.payment_status == "paid"),
         "campaigns_draft":     count(Campaign, Campaign.status == "draft"),
         "campaigns_active":    count(Campaign, Campaign.status == "active"),
         "campaigns_running":   count(Campaign, Campaign.status == "running"),
         "campaigns_completed": count(Campaign, Campaign.status == "completed"),
         "campaigns_archived":  count(Campaign, Campaign.status == "archived"),
         "campaigns_paused":    count(Campaign, Campaign.status.in_(["active", "running", "completed"]) & (Campaign.enabled == False)),
-        # Revenue
-        "revenue_total": round(revenue, 2),
         # Posts
         "posts_total":     count(Post),
         "posts_published": count(Post, Post.status == "published"),
@@ -122,12 +115,6 @@ def _build_stats(session: Session) -> dict:
             .where(Post.status == "pending",
                    Campaign.status.in_(["active", "running"]),
                    Campaign.enabled == False)
-        ).one() or 0,
-        "posts_pending_unpaid": session.exec(
-            select(func.count()).select_from(Post)
-            .join(Campaign, Post.campaign_id == Campaign.id)
-            .where(Post.status == "pending",
-                   Campaign.payment_status != "paid")
         ).one() or 0,
         # Charts
         "chart": chart,
@@ -234,34 +221,9 @@ def update_registration(
     return RedirectResponse("/admin", status_code=302)
 
 
-@router.post("/campaigns/mark-paid")
-def mark_campaign_paid(
-    request: Request,
-    campaign_id: int = Form(...),
-    session: Session = Depends(get_session),
-    _csrf: None = Depends(verify_csrf),
-):
-    if not _is_authenticated(request):
-        return RedirectResponse("/admin", status_code=302)
-    campaign = session.get(Campaign, campaign_id)
-    if not campaign:
-        return RedirectResponse("/admin", status_code=302)
-    campaign.payment_status = "paid"
-    campaign.status = "active"
-    if not campaign.start_date:
-        campaign.start_date = datetime.utcnow()
-    session.add(campaign)
-    session.commit()
-    logger.info(f"Admin manually marked campaign {campaign_id} as paid")
-    return RedirectResponse("/admin", status_code=302)
-
-
 @router.post("/settings")
 def update_settings(
     request: Request,
-    campaign_price: str = Form(...),
-    campaign_price_suggested: str = Form(...),
-    campaign_currency: str = Form(...),
     openai_model: str = Form(...),
     openai_max_posts_per_campaign: int = Form(...),
     openai_max_tokens: int = Form(...),
@@ -273,9 +235,6 @@ def update_settings(
 ):
     if not _is_authenticated(request):
         return RedirectResponse("/admin", status_code=302)
-    settings.campaign_price = campaign_price.strip()
-    settings.campaign_price_suggested = campaign_price_suggested.strip()
-    settings.campaign_currency = campaign_currency.strip().upper()
     settings.openai_model = openai_model.strip()
     settings.openai_max_posts_per_campaign = openai_max_posts_per_campaign
     settings.openai_max_tokens = openai_max_tokens
@@ -284,8 +243,7 @@ def update_settings(
     settings.metrics_max_days = metrics_max_days
     settings.metrics_max_posts_per_user = metrics_max_posts_per_user
     logger.info(
-        f"Admin updated in-memory settings: price={settings.campaign_price} "
-        f"currency={settings.campaign_currency} model={settings.openai_model} "
+        f"Admin updated in-memory settings: model={settings.openai_model} "
         f"max_posts={settings.openai_max_posts_per_campaign}"
     )
     return RedirectResponse("/admin", status_code=302)

@@ -1,153 +1,83 @@
-# TootFlow — Deployment Process
+# Self-Hosting TootFlow
 
-## Overview
+TootFlow is a small, single-service app designed for single-box deployments.
+This guide covers Docker Compose (recommended) and manual setup.
 
-Deployments follow a 5-stage gate: **tests → local testing → migrations → git push → mlox deploy**.
-
-Each stage is a hard stop — don't proceed if a stage fails.
-
----
-
-## Stage 1 — Unit Tests
+## Docker Compose (recommended)
 
 ```bash
-python -m pytest tests/ -m "not integration" -v
+git clone https://github.com/nicococo/tootflow.git
+cd tootflow
+cp .env.example .env
+# Edit .env: set SECRET_KEY (long random string) and APP_BASE_URL
+docker compose up -d --build
 ```
 
-All tests must pass. Any failure stops the process.
+Open `http://localhost:8000` (or your `APP_BASE_URL`) and log in with your
+Mastodon account. Done.
 
-To also run live AI integration tests (requires `OPENAI_API_KEY`):
+### PostgreSQL (optional)
+
+SQLite is perfectly fine for personal use. For a longer-lived instance:
 
 ```bash
-python -m pytest tests/ -v
+docker compose --profile postgres up -d --build
 ```
 
----
+Then set in `.env`:
 
-## Stage 2 — Local User Testing
+```
+DATABASE_URL=postgresql://tootflow:tootflow@db:5432/tootflow
+```
+
+Change the password. Run the app behind a reverse proxy with TLS (Caddy, Traefik,
+nginx) — production cookies are `Secure`-only and need HTTPS.
+
+## Configuration
+
+All configuration is environment-based — see [`.env.example`](.env.example) for the
+full reference. Highlights:
+
+| Variable | Notes |
+|---|---|
+| `SECRET_KEY` | **Required.** Long random string. Encrypts stored tokens; changing it invalidates them. |
+| `APP_BASE_URL` | Must match the public URL — used for OAuth callbacks. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | Optional instance-wide AI fallback. Users' own keys (Account page) take precedence. |
+| `X_API_KEY`, `X_API_SECRET` | X OAuth app credentials. Create an app at the X Developer Portal with OAuth 1.0a (Read+Write) and callback `<APP_BASE_URL>/x/callback`. Empty = X support disabled. |
+| `ADMIN_SECRET` | Enables `/admin?secret=<value>` — a read-mostly analytics dashboard. Leave empty to disable. |
+| `MAX_FREE_CAMPAIGNS` | Per-user campaign cap (anti-abuse for open instances). |
+
+## Upgrades
 
 ```bash
-./start.sh
+git pull
+docker compose up -d --build
 ```
 
-Runs the app locally against SQLite using your local `.env`.
+## Migrations
 
-Manually test the changed feature end-to-end in the browser.
-
-> **Note:** SQLite and PostgreSQL behave differently in subtle ways (boolean
-> casting, FK enforcement, some query syntax). Changes that touch the DB
-> layer should be tested with extra care — a bug can pass SQLite and surface
-> only on prod.
-
----
-
-## Stage 3 — Migrations (if `models.py` changed)
-
-If you added or changed any SQLModel fields, a migration script is required.
-`create_db_and_tables()` only creates *new* tables — it never alters existing ones.
-
-Migration scripts live in `app/migrations/`. Each script is idempotent (safe to re-run).
-Migrations are always run **locally** — never during or after deploy.
-
-**Run locally against SQLite first:**
-```bash
-python -m app.migrations.<script_name>
-```
-
-**Then run locally against prod PostgreSQL via `.env.migrate`:**
-```bash
-python -m app.migrations.<script_name> --prod
-```
-
-The `--prod` flag reads `POSTGRES_URL` from `.env.migrate` (gitignored).
-
-> **Order matters:** always migrate *before* deploying new code. New columns
-> are nullable so the running app continues to work against the updated schema
-> during the deploy window.
->
-> **Never automate migrations into the deploy pipeline.** They are a
-> deliberate, manual step — running them automatically risks applying
-> incomplete or incorrect schema changes to prod without review.
-
----
-
-## Stage 4 — Git Push
+Schema changes ship as **idempotent scripts** in `app/migrations/` — they are *not*
+run automatically. After pulling an upgrade, check the release notes; if a migration
+is mentioned, run it once:
 
 ```bash
-git add <files>
-git commit -m "your message"
-git push
+docker compose exec app python -m app.migrations.<script_name>
 ```
 
----
+They are safe to re-run.
 
-## Stage 5 — Deploy via mlox
+## Operational notes
 
-TootFlow is deployed using [mlox](https://mlox.org)'s `RepoDeployDockerService`.
+- **Single worker only.** The APScheduler (publishing every minute, metrics daily)
+  runs inside the app process — multiple workers would duplicate it.
+- **Backups**: for SQLite, stop the container and copy the volume
+  (`docker run --rm -v tootflow_app-data:/data alpine tar czf - /data`).
+- **Hosted-instance hygiene**: if you run a public instance, keep registration
+  gated (`registration_open` is manageable via `/admin`), keep `MAX_FREE_CAMPAIGNS`
+  sane, and read [SECURITY.md](SECURITY.md).
 
-On trigger, mlox:
-1. Pulls the latest git commit on the server
-2. Re-reads the `docker-compose.yml` for updated env tokens
-3. Runs `docker compose up --build -d app`
-4. The app health check at `/health` confirms a clean start
+## Legal pages (Impressum / ToS / Privacy)
 
-### When `requirements.txt` changed
-
-mlox's standard deploy uses the Docker layer cache. If you changed
-`requirements.txt`, trigger a fresh rebuild to ensure new packages are picked up:
-
-```bash
-# On the server, or via mlox shell access:
-docker compose build --no-cache app && docker compose up -d app
-```
-
-### Verifying the deploy
-
-After mlox reports success:
-
-```bash
-# Watch logs for 2 minutes
-docker compose logs -f app
-
-# Check admin dashboard
-https://tootflow.com/admin
-```
-
-Smoke test the changed feature on the live site.
-
-### If the deploy fails
-
-The health check will time out and mlox will report failure. To rollback:
-
-```bash
-# Find the previous working commit
-git log --oneline -5
-
-# On the server:
-git checkout <previous-commit>
-docker compose up --build -d app
-```
-
----
-
-## Quick Reference
-
-| Stage | Command | Stop if |
-|-------|---------|---------|
-| 1. Tests | `python -m pytest tests/ -m "not integration" -v` | Any test fails |
-| 2. Local testing | `./start.sh` | Feature broken locally |
-| 3. Migrations (if models changed) | `python -m app.migrations.<name>` then `--prod` | Migration errors |
-| 4. Git push | `git push` | Push rejected |
-| 5. mlox deploy | via mlox RepoDeployDockerService | Health check fails |
-
-Migrations are always run **locally before git push** — never automated into the deploy.
-
----
-
-## Environment Files
-
-| File | Purpose | Committed? |
-|------|---------|------------|
-| `.env` | Local dev config | No |
-| `.env.migrate` | Prod DB credentials for migration scripts | No |
-| `docker-compose.yml` | Service definition, env token discovery for mlox | Yes |
+Optional. Set the `OPERATOR_*` variables to show the legal footer and pages —
+relevant if you operate a public instance in the EU. Self-hosters can ignore them;
+the footer hides itself when `OPERATOR_NAME` is empty.

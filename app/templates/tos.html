@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Terms of Service – TootFlow{% endblock %}
-{% block meta_description %}TootFlow Terms of Service — one-time payment, campaign usage, right of withdrawal, and governing law.{% endblock %}
+{% block meta_description %}TootFlow Terms of Service — fair use of the free and open-source campaign scheduler.{% endblock %}
 {% block content %}
 
 <style>
@@ -208,82 +208,30 @@ h1.legal-title {
       </details>
 
       <details open>
-        <summary>3. Campaigns and pricing</summary>
-        <h3>Free tier</h3>
+        <summary>3. Campaigns and features</summary>
+        <h3>Everything included</h3>
         <p>
-          Creating campaigns, writing and editing posts manually, and automated publishing via your Mastodon
-          account are available at no cost. No payment is required to schedule or publish posts.
+          TootFlow is free and open-source software, licensed under the MIT license. Creating campaigns,
+          writing and editing posts manually or with AI assistance, automated publishing, engagement metrics,
+          and the Export Studio are available at no cost. There are no subscriptions, recurring fees, or
+          premium tiers.
         </p>
-        <h3>Premium activation</h3>
+        <h3>Bring your own AI key</h3>
         <p>
-          Each campaign may optionally be activated via a pay-what-you-want one-time payment.
-          The minimum is <strong>{{ settings.campaign_price }} {{ settings.campaign_currency }}</strong>;
-          the suggested amount is <strong>{{ settings.campaign_price_suggested }} {{ settings.campaign_currency }}</strong> (both including applicable VAT).
-          You choose the amount at checkout. There are no subscriptions, recurring fees, or hidden costs.
+          AI features require an API key for an OpenAI-compatible provider. On hosted instances you supply
+          your own key on the Account page; it is stored encrypted and used only to fulfill your requests.
+          If you self-host, you can configure an instance-wide key instead.
         </p>
-        <p>
-          Payment is processed by <strong>Polar</strong> (polar.sh), acting as Merchant of Record. TootFlow never
-          receives or stores your payment card details.
+        <p class="legal-note">
+          You are responsible for the costs and terms of any third-party AI provider you connect.
         </p>
-        <p>A premium activation entitles you to:</p>
-        <ul>
-          <li>AI-generated post schedules (up to the limit shown in the campaign)</li>
-          <li>Full per-post engagement metrics (favourites, reblogs, replies, poll votes)</li>
-          <li>Export Studio — repurpose your campaign as a Newsletter digest, LinkedIn article, or Reddit post,
-              subject to the per-campaign export generation limit</li>
-        </ul>
-        <p class="legal-note">Pricing may change for future campaigns. Already-activated campaigns are not affected by price changes.</p>
       </details>
 
-      <details open>
-        <summary>4. Right of withdrawal (Widerrufsrecht)</summary>
-        <div class="legal-consumer-notice">
-          This section applies to consumers (natural persons acting outside their trade or profession) within the EU.
-        </div>
-        <h3>Withdrawal policy</h3>
+      <details>
+        <summary>4. Fair use</summary>
         <p>
-          You have the right to withdraw from this contract within <strong>14 days</strong> without giving any reason.
-          The withdrawal period begins on the day the contract is concluded (i.e. the day your payment is confirmed).
-        </p>
-        <p>
-          To exercise the right of withdrawal, you must notify us by an unambiguous statement (e.g. a letter sent
-          by post or email) of your decision to withdraw from this contract:
-        </p>
-        <div class="legal-address">
-          {{ settings.operator_name or "[OPERATOR NAME not set]" }}<br>
-          {{ settings.operator_street or "[STREET not set]" }}, {{ settings.operator_city or "[CITY not set]" }}, Germany<br>
-          Email: <a href="mailto:{{ settings.operator_email }}">{{ settings.operator_email }}</a>
-        </div>
-        <p>
-          To meet the withdrawal deadline it is sufficient for you to send your communication concerning the
-          exercise of the right of withdrawal before the withdrawal period has expired.
-        </p>
-        <h3>Consequences of withdrawal</h3>
-        <p>
-          If you withdraw from this contract we will reimburse all payments received from you without undue delay
-          and in any event not later than 14 days from the day on which we are informed about your decision to
-          withdraw. We will use the same means of payment as you used for the initial transaction unless
-          expressly agreed otherwise.
-        </p>
-        <h3>Loss of right of withdrawal for digital services</h3>
-        <p>
-          <strong>Please note:</strong> In accordance with §356 Abs. 5 BGB and Art. 16(m) of Directive 2011/83/EU,
-          the right of withdrawal expires before the end of the 14-day period if:
-        </p>
-        <ul>
-          <li>the performance of the digital service has begun, <strong>and</strong></li>
-          <li>you have explicitly consented to the immediate start of performance, <strong>and</strong></li>
-          <li>you have acknowledged that you thereby lose your right of withdrawal.</li>
-        </ul>
-        <p>
-          When activating a campaign, you will be asked to confirm the immediate start of the service at checkout.
-          If you give that confirmation, your right of withdrawal is forfeited once AI generation or post publishing
-          has commenced.
-        </p>
-        <p>
-          If you have not yet used any AI generation, Export Studio, or premium metrics features, you retain
-          the full 14-day right of withdrawal.
-          Contact <a href="mailto:hello@tootflow.com">hello@tootflow.com</a> to request a refund.
+          Hosted instances may apply reasonable per-user limits (such as a cap on concurrent campaigns or
+          AI generations) to prevent abuse and keep the service available for everyone.
         </p>
       </details>
 
@@ -292,14 +240,14 @@ h1.legal-title {
         <p>You agree not to use the Service to:</p>
         <ul>
           <li>Post content that is illegal, defamatory, harassing, or violates third-party rights</li>
-          <li>Violate the terms of service of your Mastodon instance</li>
+          <li>Violate the terms of service of your Mastodon instance or X</li>
           <li>Attempt to circumvent rate limits, access controls, or security measures</li>
           <li>Use the Service for bulk spamming or automated abuse</li>
         </ul>
         <p>
           You are solely responsible for all content you publish through TootFlow, whether created manually
           or with AI assistance. We act as a technical intermediary and do not review post content before
-          it is published to your Mastodon account.
+          it is published to your accounts.
         </p>
       </details>
 
@@ -307,7 +255,7 @@ h1.legal-title {
         <summary>6. Service availability</summary>
         <p>
           We aim to keep the Service available but do not guarantee uninterrupted access. Scheduled maintenance,
-          third-party outages (Mastodon instances, OpenAI, Polar), or unforeseen technical issues may
+          third-party outages (Mastodon instances, OpenAI, X), or unforeseen technical issues may
           cause temporary unavailability.
         </p>
         <p>
@@ -325,9 +273,6 @@ h1.legal-title {
           use of the Service, including lost revenue, reputational damage, or missed publishing opportunities.
         </p>
         <p>
-          Our total liability for direct damages shall not exceed the amount you paid for the affected campaign.
-        </p>
-        <p>
           Nothing in these Terms limits liability for damages caused by wilful misconduct or gross negligence,
           or for claims arising under mandatory statutory consumer protection law.
         </p>
@@ -337,8 +282,7 @@ h1.legal-title {
         <summary>8. Account deletion and data</summary>
         <p>
           You may delete your account at any time via <a href="/account">Account Settings</a>. Deletion is
-          immediate and permanent — all campaigns, posts, and associated data are erased. Paid campaigns are
-          not refunded upon voluntary account deletion after the withdrawal period has expired.
+          immediate and permanent — all campaigns, posts, and associated data are erased.
         </p>
       </details>
 

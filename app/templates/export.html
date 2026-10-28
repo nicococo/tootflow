@@ -739,6 +739,11 @@
 
       <!-- Generate -->
       {% if campaign.status != "archived" %}
+      {% if not ai_configured %}
+      <div class="notice" style="margin-bottom:16px;">
+        AI features need an API key. <a href="/account">Add your AI provider key on the Account page</a> — any OpenAI-compatible provider works.
+      </div>
+      {% endif %}
       <div class="exp-generate-wrap">
         <button class="exp-generate-btn" id="exp-gen-btn"
                 {% if export_remaining == 0 %}disabled{% endif %}

@@ -1,7 +1,7 @@
 import json
 import logging
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -10,12 +10,12 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import AccountLink, Campaign, Metrics, Payment, Post, User, MastodonAccount, XAccount
+from app.models import AccountLink, Campaign, Metrics, Post, User, MastodonAccount, XAccount, UserAIConfig
 from sqlalchemy import or_
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
-from app.services.ai_service import generate_export, refine_export
+from app.services.ai_service import generate_export, refine_export, build_ai_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/campaigns")
@@ -224,15 +224,14 @@ async def create_campaign(
     duration_days = max(1, min(365, duration_days))
     posts_per_week = max(1, min(14, posts_per_week))
 
-    # Cap unpaid non-archived campaigns (paid campaigns are unlimited and don't count)
-    free_count = len(session.exec(
+    # Cap non-archived campaigns per user (anti-abuse for hosted instances)
+    campaign_count = len(session.exec(
         select(Campaign).where(
             Campaign.user_id == user.id,
-            Campaign.payment_status != "paid",
             Campaign.status != "archived",
         )
     ).all())
-    if free_count >= settings.max_free_campaigns:
+    if campaign_count >= settings.max_free_campaigns:
         return RedirectResponse(
             f"/campaigns/new?error=limit&count={settings.max_free_campaigns}",
             status_code=302,
@@ -277,47 +276,6 @@ async def create_campaign(
     return RedirectResponse(f"/campaigns/{campaign.id}/posts", status_code=302)
 
 
-def _polar_activate_campaign(campaign_id: int, user_id: int, session: Session) -> bool:
-    """Query Polar for a paid order matching this campaign and activate it if found. Returns True if activated."""
-    try:
-        from app.services.payment_service import get_polar_client
-        client = get_polar_client()
-        result = client.orders.list(metadata={"campaign_id": str(campaign_id)}, limit=5)
-        orders = result.result.items if result and hasattr(result, "result") and result.result else []
-        for order in orders:
-            if getattr(order, "status", None) == "paid" or getattr(order, "paid", False):
-                order_id = str(order.id)
-                amount = float(getattr(order, "total_amount", 0)) / 100
-                currency = (getattr(order, "currency", "EUR") or "EUR").upper()
-                payment = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).first()
-                if not payment:
-                    payment = Payment(
-                        user_id=user_id, campaign_id=campaign_id,
-                        lemonsqueezy_order_id=order_id, amount=amount, currency=currency, status="paid",
-                    )
-                    session.add(payment)
-                else:
-                    payment.status = "paid"
-                    payment.lemonsqueezy_order_id = order_id
-                    session.add(payment)
-                campaign = session.get(Campaign, campaign_id)
-                campaign.payment_status = "paid"
-                if campaign.status == "draft":
-                    has_posts = session.exec(select(Post).where(Post.campaign_id == campaign_id)).first()
-                    if has_posts:
-                        campaign.status = "active"
-                if not campaign.start_date:
-                    campaign.start_date = datetime.utcnow()
-                    campaign.end_date = datetime.utcnow() + timedelta(days=campaign.duration_days)
-                session.add(campaign)
-                session.commit()
-                logger.info(f"Campaign {campaign_id} activated via Polar fallback check (order {order_id})")
-                return True
-    except Exception as e:
-        logger.warning(f"Polar fallback check failed for campaign {campaign_id}: {e}")
-    return False
-
-
 def _get_linked_user_ids(session: Session, user_id: int) -> list[int]:
     links = session.exec(
         select(AccountLink).where(
@@ -345,10 +303,6 @@ def campaign_detail(
         raise HTTPException(status_code=404)
     is_owner = (campaign.user_id == user.id)
 
-    # Fallback: if returning from Polar checkout but campaign not yet activated, query Polar API
-    if is_owner and campaign.payment_status != "paid" and request.query_params.get("customer_session_token"):
-        _polar_activate_campaign(campaign_id, user.id, session)
-        session.refresh(campaign)
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
     mastodon = session.exec(select(MastodonAccount).where(MastodonAccount.user_id == user.id)).first()
 
@@ -565,8 +519,6 @@ def reset_start_date(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403)
     campaign.start_date = datetime.utcnow()
     session.add(campaign)
     session.commit()
@@ -583,20 +535,21 @@ def export_page(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign not activated")
     posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
     export_remaining = max(0, settings.export_max_per_campaign - campaign.export_generations)
     try:
         export_drafts = json.loads(campaign.export_drafts or "{}")
     except (json.JSONDecodeError, ValueError):
         export_drafts = {}
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    client, _ = build_ai_client(cfg)
     return templates.TemplateResponse("export.html", {
         "request": request, "user": user,
         "campaign": campaign, "posts": posts,
         "export_remaining": export_remaining,
         "export_max": settings.export_max_per_campaign,
         "export_drafts": export_drafts,
+        "ai_configured": client is not None,
     })
 
 
@@ -637,8 +590,6 @@ async def export_generate(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign not activated")
     if campaign.export_generations >= settings.export_max_per_campaign:
         raise HTTPException(status_code=403, detail="Export generation limit reached for this campaign")
 
@@ -649,6 +600,11 @@ async def export_generate(
     contents = _resolve_post_contents(all_posts, selected_posts)
     if not contents:
         raise HTTPException(status_code=400, detail="No posts selected")
+
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    client, model_override = build_ai_client(cfg)
+    if client is None:
+        raise HTTPException(status_code=400, detail="No AI provider configured. Add your API key on the Account page.")
 
     try:
         content = await generate_export(
@@ -662,6 +618,8 @@ async def export_generate(
             tone_shift=tone_shift,
             include_cta=include_cta,
             include_emoji=include_emoji,
+            client=client,
+            model=model_override,
         )
     except Exception as e:
         logger.error(f"Export generation failed for campaign {campaign_id}: {e}")
@@ -694,13 +652,16 @@ async def export_refine(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign not activated")
     if campaign.export_generations >= settings.export_max_per_campaign:
         raise HTTPException(status_code=403, detail="Export generation limit reached for this campaign")
 
     all_posts = session.exec(select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)).all()
     contents = _resolve_post_contents(all_posts, selected_posts)
+
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    client, model_override = build_ai_client(cfg)
+    if client is None:
+        raise HTTPException(status_code=400, detail="No AI provider configured. Add your API key on the Account page.")
 
     try:
         content = await refine_export(
@@ -716,6 +677,8 @@ async def export_refine(
             tone_shift=tone_shift,
             include_cta=include_cta,
             include_emoji=include_emoji,
+            client=client,
+            model=model_override,
         )
     except Exception as e:
         logger.error(f"Export refinement failed for campaign {campaign_id}: {e}")
@@ -742,8 +705,6 @@ async def export_save_draft(
     campaign = session.get(Campaign, campaign_id)
     if not campaign or campaign.user_id != user.id:
         raise HTTPException(status_code=404)
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign not activated")
     _save_export_draft(campaign, target, content, session)
     return JSONResponse({"ok": True})
 
@@ -764,9 +725,6 @@ def delete_campaign(
         for m in metrics:
             session.delete(m)
         session.delete(p)
-    payments = session.exec(select(Payment).where(Payment.campaign_id == campaign_id)).all()
-    for pay in payments:
-        session.delete(pay)
     session.delete(campaign)
     session.commit()
     return RedirectResponse("/dashboard", status_code=302)

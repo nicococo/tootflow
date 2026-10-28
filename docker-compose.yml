@@ -1,67 +1,40 @@
 services:
-
-  traefik:
-    image: traefik:v3.0
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik-certs:/letsencrypt
-    command:
-      - --log.level=WARN
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - "--providers.docker.constraints=Label(`traefik.instance`,`tootflow`)"
-      # HTTP → HTTPS redirect
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.websecure.address=:443
-      # Let's Encrypt via HTTP-01 challenge
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-      - --certificatesresolvers.letsencrypt.acme.email=hello@tootflow.com
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-    networks:
-      - proxy
-
   app:
     build: .
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     env_file: .env
+    environment:
+      # Keep the SQLite DB on the persistent volume
+      DATABASE_URL: sqlite:////data/tootflow.db
+    volumes:
+      - app-data:/data          # SQLite database lives here
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 15s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.instance=tootflow"
-      - "traefik.docker.network=tootflow_proxy"
 
-      # — Apex domain (tootflow.com) —
-      - "traefik.http.routers.app.rule=Host(`tootflow.com`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
-      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.app.loadbalancer.server.port=8000"
-
-      # — www → apex permanent redirect —
-      - "traefik.http.routers.app-www.rule=Host(`www.tootflow.com`)"
-      - "traefik.http.routers.app-www.entrypoints=websecure"
-      - "traefik.http.routers.app-www.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.app-www.middlewares=www-redirect"
-      - "traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\\.tootflow\\.com/(.*)"
-      - "traefik.http.middlewares.www-redirect.redirectregex.replacement=https://tootflow.com/$${1}"
-      - "traefik.http.middlewares.www-redirect.redirectregex.permanent=true"
-    networks:
-      - proxy
-
-networks:
-  proxy:
-    driver: bridge
+  # Optional PostgreSQL — docker compose --profile postgres up -d
+  # and set DATABASE_URL=postgresql://tootflow:tootflow@db:5432/tootflow in .env
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: tootflow
+      POSTGRES_PASSWORD: tootflow
+      POSTGRES_DB: tootflow
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tootflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  traefik-certs:
+  app-data:
+  db-data:

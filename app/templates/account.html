@@ -83,7 +83,7 @@
         </div>
         <div class="info-row">
           <strong>Account deletion</strong>
-          Permanently removes all your data. Payment records are also wiped. Cannot be undone.
+          Permanently removes all your data. Cannot be undone.
         </div>
       </div>
     </div>
@@ -187,6 +187,63 @@
       </p>
     </div>
 
+    <h2>AI Model</h2>
+    <p class="muted text-sm" style="margin-bottom:16px;">
+      Bring your own key from any OpenAI-compatible provider — OpenAI, OpenRouter, or a local Ollama.
+      Your key is encrypted at rest and used only for your own AI requests.
+      {% if instance_ai_available %}Without your own key, the instance default is used.{% endif %}
+    </p>
+
+    {% if ai_saved %}
+    <div style="background:#e8f5e9; border:2px solid #4caf50; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      AI configuration saved.
+    </div>
+    {% endif %}
+    {% if ai_removed %}
+    <div style="background:#e3f2fd; border:2px solid #2196f3; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      AI configuration removed.
+    </div>
+    {% endif %}
+    {% if ai_error %}
+    <div style="background:#fff3cd; border:2px solid #d95f2a; padding:10px 16px; margin-bottom:16px; font-size:13px;">
+      {{ ai_error }}
+    </div>
+    {% endif %}
+
+    <div style="background:var(--surface-soft); border:var(--border); padding:16px; margin-bottom:16px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+        Your Configuration {% if ai_config %}<span style="color:var(--teal);">● Active</span>{% else %}<span style="color:var(--muted);">○ Not set</span>{% endif %}
+      </div>
+      <form method="post" action="/account/ai/save" style="display:grid; gap:10px;">
+        <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+        <div>
+          <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px;">API Key {% if ai_config and ai_config.api_key %}<span style="color:var(--teal);">(stored — leave blank to keep)</span>{% endif %}</label>
+          <input type="password" name="api_key" autocomplete="off" placeholder="sk-..."
+                 style="width:100%; padding:8px 10px; border:2px solid #c8bfb4 !important; font-size:13px; background:#fff;">
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px;">Base URL <span style="opacity:0.7;">(optional — blank = OpenAI default)</span></label>
+          <input type="url" name="base_url" placeholder="https://openrouter.ai/api/v1" value="{{ ai_config.base_url if ai_config and ai_config.base_url else '' }}"
+                 style="width:100%; padding:8px 10px; border:2px solid #c8bfb4 !important; font-size:13px; background:#fff;">
+        </div>
+        <div>
+          <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:4px;">Model <span style="opacity:0.7;">(optional — blank = instance default)</span></label>
+          <input type="text" name="model" placeholder="gpt-4o-mini" value="{{ ai_config.model if ai_config and ai_config.model else '' }}"
+                 style="width:100%; padding:8px 10px; border:2px solid #c8bfb4 !important; font-size:13px; background:#fff;">
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button type="submit" class="btn btn-primary">Save</button>
+          {% if ai_config %}
+          <button type="button" class="btn btn-outline" id="ai-test-btn" onclick="testAi()">Test Connection</button>
+          <button type="submit" formaction="/account/ai/remove" class="btn btn-outline"
+                  style="color:#c0392b; border-color:#c0392b; margin-left:auto;"
+                  onclick="return confirm('Remove your AI configuration?')">Remove</button>
+          {% endif %}
+        </div>
+        <div id="ai-test-result" class="muted" style="font-size:12px; display:none; margin-top:4px;"></div>
+      </form>
+    </div>
+
     {% if settings.x_api_key %}
     <h2>X (Twitter) Accounts</h2>
     <p class="muted text-sm" style="margin-bottom:16px;">
@@ -251,7 +308,7 @@
       <h2 style="color:var(--red); border:none; margin-bottom:8px;">Danger Zone</h2>
       <p class="muted text-sm" style="margin-bottom:16px;">
         Permanently deletes your account, all campaigns, posts, and metrics.
-        This cannot be undone. Payment records are also removed from our system.
+        This cannot be undone.
       </p>
       <form method="post" action="/account/delete"
             onsubmit="return confirm('Delete your account and all data permanently? This cannot be undone.');">
@@ -262,4 +319,34 @@
   </div>
 
 </div>
+
+<script>
+async function testAi() {
+  const btn = document.getElementById('ai-test-btn');
+  const out = document.getElementById('ai-test-result');
+  btn.disabled = true;
+  out.style.display = 'block';
+  out.textContent = 'Testing connection…';
+  try {
+    const resp = await fetch('/account/ai/test', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'csrf_token=' + encodeURIComponent(document.querySelector('input[name=csrf_token]').value),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      out.textContent = '✓ Connection OK';
+      out.style.color = 'var(--teal, #2d7d5f)';
+    } else {
+      out.textContent = '✕ Failed: ' + (data.error || 'Unknown error');
+      out.style.color = 'var(--red, #c0392b)';
+    }
+  } catch (e) {
+    out.textContent = '✕ Request failed — try again.';
+    out.style.color = 'var(--red, #c0392b)';
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
 {% endblock %}

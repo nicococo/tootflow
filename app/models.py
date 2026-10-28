@@ -9,7 +9,6 @@ class User(SQLModel, table=True):
 
     campaigns: list["Campaign"] = Relationship(back_populates="user")
     mastodon_account: Optional["MastodonAccount"] = Relationship(back_populates="user")
-    payments: list["Payment"] = Relationship(back_populates="user")
 
 
 class MastodonAccount(SQLModel, table=True):
@@ -31,6 +30,21 @@ class XAccount(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class UserAIConfig(SQLModel, table=True):
+    """Per-user AI provider credentials (bring-your-own-key).
+
+    api_key is stored encrypted (Fernet). base_url empty = provider default;
+    model empty = instance default. Works with any OpenAI-compatible endpoint
+    (OpenAI, OpenRouter, Ollama, ...).
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", unique=True)
+    api_key: str = ""          # encrypted at rest
+    base_url: str = ""         # e.g. https://openrouter.ai/api/v1
+    model: str = ""            # e.g. openai/gpt-4o-mini, llama3, ...
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Campaign(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
@@ -46,7 +60,6 @@ class Campaign(SQLModel, table=True):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     status: str = "draft"
-    payment_status: str = "unpaid"
     enabled: bool = True
     ai_posts_generated: int = 0
     export_generations: int = 0
@@ -55,7 +68,6 @@ class Campaign(SQLModel, table=True):
 
     user: Optional[User] = Relationship(back_populates="campaigns")
     posts: list["Post"] = Relationship(back_populates="campaign")
-    payment: Optional["Payment"] = Relationship(back_populates="campaign")
 
 
 class Post(SQLModel, table=True):
@@ -117,17 +129,3 @@ class AccountLink(SQLModel, table=True):
 class SiteConfig(SQLModel, table=True):
     key: str = Field(primary_key=True)
     value: str = ""
-
-
-class Payment(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    campaign_id: int = Field(foreign_key="campaign.id", unique=True)
-    lemonsqueezy_order_id: str = ""
-    amount: float = 0.0
-    currency: str = "EUR"
-    status: str = "pending"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    user: Optional[User] = Relationship(back_populates="payments")
-    campaign: Optional[Campaign] = Relationship(back_populates="payment")
