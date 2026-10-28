@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TootFlow — Mastodon &amp; X campaigns on autopilot. Free, open source.</title>
+<meta name="description" content="TootFlow turns a topic into a full social media campaign: AI-drafted posts, scheduled publishing, engagement metrics. Free and open source (MIT). Self-host in minutes.">
+<link rel="icon" type="image/png" href="assets/favicon_32.png">
+<style>
+  :root {
+    --ink: #0d1822;
+    --teal: #47b8b1;
+    --orange: #d95f2a;
+    --paper: #f7f4ee;
+    --surface: #fffdf8;
+    --muted: #6b7280;
+    --border: 2px solid var(--ink);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Avenir Next', 'Segoe UI', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; }
+  a { color: var(--teal); }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Nav ── */
+  nav {
+    border-bottom: var(--border);
+    background: var(--ink);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+  .nav-logo img { width: 32px; height: 32px; }
+  .nav-logo strong { font-size: 15px; letter-spacing: 1px; }
+  .nav-links { display: flex; gap: 18px; align-items: center; }
+  .nav-links a {
+    color: #e8e2d8; text-decoration: none; font-size: 13px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .nav-links a:hover { color: var(--teal); }
+  .nav-links a.gh {
+    background: var(--teal); color: var(--ink); padding: 6px 14px;
+    border: 2px solid var(--teal); font-weight: bold;
+  }
+  .nav-links a.gh:hover { background: #fff; }
+
+  /* ── Hero ── */
+  .hero { border-bottom: var(--border); background: var(--surface); }
+  .hero-inner {
+    max-width: 1100px; margin: 0 auto; padding: 72px 24px 56px;
+    display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 48px; align-items: center;
+  }
+  .kicker {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px; color: var(--teal); letter-spacing: 2px; margin-bottom: 20px;
+  }
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(38px, 6vw, 62px); line-height: 1.05; margin-bottom: 24px;
+  }
+  h1 .hl { background: var(--teal); padding: 0 10px; }
+  .sub { font-size: 19px; color: #3c4a58; margin-bottom: 32px; max-width: 520px; }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-block; padding: 14px 26px; text-decoration: none;
+    font-weight: bold; font-size: 15px; border: var(--border);
+  }
+  .btn-primary { background: var(--teal); color: var(--ink); }
+  .btn-primary:hover { background: var(--ink); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--ink); }
+  .btn-ghost:hover { background: var(--ink); color: #fff; }
+  .trust { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
+  .pill {
+    font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px;
+    border: 1.5px solid var(--ink); padding: 4px 10px; background: var(--paper);
+  }
+
+  .spec-card { border: var(--border); background: var(--ink); box-shadow: 8px 8px 0 var(--teal); }
+  .spec-head { padding: 16px 20px; border-bottom: 2px solid var(--teal); }
+  .spec-head .name { color: #fff; font-weight: bold; letter-spacing: 2px; font-size: 15px; display: block; }
+  .spec-head .tagline { color: var(--teal); font-size: 11px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .spec-row {
+    display: flex; justify-content: space-between; padding: 11px 20px;
+    border-bottom: 1px solid #1e3040; font-size: 13px;
+  }
+  .spec-row:last-child { border-bottom: 0; }
+  .spec-row .k { color: #7a8a99; }
+  .spec-row .v { color: #fff; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: bold; }
+  .spec-row .v.teal { color: var(--teal); }
+  .spec-row .v.orange { color: var(--orange); }
+
+  /* ── Band ── */
+  .band { background: var(--orange); color: #fff; text-align: center; padding: 12px 24px; font-weight: bold; font-size: 14px; }
+
+  /* ── Sections ── */
+  section { padding: 72px 0; }
+  section:nth-of-type(even) { background: var(--surface); border-top: var(--border); border-bottom: var(--border); }
+  .sec-label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--teal); margin-bottom: 14px;
+  }
+  h2 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 4vw, 40px); margin-bottom: 36px; }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .card { border: var(--border); background: #fff; padding: 24px; box-shadow: 4px 4px 0 rgba(13,24,34,0.12); }
+  .card .icon { font-size: 22px; display: block; margin-bottom: 12px; }
+  .card h3 { font-size: 17px; margin-bottom: 8px; }
+  .card p { font-size: 14px; color: #3c4a58; }
+
+  code, pre { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; }
+  .terminal { border: var(--border); background: var(--ink); box-shadow: 8px 8px 0 rgba(13,24,34,0.2); }
+  .terminal-bar {
+    display: flex; gap: 8px; padding: 10px 14px; border-bottom: 2px solid #1e3040;
+    align-items: center;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #2a3848; }
+  .dot.r { background: var(--orange); } .dot.g { background: var(--teal); }
+  .terminal-title { color: #7a8a99; font-size: 11px; margin-left: 8px; }
+  .terminal pre {
+    color: #d7e2ea; padding: 22px 24px; font-size: 13.5px; line-height: 1.8; overflow-x: auto;
+  }
+  .terminal .c { color: #5f7285; }
+  .terminal .t { color: var(--teal); }
+  .terminal .o { color: var(--orange); }
+
+  /* ── Footer ── */
+  footer { background: var(--ink); color: #7a8a99; text-align: center; padding: 36px 24px; font-size: 13px; }
+  footer a { color: var(--teal); }
+  footer .mono { font-size: 11px; letter-spacing: 1px; }
+
+  @media (max-width: 860px) {
+    .hero-inner { grid-template-columns: 1fr; padding: 48px 24px 40px; }
+    .grid3 { grid-template-columns: 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+    .nav-links a:not(.gh) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">
+      <img src="assets/logo_160.png" alt="TootFlow logo">
+      <strong>TOOTFLOW</strong>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#quickstart">Quickstart</a>
+      <a href="#byok">Bring your own AI</a>
+      <a href="https://github.com/nicococo/tootflow" class="gh">★ GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════ HERO ══════ -->
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <p class="kicker">&gt; TOOTFLOW_SCHEDULER.EXE — FREE &amp; OPEN SOURCE</p>
+      <h1>Stop letting<br>your ideas <span style="text-decoration: line-through; text-decoration-color: var(--orange);">rot</span> in the drafts <span class="hl">folder.</span></h1>
+      <p class="sub">
+        TootFlow is a campaign scheduler for <strong>Mastodon and X</strong>.
+        Describe what you want to share — it drafts, spaces out, and publishes
+        automatically. <strong>You get to exist offline sometimes.</strong>
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/nicococo/tootflow">Clone it &nbsp;▶</a>
+        <a class="btn btn-ghost" href="#quickstart">Self-host in minutes</a>
+      </div>
+      <div class="trust">
+        <span class="pill">MIT licensed</span>
+        <span class="pill">No subscription</span>
+        <span class="pill">No tracking</span>
+        <span class="pill">Bring your own AI key</span>
+      </div>
+    </div>
+    <div>
+      <div class="spec-card">
+        <div class="spec-head">
+          <span class="name">TOOTFLOW</span>
+          <span class="tagline">CAMPAIGN SCHEDULER v1.0</span>
+        </div>
+        <div class="spec-row"><span class="k">License</span><span class="v teal">MIT</span></div>
+        <div class="spec-row"><span class="k">Price</span><span class="v teal">FREE</span></div>
+        <div class="spec-row"><span class="k">Subscription</span><span class="v orange">NEVER</span></div>
+        <div class="spec-row"><span class="k">Platforms</span><span class="v">MASTODON + X</span></div>
+        <div class="spec-row"><span class="k">AI</span><span class="v">YOUR KEY</span></div>
+        <div class="spec-row"><span class="k">Self-host</span><span class="v teal">YES</span></div>
+        <div class="spec-row"><span class="k">Your data</span><span class="v">YOURS</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="band">Free &amp; open source · AI, metrics &amp; export included · Self-host with Docker in minutes</div>
+
+<!-- ══════ FEATURES ══════ -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-label">// Features</div>
+    <h2>Everything included.<br>Nothing gated.</h2>
+    <div class="grid3">
+      <div class="card">
+        <span class="icon">📅</span>
+        <h3>Campaigns &amp; scheduling</h3>
+        <p>Pick a template, tone, language, and cadence. TootFlow spaces posts across your
+        campaign duration — pause, resume, and reschedule any time.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🤖</span>
+        <h3>AI drafts, your control</h3>
+        <p>AI generates the draft schedule; you edit every word. Per-post refinement with
+        natural-language instructions. 10 templates, 12 tones, 3 languages.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🐘</span>
+        <h3>Mastodon + X</h3>
+        <p>One platform per campaign. Mastodon: OAuth, polls, multi-account linking.
+        X: publish via your own X API keys — the Free tier is enough.</p>
+      </div>
+      <div class="card">
+        <span class="icon">⏰</span>
+        <h3>Set-and-forget publishing</h3>
+        <p>A background scheduler checks every minute and publishes due posts.
+        Transient errors retry automatically; permanent ones fail visibly.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📊</span>
+        <h3>Engagement metrics</h3>
+        <p>Favourites, boosts, replies, and follower snapshots — tracked per post with
+        weekly charts, so you know what actually landed.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📤</span>
+        <h3>Export Studio</h3>
+        <p>Turn a finished campaign into a newsletter digest, a LinkedIn article, or a
+        Reddit post. Your content, second life included.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ QUICKSTART ══════ -->
+<section id="quickstart">
+  <div class="wrap">
+    <div class="sec-label">// Quickstart</div>
+    <h2>From clone to first campaign<br>in about five minutes.</h2>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot r"></div><div class="dot"></div><div class="dot g"></div>
+        <span class="terminal-title">tootflow — self_host.sh</span>
+      </div>
+      <pre><span class="c"># 1. Clone and configure</span>
+git clone https://github.com/nicococo/tootflow.git
+<span class="o">cd</span> tootflow
+cp .env.example .env
+<span class="c">#    → set SECRET_KEY and APP_BASE_URL</span>
+
+<span class="c"># 2. Run it (SQLite, zero extra setup)</span>
+docker compose up -d --build
+
+<span class="c"># 3. Open the app and log in with Mastodon</span>
+<span class="t">http://localhost:8000</span>
+
+<span class="c"># Optional: PostgreSQL instead of SQLite</span>
+docker compose --profile postgres up -d --build</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ BYOK ══════ -->
+<section id="byok">
+  <div class="wrap">
+    <div class="sec-label">// Bring your own model</div>
+    <h2>Your AI. Your key. Your costs.</h2>
+    <div class="grid2">
+      <div class="card">
+        <span class="icon">🔑</span>
+        <h3>Any OpenAI-compatible provider</h3>
+        <p>Paste a key on the Account page and point it at OpenAI, OpenRouter, or a local
+        Ollama instance. Keys are encrypted at rest and used only for your own requests —
+        the operator of a hosted instance never pays for your tokens.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🛟</span>
+        <h3>Instance fallback</h3>
+        <p>Running it just for yourself? Set <code>OPENAI_API_KEY</code> in the environment
+        and skip per-user setup entirely. Per-user keys always win over the instance
+        default when both exist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ CTA ══════ -->
+<div class="band" style="font-size:16px; padding:20px 24px;">
+  Ready to post consistently without thinking about it? &nbsp;
+  <a href="https://github.com/nicococo/tootflow" style="color:#fff;">Star the repo ★</a> &nbsp;or&nbsp;
+  <a href="https://github.com/nicococo/tootflow/fork" style="color:#fff;">fork it and self-host →</a>
+</div>
+
+<footer>
+  <p class="mono">TOOTFLOW — FREE, OPEN SOURCE, MIT LICENSED</p>
+  <p style="margin-top:8px;">
+    <a href="https://github.com/nicococo/tootflow">GitHub</a> ·
+    <a href="https://github.com/nicococo/tootflow/blob/main/CONTRIBUTING.md">Contributing</a> ·
+    <a href="https://github.com/nicococo/tootflow/blob/main/SECURITY.md">Security</a> ·
+    <a href="https://github.com/nicococo/tootflow/blob/main/DEPLOY.md">Self-hosting guide</a>
+  </p>
+  <p style="margin-top:14px; font-size:11px;">Built for people who ship. Runs on one small box.</p>
+</footer>
+
+</body>
+</html>

@@ -69,7 +69,6 @@ def _make_campaign(session: Session, user: User, **kwargs) -> Campaign:
         template_type="knowledge_sharing",
         tone="professional",
         status="active",
-        payment_status="unpaid",
         enabled=True,
     )
     defaults.update(kwargs)

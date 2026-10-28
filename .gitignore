@@ -18,6 +18,9 @@ env/
 # Environment variables
 .env
 .env.local
+
+# OpenCode plugin memory (machine-generated, local-only)
+.opencode/memory/
 .env.*.local
 .env.migrate
 

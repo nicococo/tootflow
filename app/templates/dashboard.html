@@ -158,15 +158,15 @@
         </div>
         <div class="info-row">
           <strong>2 · Add Posts</strong>
-          <span>Add posts manually or use AI generation (premium).</span>
+          <span>Add posts manually or use AI generation.</span>
         </div>
         <div class="info-row">
           <strong>3 · Publish</strong>
-          <span>Posts go live on schedule — free for all campaigns.</span>
+          <span>Posts go live on schedule — automatically.</span>
         </div>
         <div class="info-row">
-          <strong>✦ Activate</strong>
-          <span>Pay what it's worth (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI generation, full metrics, and export.</span>
+          <strong>4 · Track</strong>
+          <span>Follow engagement in metrics and reuse posts in Export Studio.</span>
         </div>
       </div>
     </div>
@@ -371,7 +371,7 @@
       <tbody id="campaigns-tbody">
         {% for c in campaigns %}
         {% set row_color = account_color.get(c.user_id, '#47b8b1') %}
-        {% if not c.enabled and c.payment_status == "paid" %}{% set sg = "paused" %}
+        {% if not c.enabled %}{% set sg = "paused" %}
         {% elif c.status in ("completed", "archived") %}{% set sg = "done" %}
         {% elif c.status == "draft" %}{% set sg = "draft" %}
         {% else %}{% set sg = "active" %}{% endif %}
@@ -390,13 +390,10 @@
           </td>
           <td style="white-space:nowrap; vertical-align:middle;">
             <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
-              {% if not c.enabled and c.payment_status == "paid" %}
+              {% if not c.enabled %}
               <span class="badge" style="background:#fff3e0; color:#b45309; border:1px solid #f59e0b; font-size:10px;">paused</span>
               {% else %}
               <span class="badge badge-{{ c.status }}" style="font-size:10px;">{{ c.status | replace("_"," ") }}</span>
-              {% endif %}
-              {% if c.payment_status == "paid" %}
-              <span class="badge badge-paid" style="font-size:10px;">paid</span>
               {% endif %}
             </div>
           </td>
@@ -408,7 +405,7 @@
           <td style="white-space:nowrap;">
             <div class="actions">
               <a href="/campaigns/{{ c.id }}/posts" class="btn btn-sm btn-outline">Posts</a>
-              {% if c.payment_status == "paid" %}<a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>{% endif %}
+              <a href="/campaigns/{{ c.id }}/metrics" class="btn btn-sm btn-outline">Metrics</a>
             </div>
           </td>
         </tr>

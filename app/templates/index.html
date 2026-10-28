@@ -1,21 +1,16 @@
 {% extends "base.html" %}
 {% block title %}TootFlow – Post on Mastodon. Consistently. Without Suffering.{% endblock %}
-{% block meta_description %}TootFlow is a Mastodon campaign scheduler for OSS maintainers, researchers, and solopreneurs. Manual posting free forever. AI drafting, metrics & export from {{ settings.campaign_price }} {{ settings.campaign_currency }} per campaign, one-time, no subscription.{% endblock %}
+{% block meta_description %}TootFlow is a free, open-source campaign scheduler for Mastodon and X — for OSS maintainers, researchers, and solopreneurs. AI drafting, metrics & export included. Self-host or use the hosted instance.{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "TootFlow",
-  "description": "Mastodon campaign scheduler for OSS maintainers, researchers, and solopreneurs. Free publishing, optional AI and metrics.",
+  "description": "Free, open-source campaign scheduler for Mastodon and X. AI drafting, metrics, and export included.",
   "applicationCategory": "SocialNetworkingApplication",
   "operatingSystem": "Web",
-  "offers": {
-    "@type": "Offer",
-    "price": "{{ settings.campaign_price }}.00",
-    "priceCurrency": "{{ settings.campaign_currency }}",
-    "description": "Pay-what-you-want, one-time per campaign, no subscription"
-  },
+  "license": "https://opensource.org/licenses/MIT",
   "url": "{{ request.url.scheme }}://{{ request.url.netloc }}/"
 }
 </script>
@@ -289,7 +284,6 @@ a.lp-cta:active {
   text-align: right;
 }
 .cv-free   { color: var(--teal); text-shadow: 0 0 6px rgba(71,184,177,0.35); }
-.cv-price  { color: var(--orange); }
 .cv-never  { color: #8fa8c0; }
 .cv-yours  { color: #6a8a9a; }
 
@@ -608,7 +602,6 @@ h4.lp-step-title {
   border-bottom: 2px solid;
 }
 .lp-inv-slot:nth-child(1) .lp-inv-header { border-color: var(--teal); }
-.lp-inv-slot:nth-child(2) .lp-inv-header { border-color: var(--orange); }
 
 .lp-inv-name {
   font-family: 'VT323', monospace;
@@ -620,7 +613,6 @@ h4.lp-step-title {
   color: var(--teal);
   text-shadow: var(--glow-teal);
 }
-.lp-inv-slot:nth-child(2) .lp-inv-name { color: var(--orange); }
 
 .lp-inv-price {
   font-family: 'VT323', monospace;
@@ -628,7 +620,6 @@ h4.lp-step-title {
   color: var(--muted);
   letter-spacing: 1px;
 }
-.lp-inv-slot:nth-child(2) .lp-inv-price { color: var(--orange); opacity: 0.8; }
 
 .lp-inv-list { list-style: none; padding: 0; margin: 0; }
 .lp-inv-list li {
@@ -652,10 +643,6 @@ h4.lp-step-title {
 .lp-inv-slot:nth-child(1) .lp-inv-list li::before {
   content: '▸';
   color: var(--teal);
-}
-.lp-inv-slot:nth-child(2) .lp-inv-list li::before {
-  content: '✦';
-  color: var(--orange);
 }
 
 /* final CTA panel */
@@ -799,18 +786,14 @@ a.lp-cta-final:active {
           <span class="lp-cart-logo">TOOTFLOW</span>
           <span class="lp-cart-subtitle">Mastodon Post Scheduler</span>
           <div class="lp-cart-badges">
-            <span class="lp-cart-badge teal">OSS FRIENDLY</span>
-            <span class="lp-cart-badge orange">PWYW</span>
+            <span class="lp-cart-badge teal">OPEN SOURCE</span>
+            <span class="lp-cart-badge orange">MIT</span>
           </div>
         </div>
         <div class="lp-cart-specs">
           <div class="lp-cart-row">
-            <span class="lp-cart-key">Publishing</span>
+            <span class="lp-cart-key">Everything</span>
             <span class="lp-cart-val cv-free">FREE</span>
-          </div>
-          <div class="lp-cart-row">
-            <span class="lp-cart-key">AI + Metrics</span>
-            <span class="lp-cart-val cv-price">FROM {{ settings.campaign_price }} {{ settings.campaign_currency }}</span>
           </div>
           <div class="lp-cart-row">
             <span class="lp-cart-key">Subscription</span>
@@ -819,6 +802,10 @@ a.lp-cta-final:active {
           <div class="lp-cart-row">
             <span class="lp-cart-key">Your data</span>
             <span class="lp-cart-val cv-yours">YOURS</span>
+          </div>
+          <div class="lp-cart-row">
+            <span class="lp-cart-key">Self-host</span>
+            <span class="lp-cart-val cv-free">YES</span>
           </div>
           <div class="lp-cart-row">
             <span class="lp-cart-key">Login method</span>
@@ -849,7 +836,7 @@ a.lp-cta-final:active {
 
 <!-- ══════ BAND ══════ -->
 <div class="lp-band">
-  <p>Free to publish forever &nbsp;·&nbsp; Pay what it's worth (from {{ settings.campaign_price }} {{ settings.campaign_currency }}) for AI + metrics + export &nbsp;·&nbsp; One-time per campaign &nbsp;·&nbsp; No subscription</p>
+  <p>Free &amp; open source &nbsp;·&nbsp; AI, metrics &amp; export included &nbsp;·&nbsp; Self-host or use the hosted instance &nbsp;·&nbsp; Bring your own AI key &nbsp;·&nbsp; No subscription</p>
 </div>
 
 <!-- ══════ PROBLEM ══════ -->
@@ -966,7 +953,7 @@ a.lp-cta-final:active {
           <h4 class="lp-step-title">Draft</h4>
           <p>
             Write posts manually — free, no limit.
-            Or activate once for <strong>AI-generated drafts</strong>,
+            Or use <strong>AI-generated drafts</strong>,
             then edit every word until it sounds like you.
           </p>
         </div>
@@ -976,7 +963,7 @@ a.lp-cta-final:active {
           <h4 class="lp-step-title">Publish</h4>
           <p>
             Posts go live on schedule. Automatically.
-            <strong>No payment needed to publish.</strong>
+            <strong>While you do literally anything else.</strong>
             <em>(Yes, really. Free, forever.)</em>
           </p>
         </div>
@@ -995,31 +982,22 @@ a.lp-cta-final:active {
 
       <div class="lp-inv-slot">
         <div class="lp-inv-header">
-          <span class="lp-inv-name">Free</span>
-          <span class="lp-inv-price">Always</span>
+          <span class="lp-inv-name">Everything</span>
+          <span class="lp-inv-price">Free · open source · always</span>
         </div>
         <ul class="lp-inv-list">
-          <li>Unlimited campaigns, no cap</li>
+          <li>Campaigns with AI post generation</li>
+          <li>Per-post AI refine with your instructions</li>
           <li>Manual post creation &amp; scheduling</li>
           <li>Automated publishing on schedule</li>
           <li>Pause, resume, reschedule any time</li>
-          <li>Polls on any post</li>
-          <li>Multiple Mastodon accounts, linked</li>
-        </ul>
-      </div>
-
-      <div class="lp-inv-slot">
-        <div class="lp-inv-header">
-          <span class="lp-inv-name">Premium</span>
-          <span class="lp-inv-price">From {{ settings.campaign_price }} {{ settings.campaign_currency }} · one-time · per campaign</span>
-        </div>
-        <ul class="lp-inv-list">
-          <li>AI post generation — {{ settings.openai_max_posts_per_campaign }} posts, 10 templates, 12 tones</li>
-          <li>Per-post AI refine with your instructions</li>
           <li>Favourites, reblogs &amp; reply tracking</li>
           <li>Follower growth chart over campaign timeline</li>
-          <li>Poll voter counts</li>
+          <li>Polls on any post (Mastodon)</li>
+          <li>X/Twitter support (bring your own X API key)</li>
+          <li>Multiple Mastodon accounts, linked</li>
           <li>Export Studio — Newsletter, LinkedIn &amp; Reddit</li>
+          <li>Self-host with Docker in minutes</li>
         </ul>
       </div>
 
@@ -1029,8 +1007,8 @@ a.lp-cta-final:active {
       <div>
         <h2 class="lp-cta-h2">Ready to post consistently<br>without thinking about it?</h2>
         <p class="lp-cta-sub">
-          Sign in with Mastodon. No email required. No credit card upfront.
-          Publishing is free forever — upgrade a campaign when you want AI and metrics.
+          Sign in with Mastodon. No email required. No credit card, ever.
+          Or clone the repo and self-host it — it's MIT licensed.
         </p>
       </div>
       <a href="/login" class="lp-cta-final">Connect with Mastodon &nbsp;▶</a>

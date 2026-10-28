@@ -14,5 +14,4 @@ python-dotenv==1.0.1
 aiofiles==24.1.0
 slowapi==0.1.9
 psycopg2-binary==2.9.9
-polar-sdk==0.31.3
 pytest==9.0.3

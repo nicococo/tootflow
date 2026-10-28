@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
@@ -47,12 +47,6 @@ def campaign_metrics(
     linked_ids = _get_linked_user_ids(session, user.id)
     if campaign.user_id != user.id and campaign.user_id not in linked_ids:
         raise HTTPException(status_code=404)
-
-    if campaign.payment_status != "paid":
-        return RedirectResponse(
-            f"/campaigns/{campaign_id}?metrics_locked=1",
-            status_code=302,
-        )
 
     posts = session.exec(
         select(Post).where(Post.campaign_id == campaign_id).order_by(Post.scheduled_time)

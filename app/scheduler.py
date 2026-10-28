@@ -175,9 +175,8 @@ async def update_metrics():
             .join(Campaign, Post.campaign_id == Campaign.id)
             .where(
                 Post.status == "published",
-                Post.mastodon_status_id.isnot(None),
+                Post.mastodon_status_id.isnot(None),  # X posts excluded — Free tier has no metric reads
                 Post.published_at >= cutoff,
-                Campaign.payment_status == "paid",
                 Campaign.status.in_(["active", "running", "completed"]),
             )
             .order_by(Post.published_at.desc())

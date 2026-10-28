@@ -53,7 +53,6 @@ def _make_campaign(session: Session, user: User, mastodon_account_id=None, **kwa
         template_type="knowledge_sharing",
         tone="professional",
         status="active",
-        payment_status="unpaid",
         enabled=True,
         mastodon_account_id=mastodon_account_id,
     )

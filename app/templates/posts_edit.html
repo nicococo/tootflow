@@ -513,11 +513,10 @@
 
     {% if campaign.status != "archived" %}
     <!-- AI Generation banner -->
-    {% set paid = campaign.payment_status == "paid" %}
     {% set pending_count = posts | selectattr("status", "equalto", "pending") | list | length %}
     {% set ai_used = campaign.ai_posts_generated %}
     {% set ai_limit_reached = ai_used >= ai_max %}
-    {% set ai_available = paid and not ai_limit_reached %}
+    {% set ai_available = ai_configured and not ai_limit_reached %}
 
     <div class="ai-banner {% if ai_available %}available{% else %}locked{% endif %}">
       <div>
@@ -528,8 +527,8 @@
         <div class="ai-banner-desc">
           {% if ai_limit_reached %}
             Generation limit of {{ ai_max }} posts reached for this campaign.
-          {% elif not paid %}
-            Activate this campaign (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI-drafted post generation.
+          {% elif not ai_configured %}
+            AI features need an API key. <a href="/account">Add your AI provider key on the Account page</a> — any OpenAI-compatible provider works.
           {% elif pending_count > 0 %}
             Replaces {{ pending_count }} pending post(s) with a fresh AI-drafted schedule.
           {% else %}
@@ -586,13 +585,8 @@
     <!-- Post list -->
     {% if not posts %}
     <div class="empty-state">
-      {% if campaign.payment_status == "paid" %}
         No posts yet.<br>
         Click <strong>✦ Generate Campaign</strong> above for AI-drafted posts, or add manually.
-      {% else %}
-        No posts yet. Add posts manually above,<br>
-        or <a href="/campaigns/{{ campaign.id }}">activate the campaign</a> (from {{ settings.campaign_price }}{{ settings.campaign_currency }}) to unlock AI generation.
-      {% endif %}
     </div>
     {% else %}
 
@@ -692,7 +686,7 @@
                   form="regen-{{ post.id }}">✦ Regenerate</button>
           {% else %}
           <button type="button" class="pc-action-btn pc-regen-btn" disabled
-                  title="{% if ai_limit_reached %}AI limit reached{% else %}Activate campaign to unlock{% endif %}">✦ Regenerate</button>
+                  title="{% if ai_limit_reached %}AI limit reached{% elif not ai_configured %}Add your AI API key on the Account page{% endif %}">✦ Regenerate</button>
           {% endif %}
           <button type="submit" class="pc-action-btn pc-delete-btn"
                   form="delete-{{ post.id }}">Delete</button>

@@ -26,7 +26,7 @@ from app.main import app
 from app.database import get_session
 from app.auth import get_current_user
 from app.csrf import verify_csrf
-from app.models import Campaign, Metrics, MastodonAccount, Payment, Post, User
+from app.models import Campaign, Metrics, MastodonAccount, Post, User
 from app.routers.campaigns import format_description_for_ai
 
 
@@ -63,7 +63,6 @@ def _make_campaign(session: Session, user: User, **kwargs) -> Campaign:
         template_type="knowledge_sharing",
         tone="professional",
         status="active",
-        payment_status="unpaid",
         enabled=True,
     )
     defaults.update(kwargs)
@@ -175,7 +174,6 @@ def test_create_campaign_persists(client, db):
     ).all()
     assert len(campaigns) == 1
     assert campaigns[0].status == "draft"
-    assert campaigns[0].payment_status == "unpaid"
 
 
 # ── Delete campaign ────────────────────────────────────────────────────────────
@@ -222,22 +220,6 @@ def test_delete_cascades_metrics(client, db):
     client.post(f"/campaigns/{campaign.id}/delete", data={"csrf_token": "test"})
     db.expire_all()
     assert db.get(Metrics, mid) is None
-
-
-def test_delete_cascades_payment(client, db):
-    user = _create_user(db)
-    _set_user(user)
-    campaign = _make_campaign(db, user, payment_status="paid")
-    payment = Payment(
-        user_id=user.id, campaign_id=campaign.id,
-        lemonsqueezy_order_id="ord_1", amount=8.0, currency="EUR", status="paid",
-    )
-    db.add(payment)
-    db.commit()
-    pay_id = payment.id
-    client.post(f"/campaigns/{campaign.id}/delete", data={"csrf_token": "test"})
-    db.expire_all()
-    assert db.get(Payment, pay_id) is None
 
 
 def test_delete_404_other_user(client, db):

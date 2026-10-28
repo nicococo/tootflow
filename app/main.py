@@ -22,7 +22,7 @@ from sqlalchemy import or_
 from app.auth import optional_current_user, get_current_user
 from app.scheduler import start_scheduler, stop_scheduler
 from app.site_config import get_banner, load_from_db
-from app.routers import auth, campaigns, posts, payments, metrics, account, admin
+from app.routers import auth, campaigns, posts, metrics, account, admin
 from app.routers.metrics import post_router as metrics_post_router
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,6 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup security checks
-    if not settings.polar_webhook_secret:
-        logger.critical("POLAR_WEBHOOK_SECRET is not set — webhook endpoint is insecure")
     if settings.secret_key in ("changeme", "changeme-generate-a-long-random-string"):
         logger.critical("SECRET_KEY is set to the default placeholder — JWTs are forgeable")
 
@@ -135,7 +133,6 @@ async def security_headers(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(campaigns.router)
 app.include_router(posts.router)
-app.include_router(payments.router)
 app.include_router(metrics.router)
 app.include_router(metrics_post_router)
 app.include_router(account.router)

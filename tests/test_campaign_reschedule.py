@@ -48,7 +48,6 @@ def _make_campaign(session: Session, enabled: bool = False) -> Campaign:
         template_type="general",
         tone="neutral",
         status="running",
-        payment_status="paid",
         enabled=enabled,
     )
     session.add(campaign)

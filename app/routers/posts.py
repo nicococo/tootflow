@@ -8,12 +8,12 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import AccountLink, Campaign, Post, User
+from app.models import AccountLink, Campaign, Post, User, UserAIConfig
 from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
 from sqlalchemy import or_
-from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, schedule_posts
+from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, schedule_posts, build_ai_client
 from app.routers.campaigns import format_description_for_ai
 
 settings = get_settings()
@@ -38,6 +38,17 @@ def _campaign_platform(campaign: Campaign) -> str:
 
 def _max_chars(campaign: Campaign) -> int:
     return 280 if _campaign_platform(campaign) == "x" else 500
+
+
+def _user_ai(session: Session, user: User):
+    """Resolve (client, model) for the current user's BYOK config or env fallback."""
+    cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
+    return build_ai_client(cfg)
+
+
+def _ai_configured(session: Session, user: User) -> bool:
+    client, _ = _user_ai(session, user)
+    return client is not None
 
 router = APIRouter(prefix="/campaigns")
 templates = Jinja2Templates(directory="app/templates")
@@ -89,7 +100,8 @@ def edit_posts_page(
          "ai_max": settings.openai_max_posts_per_campaign,
          "poll_data": poll_data,
          "is_x_campaign": _campaign_platform(campaign) == "x",
-         "max_chars": _max_chars(campaign)},
+         "max_chars": _max_chars(campaign),
+         "ai_configured": _ai_configured(session, user)},
     )
 
 
@@ -183,10 +195,12 @@ async def generate_campaign_posts(
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign must be activated before generating posts")
     if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
         raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
+
+    client, model_override = _user_ai(session, user)
+    if client is None:
+        raise HTTPException(status_code=400, detail="No AI provider configured. Add your API key on the Account page.")
 
     try:
         post_contents = await generate_posts(
@@ -198,6 +212,8 @@ async def generate_campaign_posts(
             duration_days=campaign.duration_days,
             posts_per_week=campaign.posts_per_week,
             platform=_campaign_platform(campaign),
+            client=client,
+            model=model_override,
         )
         # Delete only pending posts (keep published/failed)
         pending = session.exec(
@@ -249,14 +265,16 @@ async def regenerate_post(
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign must be activated before regenerating posts")
     if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
         raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
 
     post = session.get(Post, post_id)
     if not post or post.campaign_id != campaign_id or post.status != "pending":
         raise HTTPException(status_code=404)
+
+    client, model_override = _user_ai(session, user)
+    if client is None:
+        raise HTTPException(status_code=400, detail="No AI provider configured. Add your API key on the Account page.")
 
     try:
         post.content = await regenerate_single_post(
@@ -266,6 +284,8 @@ async def regenerate_post(
             tone=campaign.tone,
             language=campaign.language,
             platform=_campaign_platform(campaign),
+            client=client,
+            model=model_override,
         )
         campaign.ai_posts_generated += 1
         session.add(post)
@@ -298,8 +318,6 @@ async def refine_post(
         raise HTTPException(status_code=404)
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be modified")
-    if campaign.payment_status != "paid":
-        raise HTTPException(status_code=403, detail="Campaign must be activated before refining posts")
     if campaign.ai_posts_generated >= settings.openai_max_posts_per_campaign:
         raise HTTPException(status_code=403, detail="AI generation limit reached for this campaign")
 
@@ -310,6 +328,10 @@ async def refine_post(
     instructions = instructions.strip()[:300]
     if not instructions:
         raise HTTPException(status_code=400, detail="Instructions cannot be empty")
+
+    client, model_override = _user_ai(session, user)
+    if client is None:
+        raise HTTPException(status_code=400, detail="No AI provider configured. Add your API key on the Account page.")
 
     try:
         poll_opts = json.loads(post.poll_options) if post.poll_options else None
@@ -323,6 +345,8 @@ async def refine_post(
             language=campaign.language,
             poll_options=poll_opts,
             platform=_campaign_platform(campaign),
+            client=client,
+            model=model_override,
         )
         campaign.ai_posts_generated += 1
         session.add(post)
