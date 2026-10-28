@@ -4,24 +4,26 @@ Thanks for helping out! This guide gets you from clone to green tests.
 
 ## Dev setup
 
-**Requirements:** Python **3.12** (3.13+ breaks the pinned `sqlmodel`), and either
-SQLite (default, zero setup) or PostgreSQL.
+**Requirements:** [uv](https://docs.astral.sh/uv/getting-started/installation/) — it
+provides Python **3.12** automatically (3.13+ breaks the pinned `sqlmodel`; the
+`.python-version` file pins it for you) and manages all dependencies + the lockfile.
 
 ```bash
 git clone https://github.com/nicococo/tootflow.git
 cd tootflow
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+uv sync                     # creates .venv, installs locked deps
 cp .env.example .env
+uv run start.py             # boots the app; SQLite DB is created on first startup
 ```
 
-> On macOS, `psycopg2-binary` may need `brew install postgresql` for its headers.
-> It's only needed for PostgreSQL — SQLite development works without it.
+> On macOS, `psycopg2-binary` may need `brew install postgresql` if no prebuilt wheel
+> exists for your platform. It's only needed for PostgreSQL — SQLite development works
+> without it.
 
 ## Running the app
 
 ```bash
-uvicorn app.main:app --reload     # http://localhost:8000
+uv run start.py             # http://localhost:8000
 ```
 
 The scheduler starts inside the app process. Log in with any Mastodon account —
@@ -30,7 +32,7 @@ dev instances register their own OAuth app per instance automatically.
 ## Running tests
 
 ```bash
-python -m pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 - 150+ tests, all offline (in-memory SQLite, mocked HTTP/AI). No network needed.

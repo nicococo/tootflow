@@ -54,6 +54,16 @@ git pull
 docker compose up -d --build
 ```
 
+## Manual setup (no Docker)
+
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) — it manages
+Python 3.12 and all dependencies:
+
+```bash
+cp .env.example .env        # set SECRET_KEY and APP_BASE_URL
+uv run start.py             # installs deps, creates the SQLite DB, serves on :8000
+```
+
 ## Migrations
 
 Schema changes ship as **idempotent scripts** in `app/migrations/` — they are *not*
@@ -61,7 +71,9 @@ run automatically. After pulling an upgrade, check the release notes; if a migra
 is mentioned, run it once:
 
 ```bash
-docker compose exec app python -m app.migrations.<script_name>
+docker compose exec app uv run --no-sync python -m app.migrations.<script_name>
+# or, without Docker:
+uv run python -m app.migrations.<script_name>
 ```
 
 They are safe to re-run.

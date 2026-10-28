@@ -53,21 +53,22 @@ remembering to post about them.
 git clone https://github.com/nicococo/tootflow.git
 cd tootflow
 cp .env.example .env        # set SECRET_KEY and APP_BASE_URL
-docker compose up -d
+docker compose up -d --build
 ```
 
 Open `http://localhost:8000`, log in with your Mastodon account, done.
 
-**Local (Python 3.12):**
+**Local (via [uv](https://docs.astral.sh/uv/)):**
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload
+git clone https://github.com/nicococo/tootflow.git
+cd tootflow
+cp .env.example .env        # set SECRET_KEY
+uv run start.py             # installs deps, creates the SQLite DB, starts the app
 ```
 
-> **Note:** Python 3.12 is required — the pinned `sqlmodel` version does not work on 3.13+.
+> Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) — it manages
+> Python 3.12 automatically (`.python-version`), so you don't need Python installed.
 
 **First AI post:** log in → Account → *AI Model* → paste an API key from any
 OpenAI-compatible provider (or set `OPENAI_API_KEY` in `.env` for an instance-wide default).

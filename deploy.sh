@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./deploy.sh           — standard deploy (uses Docker layer cache)
-#   ./deploy.sh --fresh   — full rebuild (use when requirements.txt changed)
+#   ./deploy.sh --fresh   — full rebuild (use when pyproject.toml/uv.lock changed)
 #
 # Deployment process:
 #   1. Run unit tests locally before calling this script
