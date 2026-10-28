@@ -37,9 +37,9 @@ uv run pytest tests/ -v
 
 - 150+ tests, all offline (in-memory SQLite, mocked HTTP/AI). No network needed.
 - The suite is the contract: **every PR must keep it green.** New features need tests.
-- X publishing, OAuth flows, and the scheduler are covered in `tests/test_x_support.py`
-  and `tests/test_multi_account.py` — copy their patterns (mock at the service boundary,
-  use `asyncio.run()` for async tests, no `pytest-asyncio` dependency).
+- Mastodon OAuth flows and the scheduler are covered in `tests/test_multi_account.py`
+  and `tests/test_campaign_reschedule.py` — copy their patterns (mock at the service
+  boundary, use `asyncio.run()` for async tests, no `pytest-asyncio` dependency).
 
 ## Project layout
 
@@ -51,7 +51,7 @@ app/
 ├── scheduler.py       # APScheduler: publishing + metrics jobs
 ├── crypto.py          # Fernet encryption for tokens/keys at rest
 ├── routers/           # auth (OAuth), campaigns, posts, metrics, account, admin
-├── services/          # mastodon_service, x_service, ai_service
+├── services/          # mastodon_service, ai_service
 ├── migrations/        # idempotent DDL scripts (run manually)
 └── templates/         # Jinja2, brutalist design
 ```

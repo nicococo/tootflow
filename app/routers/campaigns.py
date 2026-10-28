@@ -10,7 +10,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.database import get_session
-from app.models import AccountLink, Campaign, Metrics, Post, User, MastodonAccount, XAccount, UserAIConfig
+from app.models import AccountLink, Campaign, Metrics, Post, User, MastodonAccount, UserAIConfig
 from sqlalchemy import or_
 from app.auth import get_current_user
 from app.csrf import verify_csrf
@@ -160,24 +160,14 @@ def _get_available_accounts(session: Session, user: User) -> list[MastodonAccoun
     ).all()
 
 
-def _get_available_x_accounts(session: Session, user: User) -> list[XAccount]:
-    """Return current user's X accounts plus X accounts from all linked users."""
-    linked_ids = _get_linked_user_ids(session, user.id)
-    all_user_ids = [user.id] + linked_ids
-    return session.exec(
-        select(XAccount).where(XAccount.user_id.in_(all_user_ids))
-    ).all()
-
-
 @router.get("/new", response_class=HTMLResponse)
 def new_campaign_page(request: Request, session: Session = Depends(get_session), user: User = Depends(get_current_user)):
     existing = session.exec(select(Campaign).where(Campaign.user_id == user.id).order_by(Campaign.created_at.desc())).all()
     available_accounts = _get_available_accounts(session, user)
-    available_x_accounts = _get_available_x_accounts(session, user)
     error = None
     if request.query_params.get("error") == "limit":
         count = request.query_params.get("count", settings.max_free_campaigns)
-        error = f"You have reached the limit of {count} unpaid campaigns. Archive or delete an existing campaign, or activate one to create more."
+        error = f"You have reached the limit of {count} campaigns. Archive or delete an existing campaign to create more."
     return templates.TemplateResponse(
         "campaign_create.html",
         {
@@ -189,7 +179,6 @@ def new_campaign_page(request: Request, session: Session = Depends(get_session),
             "existing_campaigns": existing,
             "template_fields": TEMPLATE_FIELDS,
             "available_accounts": available_accounts,
-            "available_x_accounts": available_x_accounts,
             "error": error,
         },
     )
@@ -207,7 +196,6 @@ async def create_campaign(
     duration_days: int = Form(30),
     posts_per_week: int = Form(3),
     mastodon_account_id: Optional[int] = Form(None),
-    x_account_id: Optional[int] = Form(None),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
@@ -237,20 +225,14 @@ async def create_campaign(
             status_code=302,
         )
 
-    # Validate and resolve the posting account (XOR: X or Mastodon, never both)
+    # Validate and resolve the posting account
     available = _get_available_accounts(session, user)
     available_ids = {acc.id for acc in available}
-    available_x = _get_available_x_accounts(session, user)
-    available_x_ids = {acc.id for acc in available_x}
 
     resolved_account = None
-    resolved_x_account = None
-    if x_account_id and x_account_id in available_x_ids:
-        resolved_x_account = session.get(XAccount, x_account_id)
-    elif mastodon_account_id and mastodon_account_id in available_ids:
+    if mastodon_account_id and mastodon_account_id in available_ids:
         resolved_account = session.get(MastodonAccount, mastodon_account_id)
-
-    if resolved_x_account is None and resolved_account is None:
+    if resolved_account is None:
         # Fall back to current user's Mastodon account (legacy behaviour)
         resolved_account = session.exec(
             select(MastodonAccount).where(MastodonAccount.user_id == user.id)
@@ -260,7 +242,6 @@ async def create_campaign(
     campaign = Campaign(
         user_id=user.id,
         mastodon_account_id=resolved_account.id if resolved_account else None,
-        x_account_id=resolved_x_account.id if resolved_x_account else None,
         name=name,
         description=description,
         template_type=template_type,
@@ -308,12 +289,9 @@ def campaign_detail(
 
     # Resolve campaign's posting account for display
     campaign_account = None
-    campaign_x_account = None
-    if campaign.x_account_id:
-        campaign_x_account = session.get(XAccount, campaign.x_account_id)
-    if not campaign_x_account and campaign.mastodon_account_id:
+    if campaign.mastodon_account_id:
         campaign_account = session.get(MastodonAccount, campaign.mastodon_account_id)
-    if not campaign_x_account and not campaign_account:
+    if not campaign_account:
         campaign_account = session.exec(
             select(MastodonAccount).where(MastodonAccount.user_id == campaign.user_id)
         ).first()
@@ -343,8 +321,7 @@ def campaign_detail(
         {"request": request, "user": user, "campaign": campaign, "posts": posts, "mastodon": mastodon,
          "ai_max": settings.openai_max_posts_per_campaign, "stale_pending_count": stale_pending_count,
          "overview_favs": overview_favs, "overview_reblogs": overview_reblogs, "overview_replies": overview_replies,
-         "description_fields": description_fields, "is_owner": is_owner, "campaign_account": campaign_account,
-         "campaign_x_account": campaign_x_account},
+         "description_fields": description_fields, "is_owner": is_owner, "campaign_account": campaign_account},
     )
 
 
@@ -389,12 +366,11 @@ def edit_campaign_page(
     if campaign.status == "archived":
         raise HTTPException(status_code=403, detail="Archived campaigns cannot be edited")
     available_accounts = _get_available_accounts(session, user)
-    available_x_accounts = _get_available_x_accounts(session, user)
     return templates.TemplateResponse(
         "campaign_create.html",
         {"request": request, "user": user, "templates": TEMPLATES, "tones": TONES, "languages": LANGUAGES,
          "template_fields": TEMPLATE_FIELDS, "edit_campaign": campaign,
-         "available_accounts": available_accounts, "available_x_accounts": available_x_accounts},
+         "available_accounts": available_accounts},
     )
 
 
@@ -409,7 +385,6 @@ def update_campaign(
     duration_days: int = Form(30),
     posts_per_week: int = Form(3),
     mastodon_account_id: Optional[int] = Form(None),
-    x_account_id: Optional[int] = Form(None),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
     _csrf: None = Depends(verify_csrf),
@@ -432,18 +407,10 @@ def update_campaign(
     campaign.language = language
     campaign.duration_days = max(1, min(365, duration_days))
     campaign.posts_per_week = max(1, min(14, posts_per_week))
-    # XOR account switch: submitting x_account_id switches to X, submitting
-    # mastodon_account_id switches to Mastodon. Omitted fields leave it unchanged.
-    if x_account_id is not None:
-        available_x = _get_available_x_accounts(session, user)
-        if x_account_id in {acc.id for acc in available_x}:
-            campaign.x_account_id = x_account_id
-            campaign.mastodon_account_id = None
-    elif mastodon_account_id is not None:
+    if mastodon_account_id is not None:
         available = _get_available_accounts(session, user)
         if mastodon_account_id in {acc.id for acc in available}:
             campaign.mastodon_account_id = mastodon_account_id
-            campaign.x_account_id = None
     session.add(campaign)
     session.commit()
     return RedirectResponse(f"/campaigns/{campaign_id}", status_code=302)

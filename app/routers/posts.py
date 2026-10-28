@@ -31,15 +31,6 @@ def _parse_poll(poll_option: list[str], poll_expires_in: int):
     return json.dumps(clean[:4]), poll_expires_in, None
 
 
-def _campaign_platform(campaign: Campaign) -> str:
-    """'x' when the campaign publishes to X, else 'mastodon'."""
-    return "x" if campaign.x_account_id is not None else "mastodon"
-
-
-def _max_chars(campaign: Campaign) -> int:
-    return 280 if _campaign_platform(campaign) == "x" else 500
-
-
 def _user_ai(session: Session, user: User):
     """Resolve (client, model) for the current user's BYOK config or env fallback."""
     cfg = session.exec(select(UserAIConfig).where(UserAIConfig.user_id == user.id)).first()
@@ -99,8 +90,6 @@ def edit_posts_page(
          "max_posts": settings.max_posts_per_campaign,
          "ai_max": settings.openai_max_posts_per_campaign,
          "poll_data": poll_data,
-         "is_x_campaign": _campaign_platform(campaign) == "x",
-         "max_chars": _max_chars(campaign),
          "ai_configured": _ai_configured(session, user)},
     )
 
@@ -124,14 +113,11 @@ def add_post(
     current_count = session.exec(select(Post).where(Post.campaign_id == campaign_id)).all()
     if len(current_count) >= settings.max_posts_per_campaign:
         raise HTTPException(status_code=400, detail=f"Campaign has reached the maximum of {settings.max_posts_per_campaign} posts")
-    is_x = _campaign_platform(campaign) == "x"
-    if is_x and any(o.strip() for o in poll_option):
-        raise HTTPException(status_code=400, detail="Polls are not supported on X campaigns")
     opts_json, expires_in, err = _parse_poll(poll_option, poll_expires_in)
     if err:
         raise HTTPException(status_code=400, detail=err)
     sched = datetime.fromisoformat(scheduled_time)
-    post = Post(campaign_id=campaign_id, content=content[:_max_chars(campaign)], scheduled_time=sched,
+    post = Post(campaign_id=campaign_id, content=content[:500], scheduled_time=sched,
                 poll_options=opts_json, poll_expires_in=expires_in)
     session.add(post)
     # Advance campaign status on post add
@@ -165,13 +151,10 @@ def edit_post(
     post = session.get(Post, post_id)
     if not post or post.campaign_id != campaign_id:
         raise HTTPException(status_code=404)
-    is_x = _campaign_platform(campaign) == "x"
-    if is_x and any(o.strip() for o in poll_option):
-        raise HTTPException(status_code=400, detail="Polls are not supported on X campaigns")
     opts_json, expires_in, err = _parse_poll(poll_option, poll_expires_in)
     if err:
         raise HTTPException(status_code=400, detail=err)
-    post.content = content[:_max_chars(campaign)]
+    post.content = content[:500]
     post.scheduled_time = datetime.fromisoformat(scheduled_time)
     post.poll_options = opts_json
     post.poll_expires_in = expires_in
@@ -211,7 +194,6 @@ async def generate_campaign_posts(
             language=campaign.language,
             duration_days=campaign.duration_days,
             posts_per_week=campaign.posts_per_week,
-            platform=_campaign_platform(campaign),
             client=client,
             model=model_override,
         )
@@ -283,7 +265,6 @@ async def regenerate_post(
             template_type=campaign.template_type,
             tone=campaign.tone,
             language=campaign.language,
-            platform=_campaign_platform(campaign),
             client=client,
             model=model_override,
         )
@@ -344,7 +325,6 @@ async def refine_post(
             tone=campaign.tone,
             language=campaign.language,
             poll_options=poll_opts,
-            platform=_campaign_platform(campaign),
             client=client,
             model=model_override,
         )

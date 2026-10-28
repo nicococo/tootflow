@@ -231,12 +231,6 @@
       <a href="/campaigns/{{ campaign.id }}" class="btn btn-outline btn-sm">← Campaign</a>
     </div>
 
-    {% if campaign.x_account_id %}
-    <div class="notice" style="margin-bottom:24px;">
-      This campaign publishes to X (Twitter). Engagement metrics are not available — the X API Free tier is write-only.
-    </div>
-    {% endif %}
-
     {% set card_count = 3 + (1 if follower_delta is not none else 0) + (1 if total_voters > 0 else 0) %}
     <div style="display:grid; grid-template-columns: repeat({{ card_count }}, 1fr); gap:12px; margin-bottom:36px;">
       <div class="stat-box">

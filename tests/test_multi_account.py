@@ -3,19 +3,20 @@ Tests for multi-account and platform architecture.
 
 Covers:
 - Campaign.mastodon_account_id field (nullable FK)
-- XAccount stub model exists
 - Scheduler resolves account via mastodon_account_id when set
 - Scheduler falls back to user's first account when mastodon_account_id is None
 - Migration backfill logic
 - Campaign creation with explicit account assignment
+- Token-at-rest regression: decrypted tokens never persist
 """
 
+import asyncio
 import pytest
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlmodel import Session, select
 
-from app.models import Campaign, MastodonAccount, Post, User, XAccount
+from app.models import Campaign, MastodonAccount, Post, User
 from app.main import app
 from app.auth import get_current_user
 
@@ -114,44 +115,6 @@ class TestCampaignAccountIdField:
         assert c1.mastodon_account_id == account1.id
         assert c2.mastodon_account_id == account2.id
         assert c1.mastodon_account_id != c2.mastodon_account_id
-
-
-# ── Model: XAccount stub ─────────────────────────────────────────────────────
-
-class TestXAccountModel:
-    def test_xaccount_model_exists(self):
-        """XAccount model is importable and has expected fields."""
-        assert XAccount is not None
-
-    def test_xaccount_can_be_created(self, db):
-        user = _create_user(db)
-        account = XAccount(
-            user_id=user.id,
-            username="testuser",
-            access_token="fake-x-token",
-            access_token_secret="fake-secret",
-        )
-        db.add(account)
-        db.commit()
-        db.refresh(account)
-        assert account.id is not None
-        assert account.user_id == user.id
-        assert account.username == "testuser"
-
-    def test_campaign_can_reference_x_account(self, db):
-        user = _create_user(db)
-        x_account = XAccount(
-            user_id=user.id,
-            username="testuser",
-            access_token="fake-x-token",
-            access_token_secret="fake-secret",
-        )
-        db.add(x_account)
-        db.commit()
-        db.refresh(x_account)
-        campaign = _make_campaign(db, user, x_account_id=x_account.id)
-        db.refresh(campaign)
-        assert campaign.x_account_id == x_account.id
 
 
 # ── Scheduler: account resolution ────────────────────────────────────────────
@@ -271,3 +234,39 @@ class TestCampaignCreationWithAccount:
         ).first()
         assert campaign is not None
         assert campaign.mastodon_account_id == account.id
+
+
+# ── Token encryption at rest (regression: decrypted tokens must never persist) ─
+
+class TestTokensNotPersistedDecrypted:
+    def test_mastodon_publish_does_not_persist_decrypted_token(self, db, engine):
+        from app.crypto import decrypt_token, encrypt_token
+        from app.scheduler import publish_due_posts
+
+        user = _create_user(db)
+        account = MastodonAccount(
+            user_id=user.id,
+            instance_url="https://mastodon.social",
+            access_token=encrypt_token("m-token"),
+            username="muser",
+        )
+        db.add(account)
+        db.commit()
+        db.refresh(account)
+        campaign = _make_campaign(db, user, mastodon_account_id=account.id)
+        _make_post(db, campaign)
+
+        import contextlib
+        from app.scheduler import engine as _  # noqa: F401 — ensure module loaded
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(patch("app.scheduler.engine", engine))
+            stack.enter_context(patch(
+                "app.scheduler.mastodon_service.publish_post",
+                AsyncMock(return_value={"id": "m-1"}),
+            ))
+            asyncio.run(publish_due_posts())
+        db.expire_all()
+
+        row = db.exec(select(MastodonAccount).where(MastodonAccount.id == account.id)).first()
+        assert "m-token" not in row.access_token
+        assert decrypt_token(row.access_token) == "m-token"

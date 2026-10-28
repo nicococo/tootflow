@@ -11,9 +11,6 @@
   <meta property="og:title" content="{{ self.title() }}">
   <meta property="og:description" content="{{ self.meta_description() }}">
   <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.netloc }}{{ request.url.path }}">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="{{ self.title() }}">
-  <meta name="twitter:description" content="{{ self.meta_description() }}">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   {% block jsonld %}{% endblock %}
   <style>
@@ -525,14 +522,6 @@
     {% block content %}{% endblock %}
   </main>
   <footer>
-    {% if settings.operator_name %}
-    <a href="/impressum">Impressum</a>
-    <span style="margin:0 12px; color:#2a3848;">·</span>
-    <a href="/privacy">Privacy</a>
-    <span style="margin:0 12px; color:#2a3848;">·</span>
-    <a href="/tos">Terms</a>
-    <span style="margin:0 12px; color:#2a3848;">·</span>
-    {% endif %}
     TootFlow
     <span style="margin:0 12px; color:#2a3848;">·</span>
     <a href="https://github.com/nicococo/tootflow" target="_blank" rel="noopener">GitHub</a>

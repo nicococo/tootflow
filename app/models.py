@@ -21,15 +21,6 @@ class MastodonAccount(SQLModel, table=True):
     user: Optional[User] = Relationship(back_populates="mastodon_account")
 
 
-class XAccount(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    username: str = ""
-    access_token: str = ""
-    access_token_secret: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
 class UserAIConfig(SQLModel, table=True):
     """Per-user AI provider credentials (bring-your-own-key).
 
@@ -49,7 +40,6 @@ class Campaign(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     mastodon_account_id: Optional[int] = Field(default=None, foreign_key="mastodonaccount.id")
-    x_account_id: Optional[int] = Field(default=None, foreign_key="xaccount.id")
     name: str
     description: str
     template_type: str
@@ -77,7 +67,6 @@ class Post(SQLModel, table=True):
     scheduled_time: datetime
     status: str = "pending"
     mastodon_status_id: Optional[str] = None
-    x_status_id: Optional[str] = None
     published_at: Optional[datetime] = None
     poll_options: Optional[str] = None   # JSON list e.g. '["Yes","No","Maybe"]'
     poll_expires_in: int = 86400         # seconds; default = 1 day

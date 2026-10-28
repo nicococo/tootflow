@@ -43,7 +43,6 @@ full reference. Highlights:
 | `SECRET_KEY` | **Required.** Long random string. Encrypts stored tokens; changing it invalidates them. |
 | `APP_BASE_URL` | Must match the public URL — used for OAuth callbacks. |
 | `OPENAI_API_KEY`, `OPENAI_MODEL` | Optional instance-wide AI fallback. Users' own keys (Account page) take precedence. |
-| `X_API_KEY`, `X_API_SECRET` | X OAuth app credentials. Create an app at the X Developer Portal with OAuth 1.0a (Read+Write) and callback `<APP_BASE_URL>/x/callback`. Empty = X support disabled. |
 | `ADMIN_SECRET` | Enables `/admin?secret=<value>` — a read-mostly analytics dashboard. Leave empty to disable. |
 | `MAX_FREE_CAMPAIGNS` | Per-user campaign cap (anti-abuse for open instances). |
 

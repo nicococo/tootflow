@@ -17,7 +17,7 @@ from app.csrf import CSRFMiddleware
 from app.limiter import limiter
 from app.database import create_db_and_tables, get_session, engine
 from sqlalchemy import func
-from app.models import AccountLink, Campaign, MastodonAccount, Metrics, Post, User, XAccount
+from app.models import AccountLink, Campaign, MastodonAccount, Metrics, Post, User
 from sqlalchemy import or_
 from app.auth import optional_current_user, get_current_user
 from app.scheduler import start_scheduler, stop_scheduler
@@ -172,28 +172,9 @@ def sitemap_xml(request: Request):
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         f"  <url><loc>{base}/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>\n"
         f"  <url><loc>{base}/login</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>\n"
-        f"  <url><loc>{base}/privacy</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>\n"
         "</urlset>\n"
     )
     return Response(content=content, media_type="application/xml")
-
-
-@app.get("/privacy", response_class=HTMLResponse)
-def privacy(request: Request, session: Session = Depends(get_session)):
-    user = optional_current_user(request, session)
-    return templates.TemplateResponse("privacy.html", {"request": request, "user": user, "settings": get_settings()})
-
-
-@app.get("/impressum", response_class=HTMLResponse)
-def impressum(request: Request, session: Session = Depends(get_session)):
-    user = optional_current_user(request, session)
-    return templates.TemplateResponse("impressum.html", {"request": request, "user": user, "settings": get_settings()})
-
-
-@app.get("/tos", response_class=HTMLResponse)
-def tos(request: Request, session: Session = Depends(get_session)):
-    user = optional_current_user(request, session)
-    return templates.TemplateResponse("tos.html", {"request": request, "user": user, "settings": get_settings()})
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -237,10 +218,6 @@ def dashboard(
     ).all()
     mastodon_by_id = {acc.id: acc for acc in all_mastodon}
     mastodon_by_user = {acc.user_id: acc for acc in all_mastodon}
-    all_x = session.exec(
-        select(XAccount).where(XAccount.user_id.in_(all_user_ids))
-    ).all()
-    x_by_id = {acc.id: acc for acc in all_x}
 
     def _account_label(acc: MastodonAccount | None) -> str | None:
         if not acc:
@@ -249,9 +226,6 @@ def dashboard(
 
     account_label_by_campaign: dict[int, str | None] = {}
     for c in campaigns_list:
-        if c.x_account_id and c.x_account_id in x_by_id:
-            account_label_by_campaign[c.id] = f"𝕏 @{x_by_id[c.x_account_id].username}"
-            continue
         acc = mastodon_by_id.get(c.mastodon_account_id) if c.mastodon_account_id else mastodon_by_user.get(c.user_id)
         account_label_by_campaign[c.id] = _account_label(acc)
 
