@@ -24,9 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # NOTE: Pages must be enabled once in Settings → Pages → Source: "GitHub Actions".
+      # Creating the site via API is not possible with the workflow token
+      # ("Resource not accessible by integration"), so we don't try.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
