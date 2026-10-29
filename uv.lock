@@ -1133,7 +1133,7 @@ wheels = [
 [[package]]
 name = "tootflow"
 version = "1.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
     { name = "apscheduler" },

@@ -5,8 +5,12 @@ WORKDIR /app
 # Create non-root user
 RUN addgroup --system app && adduser --system --ingroup app app
 
-# Install dependencies (locked) into the project venv
+# Install dependencies (locked) into the project venv — deps cached separately
 COPY pyproject.toml uv.lock ./
+RUN UV_LINK_MODE=copy uv sync --frozen --no-dev --no-install-project
+
+# Copy application code and install the project itself (provides the `tootflow` script)
+COPY . .
 RUN UV_LINK_MODE=copy uv sync --frozen --no-dev
 
 # Copy application code

@@ -6,11 +6,12 @@
 
 <p align="center">
   <strong>Plan, draft, and automate Mastodon campaigns — free and open source.</strong><br>
-  AI-assisted post scheduling with full editorial control.
+  AI-assisted post scheduling with full editorial control. Web app plus an agent-friendly CLI.
 </p>
 
 <p align="center">
   <a href="#-quickstart">Quickstart</a> ·
+  <a href="#-built-for-agents">Agents</a> ·
   <a href="#-features">Features</a> ·
   <a href="#-configuration">Configuration</a> ·
   <a href="#-self-hosting">Self-hosting</a> ·
@@ -24,7 +25,7 @@ share, it drafts the posts, spaces them out over your chosen duration, and publi
 automatically — while you get to exist offline sometimes.
 
 Built for [OSS maintainers](#), researchers, and solopreneurs who ship things but hate
-remembering to post about them.
+remembering to post about them — and for the agents that help them do it.
 
 ## ✨ Features
 
@@ -71,6 +72,38 @@ uv run start.py             # installs deps, creates the SQLite DB, starts the a
 **First AI post:** log in → Account → *AI Model* → paste an API key from any
 OpenAI-compatible provider (or set `OPENAI_API_KEY` in `.env` for an instance-wide default).
 
+## 🤖 Built for agents
+
+Prefer letting your coding agent do the drafting? TootFlow ships a single-user CLI
+designed as a **first-class agent tool** — the agent creates, TootFlow operates:
+
+```bash
+uv run tootflow accounts add --instance https://mastodon.social   # one-time OAuth
+uv run tootflow campaigns create --name "v2.0 launch" --posts-per-week 3
+echo '[{"content": "Shipping v2.0 today 🎉"}]' | \
+    uv run tootflow posts import --campaign 1 --json-file - --skip-duplicate
+uv run tootflow ops publish        # publishes everything due — trigger it anytime
+```
+
+The division of labor: **the agent writes the words, TootFlow owns the operations** —
+tokens, scheduling, publishing, retries, metrics. Deterministic commands instead of
+fragile browser automation.
+
+Why it works well inside OpenCode, Claude Code, Codex, or any harness:
+
+- **Self-describing** — `uv run tootflow schema` prints a JSON manifest of every
+  command, parameter, choice, and convention. The agent bootstraps itself from one
+  command; it never reads your docs.
+- **Machine-first output** — stable `--json` schemas on every read command, meaningful
+  exit codes (`0`/`1`/`2`), errors on stderr. Branch on them, never scrape them.
+- **Safe by default** — no interactive prompts, destructive commands need explicit
+  `--yes`, `--skip-duplicate` prevents agent retries from double-posting.
+- **Yours to trigger** — publishing is a one-shot command: run it manually, from an
+  in-harness loop, or from any trigger you like. No daemon, no vendor lock-in.
+
+Full reference in [docs/cli.md](docs/cli.md), the recommended agent loop in
+[docs/agent-harness.md](docs/agent-harness.md).
+
 ## 🧩 Features at a glance
 
 | | |
@@ -80,6 +113,7 @@ OpenAI-compatible provider (or set `OPENAI_API_KEY` in `.env` for an instance-wi
 | 🐘 **Mastodon** | Full support incl. polls; multi-instance, multi-account |
 | 📊 **Metrics** | Per-post engagement + follower growth, fetched daily |
 | 📤 **Export Studio** | Newsletter digest, LinkedIn article, Reddit post — from any campaign |
+| 🖥️ **CLI** | Single-user CLI for agent harnesses — agents draft, TootFlow schedules & publishes |
 | 🔐 **Privacy** | No email, no passwords, no tracking. GDPR export & delete built in |
 
 ## ⚙️ Configuration

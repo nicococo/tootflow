@@ -48,8 +48,11 @@ app/
 ├── main.py            # FastAPI app, middleware, lifespan
 ├── config.py          # pydantic-settings (env-driven)
 ├── models.py          # SQLModel tables
+├── scheduling.py      # post spacing shared by web + CLI
+├── urlcheck.py        # instance URL validation (SSRF guard)
 ├── scheduler.py       # APScheduler: publishing + metrics jobs
 ├── crypto.py          # Fernet encryption for tokens/keys at rest
+├── cli/               # tootflow CLI (single-user, agent-harness-first)
 ├── routers/           # auth (OAuth), campaigns, posts, metrics, account, admin
 ├── services/          # mastodon_service, ai_service
 ├── migrations/        # idempotent DDL scripts (run manually)

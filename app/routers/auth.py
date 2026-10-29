@@ -16,6 +16,7 @@ from app.database import get_session
 from app.limiter import limiter
 from app.models import AccountLink, LoginEvent, MastodonAccount, User
 from app.services import mastodon_service
+from app.urlcheck import validate_instance_url, InvalidInstanceURL
 from app.site_config import get_registration_open
 
 logger = logging.getLogger(__name__)
@@ -29,25 +30,11 @@ _oauth_apps: dict[str, dict] = {}
 
 
 def _validate_instance_url(url: str) -> str:
-    """Reject private/loopback URLs to prevent SSRF."""
+    """Reject private/loopback URLs to prevent SSRF (shared logic in app.urlcheck)."""
     try:
-        parsed = urlparse(url)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid instance URL")
-    if parsed.scheme not in ("http", "https"):
-        raise HTTPException(status_code=400, detail="Instance URL must use https")
-    host = parsed.hostname or ""
-    if not host:
-        raise HTTPException(status_code=400, detail="Invalid instance URL")
-    if host in {"localhost", "127.0.0.1", "::1", "0.0.0.0"} or host.endswith(".local"):
-        raise HTTPException(status_code=400, detail="Invalid instance URL")
-    try:
-        ip = ipaddress.ip_address(host)
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-            raise HTTPException(status_code=400, detail="Invalid instance URL")
-    except ValueError:
-        pass  # hostname, not an IP — fine
-    return url.rstrip("/")
+        return validate_instance_url(url)
+    except InvalidInstanceURL as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/login", response_class=HTMLResponse)

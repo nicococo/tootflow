@@ -13,7 +13,8 @@ from app.auth import get_current_user
 from app.csrf import verify_csrf
 from app.limiter import limiter
 from sqlalchemy import or_
-from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, schedule_posts, build_ai_client
+from app.services.ai_service import generate_posts, regenerate_single_post, refine_single_post, build_ai_client
+from app.scheduling import schedule_posts
 from app.routers.campaigns import format_description_for_ai
 
 settings = get_settings()

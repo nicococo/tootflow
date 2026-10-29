@@ -156,6 +156,7 @@
     </a>
     <div class="nav-links">
       <a href="#features">Features</a>
+      <a href="#agents">Agents</a>
       <a href="#quickstart">Quickstart</a>
       <a href="#byok">Bring your own AI</a>
       <a href="https://github.com/nicococo/tootflow" class="gh">★ GitHub</a>
@@ -171,18 +172,18 @@
       <h1>Stop letting<br>your ideas <span style="text-decoration: line-through; text-decoration-color: var(--orange);">rot</span> in the drafts <span class="hl">folder.</span></h1>
       <p class="sub">
         TootFlow is a campaign scheduler for <strong>Mastodon and X</strong>.
-        Describe what you want to share — it drafts, spaces out, and publishes
-        automatically. <strong>You get to exist offline sometimes.</strong>
+        Describe what you want to share — your agent drafts it, TootFlow spaces it out
+        and publishes automatically. <strong>You get to exist offline sometimes.</strong>
       </p>
       <div class="cta-row">
         <a class="btn btn-primary" href="https://github.com/nicococo/tootflow">Clone it &nbsp;▶</a>
-        <a class="btn btn-ghost" href="#quickstart">Self-host in minutes</a>
+        <a class="btn btn-ghost" href="#agents">See the agent loop</a>
       </div>
       <div class="trust">
         <span class="pill">MIT licensed</span>
         <span class="pill">No subscription</span>
         <span class="pill">No tracking</span>
-        <span class="pill">Bring your own AI key</span>
+        <span class="pill">Agent-ready CLI</span>
       </div>
     </div>
     <div>
@@ -204,6 +205,69 @@
 </div>
 
 <div class="band">Free &amp; open source · AI, metrics &amp; export included · Self-host with Docker in minutes</div>
+
+<!-- ══════ AGENTS ══════ -->
+<section id="agents">
+  <div class="wrap">
+    <div class="sec-label">// Agent-native</div>
+    <h2>Built to be driven<br>by your coding agent.</h2>
+    <p style="max-width:640px; margin-bottom:36px; font-size:15px; color:#3c4a58;">
+      Most schedulers are UIs. TootFlow ships a single-user CLI designed as a
+      <strong>first-class agent tool</strong> — your agent writes the words,
+      TootFlow owns the operations: tokens, scheduling, publishing, retries, metrics.
+      Works with OpenCode, Claude Code, Codex, or a plain shell loop.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot r"></div><div class="dot"></div><div class="dot g"></div>
+        <span class="terminal-title">opencode — campaign_session.log</span>
+      </div>
+      <pre><span class="c"># agent bootstraps itself from the machine-readable manifest</span>
+<span class="o">$</span> uv run tootflow schema
+
+<span class="c"># agent drafts the posts (the creative part is yours, agent)</span>
+<span class="o">$</span> uv run tootflow campaigns create --name <span class="t">"v2.0 launch"</span> --posts-per-week 3
+<span class="o">$</span> cat drafts.json | uv run tootflow posts import --campaign 1 <span class="t">\</span>
+      --json-file - <span class="t">--skip-duplicate</span>
+<span class="o">→</span> 6 posts stored · first one goes out Friday 10:00
+
+<span class="c"># publishing: one-shot, idempotent, trigger it from anywhere</span>
+<span class="o">$</span> uv run tootflow ops publish
+<span class="o">→</span> published post 1 → 11223344
+
+<span class="c"># the agent learns what worked and drafts the next campaign</span>
+<span class="o">$</span> uv run tootflow ops metrics-refresh &amp;&amp; uv run tootflow posts metrics --campaign 1</pre>
+    </div>
+
+    <div class="grid3" style="margin-top:32px;">
+      <div class="card">
+        <span class="icon">🧭</span>
+        <h3>Self-describing</h3>
+        <p><code>tootflow schema</code> emits a JSON manifest of every command, typed
+        parameter, and convention — generated live, so it always matches the installed
+        version. The agent never reads your docs.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🛡️</span>
+        <h3>Machine-first, safe by default</h3>
+        <p>Stable <code>--json</code> output and real exit codes to branch on. No prompts;
+        destructive commands need explicit <code>--yes</code>; <code>--skip-duplicate</code>
+        stops agent retries from double-posting.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔁</span>
+        <h3>Your loop, your triggers</h3>
+        <p>Publishing is a one-shot command — run it manually, from an in-harness loop, or
+        from any trigger. No daemon, no cron dependency, no vendor lock-in.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:28px;">
+      <a href="https://github.com/nicococo/tootflow/blob/main/docs/agent-harness.md" class="btn btn-primary">Read the agent-harness recipe &nbsp;▶</a>
+    </p>
+  </div>
+</section>
 
 <!-- ══════ FEATURES ══════ -->
 <section id="features">

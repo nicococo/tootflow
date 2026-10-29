@@ -29,6 +29,60 @@ def _resolve_mastodon_account(session: Session, campaign: Campaign) -> MastodonA
     ).first()
 
 
+async def _publish_single_post(session: Session, campaign: Campaign, post: Post) -> None:
+    """Publish one pending post via Mastodon and apply status transitions.
+
+    Shared by the scheduler loop and the CLI (`posts send`). Mirrors the app's
+    error policy: 4xx → permanent failure; 5xx/429/network → stays pending.
+    """
+    account = _resolve_mastodon_account(session, campaign)
+
+    if not account:
+        logger.warning(f"No Mastodon account for campaign {campaign.id}, skipping post {post.id}")
+        return
+
+    try:
+        # Transient copy — decrypted token never touches the session,
+        # so session.commit() can't persist it (Fix #1)
+        tmp_account = MastodonAccount(
+            id=account.id,
+            user_id=account.user_id,
+            instance_url=account.instance_url,
+            username=account.username,
+            access_token=decrypt_token(account.access_token),
+        )
+        _poll_opts = json.loads(post.poll_options) if post.poll_options else None
+        result = await mastodon_service.publish_post(
+            tmp_account,
+            post.content,
+            poll_options=_poll_opts,
+            poll_expires_in=post.poll_expires_in,
+        )
+        post.status = "published"
+        post.mastodon_status_id = result["id"]
+        post.published_at = datetime.utcnow()
+        session.add(post)
+
+        # Mark campaign as running once first post publishes
+        if campaign.status == "active":
+            campaign.status = "running"
+            session.add(campaign)
+
+        logger.info(f"Published post {post.id} for campaign {campaign.id}")
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code < 500:
+            # 4xx — content/auth problem, won't fix itself
+            post.status = "failed"
+            session.add(post)
+            logger.error(f"Post {post.id} permanently failed (HTTP {e.response.status_code}): {e}")
+        else:
+            # 5xx — server-side or rate limit, leave pending for next run
+            logger.warning(f"Post {post.id} transient error (HTTP {e.response.status_code}), will retry: {e}")
+    except Exception as e:
+        # Network error, timeout, etc. — leave pending for next run
+        logger.warning(f"Post {post.id} transient error, will retry: {e}")
+
+
 async def publish_due_posts():
     """Publish posts that are due for active/running campaigns."""
     settings = get_settings()
@@ -48,53 +102,7 @@ async def publish_due_posts():
 
         for post in due_posts:
             campaign = session.get(Campaign, post.campaign_id)
-
-            account = _resolve_mastodon_account(session, campaign)
-
-            if not account:
-                logger.warning(f"No Mastodon account for campaign {campaign.id}, skipping post {post.id}")
-                continue
-
-            try:
-                # Transient copy — decrypted token never touches the session,
-                # so session.commit() can't persist it (Fix #1)
-                tmp_account = MastodonAccount(
-                    id=account.id,
-                    user_id=account.user_id,
-                    instance_url=account.instance_url,
-                    username=account.username,
-                    access_token=decrypt_token(account.access_token),
-                )
-                _poll_opts = json.loads(post.poll_options) if post.poll_options else None
-                result = await mastodon_service.publish_post(
-                    tmp_account,
-                    post.content,
-                    poll_options=_poll_opts,
-                    poll_expires_in=post.poll_expires_in,
-                )
-                post.status = "published"
-                post.mastodon_status_id = result["id"]
-                post.published_at = datetime.utcnow()
-                session.add(post)
-
-                # Mark campaign as running once first post publishes
-                if campaign.status == "active":
-                    campaign.status = "running"
-                    session.add(campaign)
-
-                logger.info(f"Published post {post.id} for campaign {campaign.id}")
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code < 500:
-                    # 4xx — content/auth problem, won't fix itself
-                    post.status = "failed"
-                    session.add(post)
-                    logger.error(f"Post {post.id} permanently failed (HTTP {e.response.status_code}): {e}")
-                else:
-                    # 5xx — server-side or rate limit, leave pending for next run
-                    logger.warning(f"Post {post.id} transient error (HTTP {e.response.status_code}), will retry: {e}")
-            except Exception as e:
-                # Network error, timeout, etc. — leave pending for next run
-                logger.warning(f"Post {post.id} transient error, will retry: {e}")
+            await _publish_single_post(session, campaign, post)
 
         session.commit()
 
